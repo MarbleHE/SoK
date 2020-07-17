@@ -1,23 +1,2 @@
-# .gitignore taken from https://github.com/atlassian/docker/blob/master/.gitignore
-.vagrant*
-bin
-docker/docker
-.*.swp
-a.out
-*.orig
-build_src
-.flymake*
 .idea
 .DS_Store
-docs/_build
-docs/_static
-docs/_templates
-.gopath/
-.dotcloud
-*.test
-bundles/
-.hg/
-.git/
-vendor/pkg/
-pyenv
-Vagrantfile
