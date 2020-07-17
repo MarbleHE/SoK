@@ -1,0 +1,8 @@
+cmake_minimum_required (VERSION 3.9...3.17)
+project(eval_benchmark)
+find_package(SEAL 3.5 REQUIRED)
+add_executable(benchmark laplacian_sharpening/laplacian_sharpening_batched.cpp)
+set_target_properties(benchmark PROPERTIES LINKER_LANGUAGE CXX) 
+# target_include_directories(benchmark PUBLIC ${SEAL_INCLUDE_DIRS})
+# target_link_libraries(benchmark PUBLIC ${SEAL_LIBRARIES})
+target_link_libraries(benchmark SEAL::seal)
