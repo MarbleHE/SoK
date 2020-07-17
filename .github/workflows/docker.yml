@@ -4,6 +4,9 @@ name: build_docker_images
 on:
   push:
     branches: [ master ]
+    # Only run this Github Action if a file containing 'Dockerfile' in its name changed
+    paths:
+      - '**/**Dockerfile**'
     
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
