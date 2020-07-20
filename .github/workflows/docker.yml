@@ -1,26 +1,28 @@
+# This Github workflow
 name: build_docker_images
 
-# Controls when the action will run. Triggers the workflow on push events but only for the master branch
+# Controls when the action will run
 on:
   push:
-    branches: [ master ]
+    branches: [master]
     # Only run this Github Action if a file containing 'Dockerfile' in its name changed
     paths:
-      - '**/**Dockerfile**'
-    
+      - "**/image_base/Dockerfile"
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build-images:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2
-    - uses: mr-smithers-excellent/docker-build-push@v3
-      name: Build & push Docker image to DockerHub
-      with:
-        image: marblehe/base_seal
-        tag: latest
-        registry: docker.io
-        dockerfile: SEAL/image_base/Dockerfile
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - uses: mr-smithers-excellent/docker-build-push@v3
+        name: Build & push Docker image to DockerHub
+        with:
+          image: marblehe/base_seal
+          tag: latest
+          registry: docker.io
+          dockerfile: SEAL/image_base/Dockerfile
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}

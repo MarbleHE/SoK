@@ -1,0 +1,29 @@
+name: run_benchmarks
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  run-benchmarks:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker
+        run: |
+          export instanceid=$(aws ec2 run-instances --image-id ami-042bbb27718941d3c --count 1 --instance-type t2.micro --instance-initiated-shutdown-behavior terminate --query 'Instances[0].InstanceId' --output text)
+
+      # clone repository (how if non-public? or push image to ECR?), build docker image, run docker image in VM and shutdown VM afterwards
+      - name: invoke benchmark via AWS SSM
+        uses: peterkimzz/aws-ssm-send-command@1.0.1
+        id: ssm
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-2
+          instance-ids: $instanceid
+          command: echo $sok-deployment-key > ~/.ssh/id_rsa; ssh-agent bash -c 'ssh-add ~/.ssh/id_rsa; git clone git@github.com:MarbleHE/SoK.git'
+        env:
+          sok-deployment-key: ${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}
+
+      - name: Get the outputs
+        run: echo "The Command id is ${{ steps.ssm.outputs.command-id }}"

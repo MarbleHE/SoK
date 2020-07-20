@@ -2,14 +2,17 @@
 
 ## Build the base image
 
-docker build -t seal_base -f Dockerfile_base .
+docker build -t base_seal -f image_base/Dockerfile .
 
 ## Push the base image to DockerHub
 
-docker push MarbleHE/base_seal
+docker tag base_seal marblehe/base_seal
+docker push marblehe/base_seal
 
 ## Build the eval image
 
-docker build -t seal_eval .
+docker build -t eval_seal .
 
-## Create a eval image container 
+## Create a container running the eval image
+
+docker run -it --rm eval_seal
