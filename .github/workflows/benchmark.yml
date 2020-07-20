@@ -32,8 +32,9 @@ jobs:
           working-directory: /home/ssm-user
           command: |
             mkdir -p ~/.ssh/
+            echo "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}" > ~/.ssh/id_rsa
             ssh-keyscan github.com >> ~/.ssh/known_hosts
-            ssh-agent bash -c 'ssh-add - <<< "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}"; git clone git@github.com:MarbleHE/SoK.git'
+            ssh-agent bash -c 'ssh-add ~/.ssh/id_rsa; git clone git@github.com:MarbleHE/SoK.git'
 
       - name: Get the outputs
         run: echo "The Command id is ${{ steps.ssm.outputs.command-id }}"
