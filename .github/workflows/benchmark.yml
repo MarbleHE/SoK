@@ -11,7 +11,7 @@ jobs:
       - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
         id: container_creation
         run: |
-          export instanceId=$(aws ec2 run-instances --image-id ami-0da952e8afc41613f --count 1 --instance-type t2.micro --instance-initiated-shutdown-behavior terminate --iam-instance-profile ec2-amazonSSMFullAccess --query 'Instances[0].InstanceId' --output text)
+          export instanceId=$(aws ec2 run-instances --image-id ami-0da952e8afc41613f --count 1 --instance-type t2.micro --instance-initiated-shutdown-behavior terminate --iam-instance-profile Arn=arn:aws:iam::400029883903:role/ec2-amazonSSMFullAccess --query 'Instances[0].InstanceId' --output text)
           aws ec2 wait instance-status-ok --instance-ids $instanceId
           echo "##[set-output name=instance_id;]$instanceId"
         env:
