@@ -13,7 +13,7 @@ jobs:
         run: |
           export instanceId=$(aws ec2 run-instances --image-id ami-042bbb27718941d3c --count 1 --instance-type t2.micro --instance-initiated-shutdown-behavior terminate --query 'Instances[0].InstanceId' --output text)
           aws ec2 wait instance-status-ok --instance-ids $instanceId
-          echo "##[set-output name=instance_id;]$($instanceId)"
+          echo "##[set-output name=instance_id;]$instanceId"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
