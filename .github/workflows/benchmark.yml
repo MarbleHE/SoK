@@ -8,11 +8,10 @@ jobs:
   run-benchmarks:
     runs-on: ubuntu-20.04
     steps:
-      - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker
+      - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
         id: container_creation
         run: |
-          export instanceId=$(aws ec2 run-instances --image-id ami-0da952e8afc41613f --count 1 --instance-type t2.micro --instance-initiated-shutdown-behavior terminate --query 'Instances[0].InstanceId' --output text)
-          aws ec2 associate-iam-instance-profile --instance-id $instanceId --iam-instance-profile Name=ec2-amazonSSMFullAccess
+          export instanceId=$(aws ec2 run-instances --image-id ami-0da952e8afc41613f --count 1 --instance-type t2.micro --instance-initiated-shutdown-behavior terminate --iam-instance-profile ec2-amazonSSMFullAccess --query 'Instances[0].InstanceId' --output text)
           aws ec2 wait instance-status-ok --instance-ids $instanceId
           echo "##[set-output name=instance_id;]$instanceId"
         env:
