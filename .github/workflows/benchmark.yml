@@ -28,9 +28,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-2
           instance-ids: ${{ steps.container_creation.outputs.instance_id }}
-          command: echo $sok_deployment_key > ~/.ssh/id_rsa; ssh-agent bash -c 'ssh-add ~/.ssh/id_rsa; git clone git@github.com:MarbleHE/SoK.git'
-        env:
-          sok_deployment_key: ${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}
+          command: echo ${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }} > ~/.ssh/id_rsa; ssh-agent bash -c 'ssh-add ~/.ssh/id_rsa; git clone git@github.com:MarbleHE/SoK.git'
 
       - name: Get the outputs
         run: echo "The Command id is ${{ steps.ssm.outputs.command-id }}"
