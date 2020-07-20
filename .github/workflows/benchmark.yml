@@ -29,8 +29,9 @@ jobs:
           aws-region: us-east-2
           # instance-ids: ${{ steps.container_creation.outputs.instance_id }}
           instance-ids: i-02c20258e4880cfe6
-          working-directory: /home/ssm-user
+          working-directory: /home/ubuntu
           command: |
+            sudo su ubuntu
             mkdir -p ~/.ssh/
             echo "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}" > ~/.ssh/id_rsa
             ssh-keyscan github.com >> ~/.ssh/known_hosts
