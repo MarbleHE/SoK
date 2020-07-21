@@ -8,21 +8,47 @@ on:
     # Only run this Github Action if a file containing 'Dockerfile' in its name changed
     paths:
       - "**/image_base/Dockerfile"
+  repository_dispatch:
+    types: [build_images]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build-images:
+  build-image-seal:
     runs-on: ubuntu-20.04
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-
-      - uses: mr-smithers-excellent/docker-build-push@v3
-        name: Build & push Docker image to DockerHub
+      # - uses: actions/checkout@v2
+      # - uses: mr-smithers-excellent/docker-build-push@v3
+      #   name: Build & push Docker image to DockerHub
+      #   with:
+      #     image: marblehe/base_seal
+      #     tag: latest
+      #     registry: docker.io
+      #     dockerfile: SEAL/image_base/Dockerfile
+      #     username: ${{ secrets.DOCKER_USERNAME }}
+      #     password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Get commit hash
+        id: get_hash
+        run: echo ::set-env name=COMMIT_HASH::$(echo ${GITHUB_SHA:10})
+      - name: Publish to Registry
+        uses: elgohr/Publish-Docker-Github-Action@master
         with:
-          image: marblehe/base_seal
-          tag: latest
-          registry: docker.io
-          dockerfile: SEAL/image_base/Dockerfile
+          name: marblehe/base_seal
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+          dockerfile: SEAL/image_base/Dockerfile
+          tags: "latest,${{ env.COMMIT_HASH }}"
+  # build-image-cingulata:
+  #   runs-on: ubuntu-20.04
+  #   steps:
+  #     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+  #     - uses: actions/checkout@v2
+  #     - uses: mr-smithers-excellent/docker-build-push@v3
+  #       name: Build & push Docker image to DockerHub
+  #       with:
+  #         image: marblehe/base_seal
+  #         tag: latest
+  #         registry: docker.io
+  #         dockerfile: SEAL/image_base/Dockerfile
+  #         username: ${{ secrets.DOCKER_USERNAME }}
+  #         password: ${{ secrets.DOCKER_PASSWORD }}
