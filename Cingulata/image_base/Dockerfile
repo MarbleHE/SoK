@@ -28,6 +28,10 @@ RUN apt-get update -qq \
     xxd \ 
     yad
 
+###### install the AWS CLI required for result upload to S3
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get -y install awscli
+
 ENV build_dir=build_bfv
 
 # clone the Cingulata repository at a fixed revision
