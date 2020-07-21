@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      # - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
       # - uses: mr-smithers-excellent/docker-build-push@v3
       #   name: Build & push Docker image to DockerHub
       #   with:
@@ -39,6 +39,7 @@ jobs:
           dockerfile: SEAL/image_base/Dockerfile
           tags: latest
           tag_with_sha: true
+
   # build-image-cingulata:
   #   runs-on: ubuntu-20.04
   #   steps:
