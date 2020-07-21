@@ -27,17 +27,18 @@ jobs:
       #     dockerfile: SEAL/image_base/Dockerfile
       #     username: ${{ secrets.DOCKER_USERNAME }}
       #     password: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Get commit hash
-        id: get_hash
-        run: echo ::set-env name=COMMIT_HASH::$(echo ${GITHUB_SHA:10})
-      - name: Publish to Registry
-        uses: elgohr/Publish-Docker-Github-Action@master
+      # - name: Get commit hash
+      #   id: get_hash
+      #   run: echo ::set-env name=COMMIT_HASH::$(echo ${GITHUB_SHA:10})
+      - name: Build and push docker image
+        uses: docker/build-push-action@v1
         with:
-          name: marblehe/base_seal
+          repository: marblehe/base_seal
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           dockerfile: SEAL/image_base/Dockerfile
-          tags: "latest,${{ env.COMMIT_HASH }}"
+          tags: latest
+          tag_with_sha: true
   # build-image-cingulata:
   #   runs-on: ubuntu-20.04
   #   steps:
