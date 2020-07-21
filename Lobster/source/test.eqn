@@ -1,0 +1,3 @@
+INORDER = i0 i1;
+OUTORDER = o;
+o = i0 * i1;
