@@ -33,6 +33,7 @@ ENV build_dir=build_bfv
 # clone the Cingulata repository at a fixed revision
 WORKDIR /
 RUN git clone --recurse-submodules -j8 https://github.com/CEA-LIST/Cingulata.git cingu
+WORKDIR /cingu
 RUN git checkout eb028240000ee4d4cbc7b1a1aacfaf62ca1f6e5f
 
 # compile cingulata
