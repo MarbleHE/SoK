@@ -9,6 +9,8 @@ env:
   ec2-instance-type: m5n.large
   ami-ubuntu-docker: ami-0da952e8afc41613f
   iam-instance-profile-ssm: Arn=arn:aws:iam::400029883903:instance-profile/ec2-amazonSSMFullAccess
+  # root volume size in GB
+  ec2-volume-size: 25
 
 jobs:
   run-benchmarks:
@@ -23,7 +25,7 @@ jobs:
       - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
         id: container_creation
         run: |
-          export instanceId=$(aws ec2 run-instances --image-id ami-0da952e8afc41613f --count 1 --instance-type ${{ env.ec2-instance-type }} --instance-initiated-shutdown-behavior terminate --iam-instance-profile ${{ env.iam-instance-profile-ssm }} --query 'Instances[0].InstanceId' --output text)
+          export instanceId=$(aws ec2 run-instances --image-id ami-0da952e8afc41613f --count 1 --instance-type ${{ env.ec2-instance-type }} --block-device-mapping DeviceName=/dev/sda1,Ebs={VolumeSize=${{ env.ec2-volume-size }}} --instance-initiated-shutdown-behavior terminate --iam-instance-profile ${{ env.iam-instance-profile-ssm }} --query 'Instances[0].InstanceId' --output text)
           aws ec2 wait instance-status-ok --instance-ids $instanceId
           echo "##[set-output name=instance_id;]$instanceId"
         env:
@@ -44,8 +46,7 @@ jobs:
             mkdir -p /root/.ssh/
             echo "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}" > /root/.ssh/id_rsa
             chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
-            ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa
-            git clone git@github.com:MarbleHE/SoK.git'
+            ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa; git clone git@github.com:MarbleHE/SoK.git'
             cd /root/SoK/${{ matrix.tool }}
             docker run -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} -e AWS_DEFAULT_REGION=${{ env.default-aws-region }} --rm $(docker build -q .)
 #            shutdown -h now
