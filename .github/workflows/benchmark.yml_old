@@ -1,0 +1,123 @@
+name: run_benchmarks
+
+on:
+  repository_dispatch:
+    types: [run_benchmarks]
+
+env:
+  default-aws-region: us-east-2
+  ec2-instance-type: m5n.large
+  ami-ubuntu-docker: ami-0da952e8afc41613f
+  iam-instance-profile-ssm: Arn=arn:aws:iam::400029883903:instance-profile/ec2-amazonSSMFullAccess
+
+jobs:
+  run-benchmark-seal:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
+        id: container_creation
+        run: |
+          export instanceId=$(aws ec2 run-instances --image-id ami-0da952e8afc41613f --count 1 --instance-type ${{ env.ec2-instance-type }} --instance-initiated-shutdown-behavior terminate --iam-instance-profile ${{ env.iam-instance-profile-ssm }} --query 'Instances[0].InstanceId' --output text)
+          aws ec2 wait instance-status-ok --instance-ids $instanceId
+          echo "##[set-output name=instance_id;]$instanceId"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.default-aws-region }}
+
+      - name: invoke benchmark via AWS SSM
+        uses: peterkimzz/aws-ssm-send-command@1.0.1
+        id: ssm
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.default-aws-region }}
+          instance-ids: ${{ steps.container_creation.outputs.instance_id }}
+          working-directory: /root
+          command: |
+            mkdir -p /root/.ssh/
+            echo "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}" > /root/.ssh/id_rsa
+            chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
+            ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa
+            git clone git@github.com:MarbleHE/SoK.git'
+            cd /root/SoK/SEAL
+            docker build -q -t eval_seal .
+            docker run -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} -e AWS_DEFAULT_REGION=${{ env.default-aws-region }} --rm eval_seal
+            shutdown -h now
+
+      - name: Print command ID
+        run: echo -e "The Command ID is ${{ steps.ssm.outputs.command-id }}.\nRun 'aws ssm list-command-invocations --command-id ${{ steps.ssm.outputs.command-id }} --details' in AWS CLI to see task progress."
+
+  run-benchmark-lobster:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
+        id: container_creation
+        run: |
+          export instanceId=$(aws ec2 run-instances --image-id ${{ env.ami-ubuntu-docker }} --count 1 --instance-type ${{ env.ec2-instance-type }} --instance-initiated-shutdown-behavior terminate --iam-instance-profile ${{ env.iam-instance-profile-ssm }} --query 'Instances[0].InstanceId' --output text)
+          aws ec2 wait instance-status-ok --instance-ids $instanceId
+          echo "##[set-output name=instance_id;]$instanceId"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.default-aws-region }}
+
+      - name: invoke benchmark via AWS SSM
+        uses: peterkimzz/aws-ssm-send-command@1.0.1
+        id: ssm
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.default-aws-region }}
+          instance-ids: ${{ steps.container_creation.outputs.instance_id }}
+          working-directory: /root
+          command: |
+            mkdir -p /root/.ssh/
+            echo "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}" > /root/.ssh/id_rsa
+            chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
+            ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa
+            git clone git@github.com:MarbleHE/SoK.git'
+            cd /root/SoK/Lobster
+            docker build -q -t eval_lobster .
+            docker run -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} -e AWS_DEFAULT_REGION=${{ env.default-aws-region }} --rm eval_lobster
+            shutdown -h now
+
+      - name: Print command ID
+        run: echo -e "The Command ID is ${{ steps.ssm.outputs.command-id }}.\nRun 'aws ssm list-command-invocations --command-id ${{ steps.ssm.outputs.command-id }} --details' in AWS CLI to see task progress."
+
+  run-benchmark-alchemy:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
+        id: container_creation
+        run: |
+          export instanceId=$(aws ec2 run-instances --image-id ${{ env.ami-ubuntu-docker }} --count 1 --instance-type ${{ env.ec2-instance-type }} --instance-initiated-shutdown-behavior terminate --iam-instance-profile ${{ env.iam-instance-profile-ssm }} --query 'Instances[0].InstanceId' --output text)
+          aws ec2 wait instance-status-ok --instance-ids $instanceId
+          echo "##[set-output name=instance_id;]$instanceId"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.default-aws-region }}
+
+      - name: invoke benchmark via AWS SSM
+        uses: peterkimzz/aws-ssm-send-command@1.0.1
+        id: ssm
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.default-aws-region }}
+          instance-ids: ${{ steps.container_creation.outputs.instance_id }}
+          working-directory: /root
+          command: |
+            mkdir -p /root/.ssh/
+            echo "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}" > /root/.ssh/id_rsa
+            chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
+            ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa
+            git clone git@github.com:MarbleHE/SoK.git'
+            cd /root/SoK/ALCHEMY
+            docker build -q -t eval_alchemy .
+            docker run -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} -e AWS_DEFAULT_REGION=${{ env.default-aws-region }} --rm eval_alchemy
+            shutdown -h now
+
+      - name: Print command ID
+        run: echo -e "The Command ID is ${{ steps.ssm.outputs.command-id }}.\nRun 'aws ssm list-command-invocations --command-id ${{ steps.ssm.outputs.command-id }} --details' in AWS CLI to see task progress."
