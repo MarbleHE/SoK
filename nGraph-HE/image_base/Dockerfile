@@ -61,12 +61,12 @@ WORKDIR /home
 
 # *** end of Dockerfile from IntelAI/he-transformer repository ****************
 
-ENV HE_TRANSFORMER 
+ENV HE_TRANSFORMER /home/he-transformer
 
 # Build HE-Transformer
 # https://github.com/IntelAI/he-transformer#1-build-he-transformer
 RUN git clone https://github.com/IntelAI/he-transformer.git
-WORKDIR /home/he-transformer
+WORKDIR $HE_TRANSFORMER
 RUN mkdir build && \
     cd build && \
     cmake .. -DCMAKE_CXX_COMPILER=clang++-9 && \
@@ -74,7 +74,7 @@ RUN mkdir build && \
 
 # Build the Python bindings for client
 # https://github.com/IntelAI/he-transformer#1c-python-bindings-for-client
-RUN cd /home/he-transformer/build && \
+RUN cd $HE_TRANSFORMER/build && \
     source external/venv-tf-py3/bin/activate && \
     make install python_client && \
     pip install python/dist/pyhe_client-*.whl && \
