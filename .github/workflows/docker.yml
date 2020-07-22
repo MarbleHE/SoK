@@ -13,68 +13,31 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  build-image-seal:
+  build-images:
     runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        # this must match the tool's directory name in the SoK repo
+        tool: [SEAL, Cingulata, Lobster, ALCHEMY, nGraph-HE]
+        include:
+          - tool: SEAL
+            dockerhub_repository: marblehe/base_seal
+          - tool: Cingulata
+            dockerhub_repository: marblehe/base_cingulata
+          - tool: Lobster
+            dockerhub_repository: marblehe/base_lobster
+          - tool: ALCHEMY
+            dockerhub_repository: marblehe/base_alchemy
+          - tool: nGraph-HE
+            dockerhub_repository: marblehe/base_ngraph-he
     steps:
       - uses: actions/checkout@v2
       - name: Build and push docker image
         uses: docker/build-push-action@v1.1.0
         with:
-          repository: marblehe/base_seal
+          repository: ${{ matrix.dockerhub_repository }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          dockerfile: SEAL/image_base/Dockerfile
-          tags: latest
-          tag_with_sha: true
-  build-image-cingulata:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build and push docker image
-        uses: docker/build-push-action@v1.1.0
-        with:
-          repository: marblehe/base_cingulata
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          dockerfile: Cingulata/image_base/Dockerfile
-          tags: latest
-          tag_with_sha: true
-  build-image-lobster:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build and push docker image
-        uses: docker/build-push-action@v1.1.0
-        with:
-          repository: marblehe/base_lobster
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          dockerfile: Lobster/image_base/Dockerfile
-          tags: latest
-          tag_with_sha: true
-  build-image-alchemy:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build and push docker image
-        uses: docker/build-push-action@v1.1.0
-        with:
-          repository: marblehe/base_alchemy
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          dockerfile: ALCHEMY/image_base/Dockerfile
-          tags: latest
-          tag_with_sha: true
-  build-image-ngraph-he:
-    runs-on: ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build and push docker image
-        uses: docker/build-push-action@v1.1.0
-        with:
-          repository: marblehe/base_ngraph-he
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          dockerfile: nGraph-HE/image_base/Dockerfile
+          dockerfile: ${{ matrix.tool }}/image_base/Dockerfile
           tags: latest
           tag_with_sha: true
