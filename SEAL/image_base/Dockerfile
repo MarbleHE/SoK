@@ -3,9 +3,7 @@ FROM ubuntu:20.04 as base_seal
 ENV ROOT_HOME /
 
 ###### install wget git etc
-RUN apt-get update
-RUN apt-get -y install git
-RUN apt-get -y install wget
+RUN apt-get update; apt-get -y install git wget
 
 ###### install the AWS CLI required for result upload to S3
 ENV DEBIAN_FRONTEND=noninteractive

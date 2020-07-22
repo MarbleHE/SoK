@@ -1,10 +1,9 @@
 FROM ubuntu:20.04
 
 # install dependencies
-RUN apt-get update
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get -y install opam cmake flex bison
-RUN apt-get -y install build-essential git
+RUN apt-get update; apt-get -y install opam cmake flex bison
+RUN apt-get update; apt-get -y install build-essential git
 
 ###### install the AWS CLI required for result upload to S3
 RUN apt-get -y install awscli
