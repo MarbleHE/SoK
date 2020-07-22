@@ -49,9 +49,9 @@ extra-deps:
 - monadcryptorandom-0.7.2.1
 - template-default-0.1.2
 - DRBG-0.5.5
-- lol-0.3.0.0
+- lol-0.7.0.0
 - lol-apps-0.3.0.0
-- lol-cpp-0.3.0.0
+- lol-cpp-0.2.0.0
 
 ghc-options:
     "$locals": -fexpose-all-unfoldings -fwarn-dodgy-imports
