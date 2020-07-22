@@ -11,7 +11,7 @@ env:
   iam-instance-profile-ssm: Arn=arn:aws:iam::400029883903:instance-profile/ec2-amazonSSMFullAccess
 
 jobs:
-  run-benchmark-seal:
+  run-benchmarks:
     runs-on: ubuntu-20.04
     strategy:
       matrix:
