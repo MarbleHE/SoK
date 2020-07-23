@@ -17,6 +17,8 @@ jobs:
     runs-on: ubuntu-20.04
     # the strategy executes this job for each tool in parallel
     strategy:
+      # do not cancel all jobs if any matrix job fails
+      fail-fast: false
       matrix:
         include:
           # tool: the directory name in the SoK repository
