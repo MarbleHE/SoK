@@ -15,11 +15,12 @@ on:
 jobs:
   build-images:
     runs-on: ubuntu-20.04
+    # the strategy executes this job for each tool in parallel
     strategy:
       matrix:
-        # this must match the tool's directory name in the SoK repo
-        tool: [SEAL, Cingulata, Lobster, ALCHEMY, nGraph-HE]
         include:
+          # tool: the directory name in the SoK repository
+          # dockerhub_repository: an existing repository on DockerHub
           - tool: SEAL
             dockerhub_repository: marblehe/base_seal
           - tool: Cingulata
@@ -31,7 +32,12 @@ jobs:
           - tool: nGraph-HE
             dockerhub_repository: marblehe/base_ngraph-he
     steps:
-      - uses: actions/checkout@v2
+      - name: Check out the SoK repository
+        uses: actions/checkout@v2
+      - name: Pull latest release of image from DockerHub
+        run: docker pull ${{ matrix.dockerhub_repository }}
+      - name: Enable caching for Docker layers
+        uses: satackey/action-docker-layer-caching@v0.0.3
       - name: Build and push docker image
         uses: docker/build-push-action@v1.1.0
         with:
