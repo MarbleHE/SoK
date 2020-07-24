@@ -25,21 +25,22 @@ jobs:
           # dockerhub_repository: an existing repository on DockerHub
           - tool: SEAL
             dockerhub_repository: marblehe/base_seal
+            base_images: ubuntu:20.04
           - tool: Cingulata
             dockerhub_repository: marblehe/base_cingulata
+            base_images: ubuntu:18.04
           - tool: Lobster
             dockerhub_repository: marblehe/base_lobster
+            base_images: ubuntu:20.04
           - tool: ALCHEMY
             dockerhub_repository: marblehe/base_alchemy
+            base_images: haskell:8
           - tool: nGraph-HE
             dockerhub_repository: marblehe/base_ngraph-he
+            base_images: ubuntu:18.04
     steps:
       - name: Check out the SoK repository
         uses: actions/checkout@v2
-      - name: Pull latest release of image from DockerHub
-        run: docker pull ${{ matrix.dockerhub_repository }}
-      - name: Enable caching for Docker layers
-        uses: satackey/action-docker-layer-caching@v0.0.3
       - name: Build and push docker image
         uses: docker/build-push-action@v1.1.0
         with:
@@ -49,3 +50,4 @@ jobs:
           dockerfile: ${{ matrix.tool }}/image_base/Dockerfile
           tags: latest
           tag_with_sha: true
+          cache_froms: ${{ matrix.base_images }}, ${{ matrix.dockerhub_repository }}
