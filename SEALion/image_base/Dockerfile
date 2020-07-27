@@ -1,10 +1,10 @@
 FROM ubuntu:bionic
 
-RUN apt-get update && apt-get install -y python3 python3-dev python3-pip python3-setuptools gcc-6 g++-6 git ssh
+RUN apt-get update && apt-get install -y python3 python3-dev python3-pip python3-setuptools gcc-6 g++-6 git openssh-client
 
 RUN mkdir -p /root/.ssh
 COPY id_rsa /root/.ssh/id_rsa
-RUN chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
+RUN chmod 600 /root/.ssh/id_rsa; cat /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
 
 WORKDIR /root
 RUN ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa; git clone --recursive git@github.com:MarbleHE/sealion.git' 
