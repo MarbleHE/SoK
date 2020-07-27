@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Store deployment key on runner VM
         if: matrix.tool == 'SEALion'
-        run: echo "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}" > id_rsa
+        run: echo "${{ secrets.SEALION_DEPLOYMENT_PRIVATE_KEY }}" > id_rsa
       - name: Build and push docker image
         uses: docker/build-push-action@v1.1.0
         with:
