@@ -20,6 +20,7 @@ jobs:
       # do not cancel all jobs if any matrix job fails
       fail-fast: false
       matrix:
+        tool: [SEAL, Cingulata, Lobster, ALCHEMY, nGraph-HE]
         include:
           # tool: the directory name in the SoK repository
           # dockerhub_repository: an existing repository on DockerHub
