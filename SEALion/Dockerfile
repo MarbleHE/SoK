@@ -8,10 +8,6 @@ COPY id_rsa /root/.ssh/id_rsa
 RUN chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
 RUN ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa; git clone --recursive git@github.com:MarbleHE/sealion.git' 
 
-# install deps
-# TODO move this to base image
-RUN pip3 install -U --user utils numpy
-
 # install SEALion python package
 WORKDIR /root/sealion
 RUN CFLAGS=-O3 python3 setup.py install
