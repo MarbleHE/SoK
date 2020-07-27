@@ -25,19 +25,22 @@ jobs:
           # dockerhub_repository: an existing repository on DockerHub
           - tool: SEAL
             dockerhub_repository: marblehe/base_seal
-            base_images: ubuntu:20.04
           - tool: Cingulata
             dockerhub_repository: marblehe/base_cingulata
-            base_images: ubuntu:18.04
           - tool: Lobster
             dockerhub_repository: marblehe/base_lobster
-            base_images: ubuntu:20.04
           - tool: ALCHEMY
             dockerhub_repository: marblehe/base_alchemy
-            base_images: haskell:8
           - tool: nGraph-HE
             dockerhub_repository: marblehe/base_ngraph-he
-            base_images: ubuntu:18.04
+          - tool: SEALion
+            dockerhub_repository: marblehe/sealion
+        exclude:
+          - tool: SEAL
+          - tool: Cingulata
+          - tool: Lobster
+          - tool: ALCHEMY
+          - tool: nGraph-HE
     steps:
       - name: Check out the SoK repository
         uses: actions/checkout@v2
@@ -50,4 +53,3 @@ jobs:
           dockerfile: ${{ matrix.tool }}/image_base/Dockerfile
           tags: latest
           tag_with_sha: true
-          cache_froms: ${{ matrix.base_images }}, ${{ matrix.dockerhub_repository }}
