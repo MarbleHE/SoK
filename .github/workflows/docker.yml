@@ -36,12 +36,6 @@ jobs:
             dockerhub_repository: marblehe/base_ngraph-he
           - tool: SEALion
             dockerhub_repository: marblehe/sealion
-        exclude:
-          - tool: SEAL
-          - tool: Cingulata
-          - tool: Lobster
-          - tool: ALCHEMY
-          - tool: nGraph-HE
     steps:
       - name: Check out the SoK repository
         uses: actions/checkout@v2
