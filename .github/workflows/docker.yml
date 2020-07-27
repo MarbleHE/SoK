@@ -11,6 +11,9 @@ on:
   repository_dispatch:
     types: [build_images]
 
+env:
+  DOCKER_BUILDKIT: 1
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   build-images:
@@ -32,11 +35,12 @@ jobs:
             dockerhub_repository: marblehe/base_lobster
           - tool: ALCHEMY
             dockerhub_repository: marblehe/base_alchemy
-# Compilation is too resource-heavy to be built on Github actions runner
-#          - tool: nGraph-HE
-#            dockerhub_repository: marblehe/base_ngraph-he
           - tool: SEALion
             dockerhub_repository: marblehe/base_sealion
+    # Compilation is too resource-heavy to be performed on Github actions runner
+    #          - tool: nGraph-HE
+    #            dockerhub_repository: marblehe/base_ngraph-he
+
     steps:
       - name: Check out the SoK repository
         uses: actions/checkout@v2
@@ -49,3 +53,5 @@ jobs:
           dockerfile: ${{ matrix.tool }}/image_base/Dockerfile
           tags: latest
           tag_with_sha: true
+          build_args: BUILDKIT_INLINE_CACHE=1
+          cache_froms: ${{ matrix.dockerhub_repository }}
