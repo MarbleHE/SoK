@@ -11,7 +11,6 @@ env:
   iam-instance-profile-ssm: Arn=arn:aws:iam::400029883903:instance-profile/ec2-amazonSSMFullAccess
   # root volume size in GB
   ec2-volume-size: 25
-  timestamp: 00000000_000000
 
 jobs:
   setup:
