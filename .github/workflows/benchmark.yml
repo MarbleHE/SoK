@@ -1,67 +1,77 @@
 name: run_benchmarks
 
 on:
+  # runs the benchmark workflow only if it is manually triggered (POST API request)
   repository_dispatch:
     types: [run_benchmarks]
 
 env:
+  # the default AWS region to be used for the AWS CLI
   default-aws-region: us-east-2
+  # the instance type to be used for the EC2 benchmarking VMs
   ec2-instance-type: m5n.large
+  # the AMI for the EC2 VMs (Ubuntu 20.04 + Docker)
   ami-ubuntu-docker: ami-0da952e8afc41613f
+  # the instance profile to be bound to the EC2 VM that allows SSM access
   iam-instance-profile-ssm: Arn=arn:aws:iam::400029883903:instance-profile/ec2-amazonSSMFullAccess
-  # root volume size in GB
+  # root volume size (GB) of the EC2 VM
   ec2-volume-size: 25
 
 jobs:
+  # A job that creates a unique timestamp for each benchmark run.
+  # Maps the step output to the job output, see https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#jobsjobs_idoutputs.
   setup:
     runs-on: ubuntu-20.04
     outputs:
-      output1: ${{ steps.get_time.outputs.timestamp }}
+      ts: ${{ steps.get_time.outputs.timestamp }}
     steps:
       - name: Get timestamp of workflow start
         id: get_time
         run: echo "::set-output name=timestamp::$(date +'%Y%m%d_%H%M%S')"
 
   run-benchmarks:
+    # ensure that job defining the output folder's name is executed first
     needs: setup
     runs-on: ubuntu-20.04
+    # the strategy executes this job (i.e., all steps of it) in parallel for each of the given tools
     strategy:
       matrix:
         # this must match the tool's directory name in the SoK repo
         tool: [SEAL, Lobster, ALCHEMY, Cingulata, SEALion]
-
     steps:
-      - name: For debugging only - print timestamp
-        run: echo ${{ needs.setup.outputs.output1 }}
-      # - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
-      #   id: container_creation
-      #   run: |
-      #     export instanceId=$(aws ec2 run-instances --image-id ${{ env.ami-ubuntu-docker }} --count 1 --instance-type ${{ env.ec2-instance-type }} --block-device-mapping DeviceName=/dev/sda1,Ebs={VolumeSize=${{ env.ec2-volume-size }}} --instance-initiated-shutdown-behavior terminate --iam-instance-profile ${{ env.iam-instance-profile-ssm }} --query 'Instances[0].InstanceId' --output text)
-      #     aws ec2 wait instance-status-ok --instance-ids $instanceId
-      #     echo "##[set-output name=instance_id;]$instanceId"
-      #   env:
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     AWS_DEFAULT_REGION: ${{ env.default-aws-region }}
-      # - name: Store deployment key on runner VM
-      #   if: matrix.tool == 'SEALion'
-      #   run: echo "${{ secrets.SEALION_DEPLOYMENT_PRIVATE_KEY }}" > id_rsa
-      # - name: invoke benchmark via AWS SSM
-      #   uses: peterkimzz/aws-ssm-send-command@1.0.1
-      #   id: ssm
-      #   with:
-      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     aws-region: ${{ env.default-aws-region }}
-      #     instance-ids: ${{ steps.container_creation.outputs.instance_id }}
-      #     working-directory: /root
-      #     command: |
-      #       mkdir -p /root/.ssh/
-      #       echo "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}" > /root/.ssh/id_rsa
-      #       chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
-      #       ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa; git clone git@github.com:MarbleHE/SoK.git'
-      #       cd /root/SoK/${{ matrix.tool }}
-      #       docker run -e WORKFLOW_RUN_ID=${{ github.run_id }} -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} -e AWS_DEFAULT_REGION=${{ env.default-aws-region }} --rm $(docker build -q .)
-      #       shutdown -h now
-      # - name: Print command ID
-      #   run: echo -e "The Command ID is ${{ steps.ssm.outputs.command-id }}.\nRun 'aws ssm list-command-invocations --command-id ${{ steps.ssm.outputs.command-id }} --details' in AWS CLI to see task progress."
+      # create a AWS EC2 instance and wait until it is ready to accept SSM commands
+      - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
+        id: container_creation
+        run: |
+          export instanceId=$(aws ec2 run-instances --image-id ${{ env.ami-ubuntu-docker }} --count 1 --instance-type ${{ env.ec2-instance-type }} --block-device-mapping DeviceName=/dev/sda1,Ebs={VolumeSize=${{ env.ec2-volume-size }}} --instance-initiated-shutdown-behavior terminate --iam-instance-profile ${{ env.iam-instance-profile-ssm }} --query 'Instances[0].InstanceId' --output text)
+          aws ec2 wait instance-status-ok --instance-ids $instanceId
+          echo "##[set-output name=instance_id;]$instanceId"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ env.default-aws-region }}
+      # deploy the deployment key for the SEALion repository on the EC2 VM
+      - name: Store deployment key on runner VM
+        if: matrix.tool == 'SEALion'
+        run: echo "${{ secrets.SEALION_DEPLOYMENT_PRIVATE_KEY }}" > id_rsa
+      # run the benchmark on the EC2 VM and shut it down afterward (this leads to termination due to the set termination policy)
+      - name: invoke benchmark via AWS SSM
+        uses: peterkimzz/aws-ssm-send-command@1.0.1
+        id: ssm
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.default-aws-region }}
+          instance-ids: ${{ steps.container_creation.outputs.instance_id }}
+          working-directory: /root
+          command: |
+            mkdir -p /root/.ssh/
+            echo "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}" > /root/.ssh/id_rsa
+            chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
+            ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa; git clone git@github.com:MarbleHE/SoK.git'
+            cd /root/SoK/${{ matrix.tool }}
+            docker run -e S3_URL s3://sok-repository-eval-benchmarks -e S3_FOLDER=${{ needs.setup.outputs.ts }} -e AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} -e AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} -e AWS_DEFAULT_REGION=${{ env.default-aws-region }} --rm $(docker build -q .)
+            shutdown -h now
+      # print command ID that is helpful to debug execution of SSH command (alternatively, connect to VM via web session as it does not have a SSH key)
+      - name: Print command ID
+        run: echo -e "The Command ID is ${{ steps.ssm.outputs.command-id }}.\nRun 'aws ssm list-command-invocations --command-id ${{ steps.ssm.outputs.command-id }} --details' in AWS CLI to see task progress."
