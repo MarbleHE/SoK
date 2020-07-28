@@ -15,6 +15,8 @@ env:
 jobs:
   setup:
     runs-on: ubuntu-20.04
+    outputs:
+      output1: ${{ steps.get_time.outputs.timestamp }}
     steps:
       - name: Get timestamp of workflow start
         id: get_time
@@ -30,7 +32,7 @@ jobs:
 
     steps:
       - name: For debugging only - print timestamp
-        run: echo ${{ needs.setup.outputs.timestamp }}
+        run: echo ${{ needs.setup.outputs.output1 }}
       # - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
       #   id: container_creation
       #   run: |
