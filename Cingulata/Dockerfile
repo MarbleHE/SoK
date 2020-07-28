@@ -1,13 +1,16 @@
 FROM marblehe/base_cingulata
 
+# bc is required to compute times
+# TODO integrate into Cingulata base image
+RUN apt-get update; apt-get install -y bc
+
 # copy eval program into container
-COPY source /root/eval
+COPY source/eval /cingu/eval
+COPY source/CMakeLists.txt /cingu/CMakeLists.txt
 
 # build the benchmark
-WORKDIR /root/eval
-RUN mkdir build
-WORKDIR /root/eval/build
-RUN cmake ..; make
+WORKDIR /cingu
+RUN mkdir build; cd build; cmake ..; make
 
 # execute the benchmark and upload benchmark results to S3
-CMD ["sh", "-c", "./benchmark > result_benchmark_cingulata.csv; aws s3 cp result_benchmark_cingulata.csv s3://sok-repository-eval-benchmarks"]
+CMD ["sh", "-c", "cd /cingu/build/eval/cardio; ./run.sh; aws s3 cp cingulata_cardio.csv ${S3_URL}/${S3_FOLDER}/Cingulata/"]

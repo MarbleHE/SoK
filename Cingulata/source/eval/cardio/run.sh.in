@@ -1,0 +1,83 @@
+#!/bin/bash
+
+#
+#    (C) Copyright 2017 CEA LIST. All Rights Reserved.
+#    Contributor(s): Cingulata team (formerly Armadillo team)
+#
+#    This software is governed by the CeCILL-C license under French law and
+#    abiding by the rules of distribution of free software.  You can  use,
+#    modify and/ or redistribute the software under the terms of the CeCILL-C
+#    license as circulated by CEA, CNRS and INRIA at the following URL
+#    "http://www.cecill.info".
+#
+#    As a counterpart to the access to the source code and  rights to copy,
+#    modify and redistribute granted by the license, users are provided only
+#    with a limited warranty  and the software's author,  the holder of the
+#    economic rights,  and the successive licensors  have only  limited
+#    liability.
+#
+#    The fact that you are presently reading this means that you have had
+#    knowledge of the CeCILL-C license and that you accept its terms.
+#
+#
+
+OUTPUT_FILENAME=cingulata_cardio.csv
+
+echo "num_conditions, t_keygen, t_input_encryption, t_computation, t_decryption" > $OUTPUT_FILENAME
+echo -ne "15, " >> $OUTPUT_FILENAME
+START_T=$(date +%s.%N)
+
+CIRCUIT=@CIRCUIT@
+APPS_DIR=@APPS_DIR@
+
+mkdir -p input
+rm -f input/*.ct
+mkdir -p output
+rm -f output/*.ct
+
+# Generate keys
+# echo "FHE key generation"
+$APPS_DIR/generate_keys
+END_KEYGEN_T=$(date +%s.%N)
+# keygen only takes short time - use printf to ensure that output includes a leading zero (0.x instead of .x)
+printf "%0.6f, " $(echo "$END_KEYGEN_T - $START_T" | bc) >> $OUTPUT_FILENAME
+
+# echo "Input formatting & encryption"
+NR_THREADS=1
+KS=(241 210 225 219 92 43 197)
+
+# Encrypt client data
+# flags: 15 = 01111
+#   - 0: woman
+#   - 1: cardiology disease in family history
+#   - 1: smoker
+#   - 1: diabetes
+#   - 1: high blood pressure
+$APPS_DIR/helper --bit-cnt 5 --prefix %i:flags_         --suffix '' $((15 ^ KS[0])) > clear_data.data
+$APPS_DIR/helper --bit-cnt 8 --prefix %i:age_           --suffix '' $((55 ^ KS[1])) >> clear_data.data
+$APPS_DIR/helper --bit-cnt 8 --prefix %i:hdl_           --suffix '' $((50 ^ KS[2])) >> clear_data.data
+$APPS_DIR/helper --bit-cnt 8 --prefix %i:height_        --suffix '' $((80 ^ KS[3])) >> clear_data.data
+$APPS_DIR/helper --bit-cnt 8 --prefix %i:weight_        --suffix '' $((80 ^ KS[4])) >> clear_data.data
+$APPS_DIR/helper --bit-cnt 8 --prefix %i:physical_act_  --suffix '' $((45 ^ KS[5])) >> clear_data.data
+$APPS_DIR/helper --bit-cnt 8 --prefix %i:drinking_      --suffix '' $((4 ^ KS[6]))  >> clear_data.data
+sed -i 's/%/\n/g' clear_data.data
+sed -i '/^$/d' clear_data.data
+
+# encrypt 7*8-bit kreyvium ciphered inputs and homomorphically mined kreyvium key
+for (( i = 0; i < ${#KS[@]}; i++ )); do
+  TMP=`$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:ks_"$i"_"  ${KS[i]}`
+  $APPS_DIR/encrypt --threads $NR_THREADS $TMP
+done
+END_INPUT_ENC_T=$(date +%s.%N)
+echo -ne $(echo "$END_INPUT_ENC_T - $END_KEYGEN_T" | bc)", " >> $OUTPUT_FILENAME
+
+# echo "FHE execution"
+$APPS_DIR/dyn_omp $CIRCUIT --threads $NR_THREADS --clear-inps clear_data.data # -v
+FHE_EXEC_T=$(date +%s.%N)
+echo -ne $(echo "$FHE_EXEC_T - $END_INPUT_ENC_T" | bc)", " >> $OUTPUT_FILENAME
+
+echo -ne "Decrypted result: "
+OUT_FILES=`ls -v output/*`
+$APPS_DIR/helper --from-bin --bit-cnt 8 `$APPS_DIR/decrypt  $OUT_FILES`
+DECRYPT_T=$(date +%s.%N)
+printf "%0.6f, " $(echo "$DECRYPT_T - $FHE_EXEC_T" | bc) >> $OUTPUT_FILENAME
