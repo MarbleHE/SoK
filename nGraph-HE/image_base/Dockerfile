@@ -25,8 +25,7 @@
 FROM ubuntu:18.04
 
 RUN apt-get update && apt-get install -y \
-    python3-pip virtualenv \
-    python3-numpy python3-dev python3-wheel \
+    python3-pip virtualenv python3-dev \
     git \
     unzip wget \
     sudo \
@@ -38,12 +37,24 @@ RUN apt-get update && apt-get install -y \
     autoconf libtool \
     doxygen graphviz \
     yapf3 python3-yapf \
+    python python-dev python3 python3-dev \
     libomp-dev
+
+RUN python3.6 -m pip install pip --upgrade && \ 
+    pip3 install -U --user pip six 'numpy<1.19.0' wheel setuptools mock 'future>=0.17.1' && \ 
+    pip3 install -U --user keras_applications --no-deps && \ 
+    pip3 install -U --user keras_preprocessing --no-deps && \ 
+    rm -rf /usr/bin/python && \
+    ln -s /usr/bin/python3.6 /usr/bin/python
 
 # Install clang-9
 RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
 RUN apt-add-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
 RUN apt-get update && apt install -y clang-9 clang-tidy-9 clang-format-9
+
+RUN apt-get update && apt-get install -y gcc-4.8 g++-4.8
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8 && \
+  update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
 
 RUN apt-get clean autoclean && apt-get autoremove -y
 
@@ -65,12 +76,17 @@ ENV HE_TRANSFORMER /home/he-transformer
 
 # Build HE-Transformer
 # https://github.com/IntelAI/he-transformer#1-build-he-transformer
-RUN git clone https://github.com/IntelAI/he-transformer.git
+WORKDIR /home
+RUN git clone https://github.com/IntelAI/he-transformer.git he-transformer
+
 WORKDIR $HE_TRANSFORMER
+COPY ngraph-tf.cmake /cmake/
+
 RUN mkdir build && \
-    cd build && \
-    cmake .. -DCMAKE_CXX_COMPILER=clang++-9 && \
-    make -j8 install
+    cd build && \ 
+    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_C_COMPILER=clang-9 -Werror
+WORKDIR $HE_TRANSFORMER/build
+RUN env VERBOSE=1 make -j 144 install
 
 # Build the Python bindings for client
 # https://github.com/IntelAI/he-transformer#1c-python-bindings-for-client
@@ -81,3 +97,5 @@ RUN cd $HE_TRANSFORMER/build && \
     python3 -c "import pyhe_client"
 
 CMD ["/bin/bash"]
+
+
