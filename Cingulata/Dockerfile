@@ -1,9 +1,5 @@
 FROM marblehe/base_cingulata
 
-# bc is required to compute times
-# TODO integrate into Cingulata base image
-RUN apt-get update; apt-get install -y bc
-
 # copy eval program into container
 COPY source/eval /cingu/eval
 COPY source/CMakeLists.txt /cingu/CMakeLists.txt
