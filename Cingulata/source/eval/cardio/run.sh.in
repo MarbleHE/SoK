@@ -80,4 +80,4 @@ echo -ne "Decrypted result: "
 OUT_FILES=`ls -v output/*`
 $APPS_DIR/helper --from-bin --bit-cnt 8 `$APPS_DIR/decrypt  $OUT_FILES`
 DECRYPT_T=$(date +%s.%N)
-printf "%0.6f, " $(echo "$DECRYPT_T - $FHE_EXEC_T" | bc) >> $OUTPUT_FILENAME
+printf "%0.6f " $(echo "$DECRYPT_T - $FHE_EXEC_T" | bc) >> $OUTPUT_FILENAME
