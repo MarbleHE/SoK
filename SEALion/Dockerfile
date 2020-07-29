@@ -19,7 +19,4 @@ COPY source /root/eval
 WORKDIR /root/eval
 
 # execute the benchmark and upload benchmark results to S3
-CMD ["sh", "-c", "python3 mlp.py > result_benchmark_sealion.txt; aws s3 cp result_benchmark_sealion.txt s3://sok-repository-eval-benchmarks"]
-
-
-
+CMD ["sh", "-c", "python3 mlp.py > result_benchmark_sealion.txt; aws s3 cp result_benchmark_sealion.txt ${S3_URL}/${S3_FOLDER}/SEALion/"]
