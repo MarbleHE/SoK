@@ -25,7 +25,7 @@ CIRCUIT=@CIRCUIT@
 APPS_DIR=@APPS_DIR@
 OUTPUT_FILENAME=cingulata_cardio.csv
 
-echo "t_keygen, t_input_encryption, t_computation, t_decryption" > $OUTPUT_FILENAME
+echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OUTPUT_FILENAME
 
 RUN=1
 
