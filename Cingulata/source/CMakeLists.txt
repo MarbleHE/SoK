@@ -36,7 +36,7 @@ message("INIT_ABC_MODULE            " ${INIT_ABC_MODULE})
 message("INIT_CINGU_PARAM_MODULE    " ${INIT_CINGU_PARAM_MODULE})
 message("INIT_GOOGLETEST_MODULE     " ${INIT_GOOGLETEST_MODULE})
 
-add_subdirectory(optim) 
+add_subdirectory(optim)
 add_subdirectory(runtime)
 
 include_directories(circuit/include) # support old circuit interface
@@ -44,5 +44,3 @@ include_directories(${COMMON_INCLUDE_DIR})
 
 # directory of evaluation benchmarks
 add_subdirectory(eval)
-
-
