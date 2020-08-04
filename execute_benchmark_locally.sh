@@ -1,9 +1,7 @@
 #!/bin/bash
 
-# USAGE="Usage: ./run_benchmark <toolname>\nwhere <toolname> = [alchemy|cingulata|lobster|seal|sealion|tfhe|ngraph]."
-
 read -r -d '' USAGE << EOM
-Usage: ./run_benchmark <toolname>
+Usage: ./execute_benchmark_locally.sh <toolname>
     where <toolname> = [alchemy|cingulata|lobster|seal|sealion|tfhe|ngraph].
 
 Follow environment variables are required for the S3 upload:
