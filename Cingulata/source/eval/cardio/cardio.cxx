@@ -29,6 +29,7 @@
 #include <ci_int.hxx>
 #include <int_op_gen/mult_depth.hxx>
 
+
 /* namespaces */
 using namespace std;
 using namespace cingulata;
@@ -106,10 +107,14 @@ int main() {
   risk_factors.push_back(flags[PRESSURE_FIELD]);
   
   // HDL cholesterol < 40
-  risk_factors.push_back(select(hdl < 40, 1, 0));
+  risk_factors.push_back(select(hdl < 41, 1, 0));
 
-  // weight > height-90
-  risk_factors.push_back(select(weight - 10 > height, 1, 0));
+  // weight > height-90 
+  // iff. height-90 < weight
+  // iff. height < weight+90
+  CiInt ninety{CiInt::u8};
+  ninety = 90;
+  risk_factors.push_back(select(height < (weight+ninety), 1, 0));
 
   // daily physical activity < 30 min
   risk_factors.push_back(select(physical_act < 30, 1, 0));
