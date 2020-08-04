@@ -61,7 +61,6 @@ class Cardio {
 
   CiphertextVector ctxt_to_ciphertextvector(seal::Ciphertext &ctxt);
 
-
  public:
   void setup_context_bfv(std::size_t poly_modulus_degree,
                          std::uint64_t plain_modulus);
@@ -70,7 +69,8 @@ class Cardio {
 
   CiphertextVector encode_and_encrypt(int32_t number);
 
-  std::unique_ptr<seal::Ciphertext> equal(CiphertextVector lhs, CiphertextVector rhs);
+  std::unique_ptr<seal::Ciphertext> equal(CiphertextVector lhs,
+                                          CiphertextVector rhs);
 
   void shift_right_inplace(CiphertextVector &ctxt);
 
@@ -79,7 +79,6 @@ class Cardio {
   CiphertextVector slice(CiphertextVector ctxt, int idx_begin, int idx_end);
 
   CiphertextVector slice(CiphertextVector ctxt, int idx_begin);
-
 
   std::unique_ptr<seal::Ciphertext> multvect(CiphertextVector bitvec);
 

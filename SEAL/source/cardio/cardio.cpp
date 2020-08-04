@@ -1,10 +1,10 @@
 #include "cardio.h"
 
-#define SEX_FIELD 4
-#define ANTECEDENT_FIELD 3
+#define SEX_FIELD 0
+#define ANTECEDENT_FIELD 1
 #define SMOKER_FIELD 2
-#define DIABETES_FIELD 1
-#define PRESSURE_FIELD 0
+#define DIABETES_FIELD 3
+#define PRESSURE_FIELD 4
 
 void Cardio::setup_context_bfv(std::size_t poly_modulus_degree,
                                std::uint64_t plain_modulus) {
@@ -19,8 +19,10 @@ void Cardio::setup_context_bfv(std::size_t poly_modulus_degree,
 
   /// Create keys
   seal::KeyGenerator keyGenerator(context);
-  secretKey = std::make_unique<seal::SecretKey>(keyGenerator.secret_key());
   publicKey = std::make_unique<seal::PublicKey>(keyGenerator.public_key());
+  secretKey = std::make_unique<seal::SecretKey>(keyGenerator.secret_key());
+  relinKeys =
+      std::make_unique<seal::RelinKeys>(keyGenerator.relin_keys_local());
 
   // secret key encryptor is more efficient
   encryptor =
@@ -89,6 +91,7 @@ std::unique_ptr<seal::Ciphertext> Cardio::multvect(CiphertextVector bitvec) {
   for (std::size_t k = 1; k < size; k *= 2) {
     for (std::size_t i = 0; i < size - k; i += 2 * k) {
       evaluator->multiply_inplace(bitvec[i], bitvec[i + k]);
+      evaluator->relinearize_inplace(bitvec[i], *relinKeys);
     }
   }
   return std::make_unique<seal::Ciphertext>(bitvec[0]);
@@ -117,6 +120,7 @@ void Cardio::pre_computation(std::vector<CiphertextVector> &P,
   }
   for (size_t i = 0; i < size - 1; ++i) {
     evaluator->multiply(lhs[i], rhs[i], G[i][i]);
+    evaluator->relinearize_inplace(G[i][i], *relinKeys);
   }
 }
 
@@ -131,23 +135,10 @@ void Cardio::evaluate_G(std::vector<CiphertextVector> &P,
                         std::vector<CiphertextVector> &G, int row_idx,
                         int col_idx, int step) {
   int k = col_idx + (int)std::pow(2, step - 1);
-  std::cout << "\trow_idx: " << row_idx << std::endl
-            << "\tcol_idx: " << col_idx << std::endl
-            << "\tstep: " << step << std::endl
-            << "\tk: " << k << std::endl;
   seal::Ciphertext r;
   encryptor->encrypt_zero(r);
-  print_ciphertext("P[row_idx][k]", P[row_idx][k]);
-  std::cout << decryptor->invariant_noise_budget(P[row_idx][k]) << " bit" << std::endl;
-  print_ciphertext("G[k - 1][col_idx]", G[k - 1][col_idx]);
-  std::cout << decryptor->invariant_noise_budget(G[k - 1][col_idx]) << " bit" << std::endl;
-
-  P[row_idx][k].reserve(16);
-  G[k - 1][col_idx].reserve(16);
-
   evaluator->multiply(P[row_idx][k], G[k - 1][col_idx], r);
-  print_ciphertext("G[row_idx][k]", G[row_idx][k]);
-  print_ciphertext("r", r);
+  evaluator->relinearize_inplace(r, *relinKeys);
   evaluator->add(G[row_idx][k], r, G[row_idx][col_idx]);
 }
 
@@ -156,6 +147,7 @@ void Cardio::evaluate_P(std::vector<CiphertextVector> &P,
                         int col_idx, int step) {
   int k = col_idx + (int)std::pow(2, step - 1);
   evaluator->multiply(P[row_idx][k], P[k - 1][col_idx], P[row_idx][col_idx]);
+  evaluator->relinearize_inplace(P[row_idx][col_idx], *relinKeys);
 }
 
 CiphertextVector Cardio::post_computation(std::vector<CiphertextVector> &P,
@@ -175,25 +167,17 @@ CiphertextVector Cardio::add(CiphertextVector lhs, CiphertextVector rhs) {
   /// Implements the Sklansky Adder.
   CiphertextVector res;
 
-  std::cout << "ABC1" << std::endl;
-
   int size = lhs.size();
   seal::Ciphertext zero;
   encryptor->encrypt_zero(zero);
   std::vector<CiphertextVector> P(size, CiphertextVector(size, zero));
   std::vector<CiphertextVector> G(size, CiphertextVector(size, zero));
 
-  std::cout << "ABC2" << std::endl;
-
   int num_steps = 0;
   if (size > 1) num_steps = (int)std::floor(std::log2((double)size - 1)) + 1;
 
-  std::cout << "ABC3" << std::endl;
-
   // compute initial G, P
   pre_computation(P, G, lhs, rhs);
-
-  std::cout << "ABC4" << std::endl;
 
   // for each level
   for (std::size_t step = 1; step <= num_steps; ++step) {
@@ -205,21 +189,16 @@ CiphertextVector Cardio::add(CiphertextVector lhs, CiphertextVector rhs) {
     while (row < size - 1) {
       col = (int)std::floor(row / std::pow(2, step)) * (int)std::pow(2, step);
       for (size_t i = 0; i < (int)std::pow(2, step - 1); ++i) {
-        std::cout << "evaluate_G" << std::endl;
         evaluate_G(P, G, row, col, step);
         if (col != 0) {
-          std::cout << "evaluate_P" << std::endl;
           evaluate_P(P, G, row, col, step);
         }
         row += 1;
         if (row == size - 1) break;
-        std::cout << "for iteration completed" << std::endl;
       }
-      std::cout << "for completed" << std::endl;
       row += (int)std::pow(2, step - 1);
     }
   }
-  std::cout << "before post_computation" << std::endl;
   // compute results
   res = post_computation(P, G, size);
   return res;
@@ -237,17 +216,6 @@ CiphertextVector Cardio::slice(CiphertextVector ctxt, int idx_begin) {
 // return lhs < rhs
 std::unique_ptr<seal::Ciphertext> Cardio::lower(CiphertextVector &lhs,
                                                 CiphertextVector &rhs) {
-  //  const int len = lhs.size();
-  //  if (len == 1) return CiBit(lhs[0]).op_andny(rhs[0]);
-  //
-  //  const int len2 = len>>1;
-  //  CiBitVector lhs_l = lhs.slice(0,len2);
-  //  CiBitVector lhs_h = lhs.slice(len2);
-  //  CiBitVector rhs_l = rhs.slice(0,len2);
-  //  CiBitVector rhs_h = rhs.slice(len2);
-  //
-  //  return oper(lhs_h, rhs_h) ^ (equal(lhs_h, rhs_h) & oper(lhs_l, rhs_l));
-
   std::unique_ptr<seal::Ciphertext> result =
       std::make_unique<seal::Ciphertext>();
 
@@ -257,6 +225,7 @@ std::unique_ptr<seal::Ciphertext> Cardio::lower(CiphertextVector &lhs,
     // andNY(lhs[0], rhs[0]) = !(lhs[0]) & rhs[0]
     evaluator->add_plain(lhs[0], encoder->encode(1), lhs_neg);
     evaluator->multiply(lhs_neg, rhs[0], *result);
+    evaluator->relinearize_inplace(*result, *relinKeys);
     return result;
   }
 
@@ -271,6 +240,7 @@ std::unique_ptr<seal::Ciphertext> Cardio::lower(CiphertextVector &lhs,
   seal::Ciphertext term1 = *lower(lhs_h, rhs_h);
   seal::Ciphertext term2;
   evaluator->multiply(*equal(lhs_h, rhs_h), *lower(lhs_l, rhs_l), term2);
+  evaluator->relinearize_inplace(term2, *relinKeys);
   evaluator->add(term1, term2, *result);
   return result;
 }
@@ -316,7 +286,14 @@ void Cardio::run_cardio() {
   // === client-side computation ====================================
 
   // encode and encrypt the inputs
-  auto flags = encode_and_encrypt(0xF ^ keystream[0]);  // 0xF == 0000 1111
+  // Cingulata:
+  //  flags_0 = 0
+  //  flags_1 = 1
+  //  flags_2 = 1
+  //  flags_3 = 1
+  //  flags_4 = 1
+  // instead of 15 we encode 30 as the bit order in Cingulata is reversed
+  auto flags = encode_and_encrypt(30 ^ keystream[0]);  // 30 == 0001 1110
   auto age = encode_and_encrypt(55 ^ keystream[1]);
   auto hdl = encode_and_encrypt(50 ^ keystream[2]);
   auto height = encode_and_encrypt(80 ^ keystream[3]);
@@ -347,81 +324,86 @@ void Cardio::run_cardio() {
     evaluator->add_inplace(drinking[i], ks6[i]);
   }
 
-
-  // seal::Ciphertext result, zero1, zero2;
-  // encryptor->encrypt_zero(zero1);
-  // encryptor->encrypt_zero(zero2);
-  // evaluator->multiply(zero1, zero2, result);
-
-  // return;
-
   // cardiac risk factor assessment algorithm
   seal::Ciphertext zero;
   encryptor->encrypt_zero(zero);
   CiphertextVector riskScore(8, zero);
 
-  // score = score + (flags[SEX_FIELD] & (50 < age))
-  seal::Ciphertext cond1;
-  cond1.resize(16);
-  auto fifty = encode_and_encrypt(50);
-  evaluator->multiply(flags[SEX_FIELD], *lower(fifty, age), cond1);
-  CiphertextVector abc = ctxt_to_ciphertextvector(cond1);
-  std::cout << "abc:" << std::endl;
-  for (auto c : abc) {
-    std::cout << decryptor->invariant_noise_budget(c) << " bit" << std::endl;
-  }
-  // riskScore = add(riskScore, abc);
-  riskScore = add(riskScore, encode_and_encrypt(0));
-  std::cout << "abc:" << std::endl;
-  for (auto c : riskScore) {
-    std::cout << decryptor->invariant_noise_budget(c) << " bit" << std::endl;
-  }
+  // (flags[SEX_FIELD] & (50 < age))
+  seal::Ciphertext condition1;
+  CiphertextVector fifty = encode_and_encrypt(50);
+  evaluator->multiply(flags[SEX_FIELD], *lower(fifty, age), condition1);
+  evaluator->relinearize_inplace(condition1, *relinKeys);
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition1));
 
   // flags[SEX_FIELD]+1 & (60 < age)
-  // seal::Ciphertext cond2;
-  // encryptor->encrypt_zero(cond2);
-  // std::cout << decryptor->invariant_noise_budget(cond2) << " bit" <<
-  // std::endl; auto sixty = encode_and_encrypt(60); seal::Ciphertext
-  // sex_female; evaluator->add_plain(flags[SEX_FIELD], encoder->encode(1),
-  // sex_female);
-
-  // evaluator->multiply(sex_female, *lower(sixty, age), cond2);
-  // seal::Ciphertext c2 = cond2;
-
-  // std::cout << decryptor->invariant_noise_budget(cond2) << " bit" <<
-  // std::endl; evaluator->add_inplace(score, cond2);
-  // print_ciphertextvector(cond22);
-  // seal::Ciphertext ct;
-  // encryptor->encrypt(encoder->encode(1), ct);
-  // riskScore = add(riskScore, ctxt_to_ciphertextvector(c2));
+  // expected: true
+  seal::Ciphertext sex_female;
+  // !flags[SEX_FIELD] == flags[SEX_FIELD]+1
+  evaluator->add_plain(flags[SEX_FIELD], encoder->encode(1), sex_female);
+  CiphertextVector sixty = encode_and_encrypt(60);
+  seal::Ciphertext condition2;
+  evaluator->multiply(sex_female, *lower(sixty, age), condition2);
+  evaluator->relinearize_inplace(condition2, *relinKeys);
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition2));
 
   // flags[ANTECEDENT_FIELD]
-  // evaluator->add_inplace(score, flags[ANTECEDENT_FIELD]);
-  // riskScore = add(riskScore,
-  // ctxt_to_ciphertextvector(flags[ANTECEDENT_FIELD]));
+  // expected: true
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(flags[ANTECEDENT_FIELD]));
 
   // flags[SMOKER_FIELD]
-  // evaluator->add_inplace(score, flags[SMOKER_FIELD]);
-  // riskScore = add(riskScore, ctxt_to_ciphertextvector(flags[SMOKER_FIELD]));
+  // expected: true
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(flags[SMOKER_FIELD]));
 
   // flags[DIABETES_FIELD]
-  // evaluator->add_inplace(score, flags[DIABETES_FIELD]);
-  // riskScore = add(riskScore,
-  // ctxt_to_ciphertextvector(flags[DIABETES_FIELD]));
+  // expected: true
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(flags[DIABETES_FIELD]));
 
   // flags[PRESSURE_FIELD]
-  // evaluator->add_inplace(score, flags[PRESSURE_FIELD]);
-  // riskScore = add(riskScore,
-  // ctxt_to_ciphertextvector(flags[PRESSURE_FIELD]));
+  // expected: false
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(flags[PRESSURE_FIELD]));
 
-  print_ciphertextvector(riskScore);
+  // hdl < 40
+  // expected: false
+  CiphertextVector fourty = encode_and_encrypt(40);
+  seal::Ciphertext condition7 = *lower(hdl, fourty);
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition7));
+
+  // weight > height-90
+  // iff. height < weight+90
+  // expected: false
+  CiphertextVector ninety = encode_and_encrypt(90);
+  CiphertextVector weight90 = add(weight, ninety);
+  seal::Ciphertext condition8 = *lower(height, weight90);
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition8));
+
+  // physical_act < 30
+  // expected: false
+  CiphertextVector thirty = encode_and_encrypt(30);
+  seal::Ciphertext condition9 = *lower(physical_act, thirty);
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition9));
+
+  // flags[SEX_FIELD] && (3 < drinking)
+  // expected: true
+  seal::Ciphertext condition10;
+  CiphertextVector three = encode_and_encrypt(3);
+  evaluator->multiply(flags[SEX_FIELD], *lower(three, drinking), condition10);
+  evaluator->relinearize_inplace(condition10, *relinKeys);
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition10));
+
+  // !flags[SEX_FIELD] && (2 < drinking)
+  // expected: true
+  CiphertextVector two = encode_and_encrypt(2);
+  seal::Ciphertext condition11;
+  evaluator->multiply(sex_female, *lower(two, drinking), condition11);
+  evaluator->relinearize_inplace(condition11, *relinKeys);
+  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition11));
 
   // === client-side computation ====================================
 
-  // decrypt the result
-  // seal::Plaintext cleartext_score;
-  // decryptor->decrypt(score, cleartext_score);
-  // std::cout << "Risk Score: " << cleartext_score.to_string() << std::endl;
+  // decrypt and print the result
+  std::cout << "==== RISK SCORE ======" << std::endl;
+  print_ciphertextvector(riskScore);
 }
 
 int main(int argc, char *argv[]) {
