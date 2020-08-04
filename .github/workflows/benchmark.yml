@@ -95,8 +95,7 @@ jobs:
       - name: Check out the SoK repository and switch into repository folder
         uses: actions/checkout@v2
       - name: Copy plotting scripts from repository to S3
-        run: aws s3 cp scripts/plotting/*.py ${{ env.s3-repository-url }}/${{ needs.setup.outputs.ts }}/plot/
-        working-directory: SoK
+        run: aws s3 cp --recursive scripts/plotting ${{ env.s3-repository-url }}/${{ needs.setup.outputs.ts }}/plot/ --include "*.py"
       # - name: Create and exports plots to S3
       #   run: |
 
