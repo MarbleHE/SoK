@@ -10,4 +10,4 @@ WORKDIR /root/eval/build
 RUN cmake .. && make
 
 # execute the benchmark and upload benchmark results to S3
-CMD ["sh", "-c", "./benchmark > result_benchmark_seal.csv; aws s3 cp result_benchmark_seal.csv ${S3_URL}/${S3_FOLDER}/SEAL/"]
+CMD ["sh", "-c", "./run.sh; aws s3 cp seal_cardio.csv ${S3_URL}/${S3_FOLDER}/SEAL/"]
