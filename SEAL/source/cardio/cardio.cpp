@@ -268,10 +268,26 @@ void Cardio::print_ciphertextvector(CiphertextVector &vec) {
   std::cout << "val (dec):\t" << decimal_value << std::endl;
 }
 
-void Cardio::run_cardio() {
-  // set up the BFV schema
-  setup_context_bfv(16384, 2);
+namespace {
+void log_time(std::stringstream &ss,
+              std::chrono::time_point<std::chrono::high_resolution_clock> start,
+              std::chrono::time_point<std::chrono::high_resolution_clock> end,
+              bool last = false) {
+  ss << std::chrono::duration_cast<ms>(end - start).count();
+  if (!last) ss << ", ";
+}
+}  // namespace
 
+void Cardio::run_cardio() {
+  std::stringstream ss_time;
+
+  // set up the BFV schema
+  auto t0 = Time::now();
+  setup_context_bfv(16384, 2);
+  auto t1 = Time::now();
+  log_time(ss_time, t0, t1, false);
+
+  auto t2 = Time::now();
   // encode and encrypt keystream
   int32_t keystream[] = {241, 210, 225, 219, 92, 43, 197};
 
@@ -301,10 +317,15 @@ void Cardio::run_cardio() {
   auto physical_act = encode_and_encrypt(45 ^ keystream[5]);
   auto drinking = encode_and_encrypt(4 ^ keystream[6]);
 
+  auto t3 = Time::now();
+  log_time(ss_time, t2, t3, false);
+
   // transmit data to server...
 
   // === server-side computation ====================================
 
+  auto t4 = Time::now();
+  
   // homomorphically execute the Kreyvium algorithm
   // arithmetic addition of bits corresponds to bitwise XOR
   for (int i = 0; i < 8; ++i) {
@@ -399,11 +420,25 @@ void Cardio::run_cardio() {
   evaluator->relinearize_inplace(condition11, *relinKeys);
   riskScore = add(riskScore, ctxt_to_ciphertextvector(condition11));
 
+  auto t5 = Time::now();
+  log_time(ss_time, t4, t5, false);
+
   // === client-side computation ====================================
+
+  auto t6 = Time::now();
 
   // decrypt and print the result
   std::cout << "==== RISK SCORE ======" << std::endl;
   print_ciphertextvector(riskScore);
+
+  auto t7 = Time::now();
+  log_time(ss_time, t6, t7, true);
+
+  // write ss_time into file
+  std::ofstream myfile;
+  myfile.open("seal_cardio.csv", std::ios_base::app);
+  myfile << ss_time.str() << std::endl;
+  myfile.close();
 }
 
 int main(int argc, char *argv[]) {

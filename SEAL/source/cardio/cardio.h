@@ -15,8 +15,11 @@
 #include <numeric>
 #include <random>
 #include <vector>
+#include <fstream>
 
 typedef std::vector<seal::Ciphertext> CiphertextVector;
+typedef std::chrono::high_resolution_clock Time;
+typedef std::chrono::milliseconds ms;
 
 class Cardio {
  private:
