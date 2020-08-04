@@ -1,0 +1,7 @@
+six==1.15.0
+# If not using CUDA, use below:
+# tensorflow==1.15.3
+tensorflow-gpu==1.15.3
+numpy==1.19.1
+np_utils==1.19.1
+scikit-learn==0.32.1
