@@ -46,14 +46,15 @@ case "$toolname" in
     exit 1;
 esac
 
+
 TAG_NAME=eval_${toolname}
 
-cd ${toolname} || echo "Could not find ${tooldir} directory! Needs to be executed from SoK root directory."; exit 1
+cd ${toolname} || (echo "Could not find ${tooldir} directory! Needs to be executed from SoK root directory."; exit 1)
 
 echo "Building eval image for ${tooldir}..."
-echo docker build -t ${TAG_NAME} . && \
+docker build -t ${TAG_NAME} . && \
 echo "Running benchmark in eval docker image..." && \
-echo docker run -e S3_URL=s3://sok-repository-eval-benchmarks \
+docker run -e S3_URL=s3://sok-repository-eval-benchmarks \
     -e S3_FOLDER=$(date +"%Y%m%d_%H%M%S") \
     -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
     -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
