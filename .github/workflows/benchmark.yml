@@ -50,7 +50,8 @@ jobs:
     strategy:
       matrix:
         # this must match the tool's directory name in the SoK repo
-        tool: [SEAL, Lobster, ALCHEMY, Cingulata, SEALion]
+        # tool: [SEAL, Lobster, ALCHEMY, Cingulata, SEALion]
+        tool: [SEALion]
     steps:
       # create a AWS EC2 instance and wait until it is ready to accept SSM commands
       - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
@@ -66,12 +67,7 @@ jobs:
             --iam-instance-profile ${{ env.iam-instance-profile-ssm }} \
             --query 'Instances[0].InstanceId' --output text)
           aws ec2 wait instance-status-ok --instance-ids $instanceId
-          echo "##[set-output name=instance_id;]$instanceId"
-      # adds the deployment key for the SEALion repository on the Github Action runner VM; it is then copied via the
-      # SEALion dockerfile into the container
-      - name: If this is SEALion - store repositories deployment key on runner VM
-        if: matrix.tool == 'SEALion'
-        run: echo "${{ secrets.SEALION_DEPLOYMENT_PRIVATE_KEY }}" > /root/SoK/${{ matrix.tool }}/id_rsa
+          echo "##[set-output name=instance_id;]$instanceId"      
       # run the benchmark on the EC2 VM and shut it down afterward (this leads to termination due to the set termination policy)
       - name: invoke benchmark via AWS SSM
         uses: peterkimzz/aws-ssm-send-command@1.0.1
@@ -89,6 +85,9 @@ jobs:
             chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
             ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa; git clone git@github.com:MarbleHE/SoK.git'
             cd /root/SoK/${{ matrix.tool }}
+            if [ "${{ matrix.tool }}"" == "SEALion" ]; then
+              echo "${{ secrets.SEALION_DEPLOYMENT_PRIVATE_KEY }}" > id_rsa 
+            fi
             docker run \
               -e S3_URL=${{ env.s3-repository-url }} \
               -e S3_FOLDER=${{ needs.setup.outputs.ts }} \
@@ -107,7 +106,7 @@ jobs:
             if [ "$COUNTER" -eq "${{ env.instance-termination-timeout }}" ]; then
               echo "Timeout: Instance did not stop after ${{ env.instance-termination-timeout }} minutes. Ignoring and continuing workflow run."
             fi
-            sleep 60;
+            sleep 60
             COUNTER=$(( $COUNTER + 1 ))
           done
 
