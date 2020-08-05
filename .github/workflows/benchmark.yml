@@ -69,7 +69,7 @@ jobs:
       # SEALion dockerfile into the container
       - name: If this is SEALion - store repositories deployment key on runner VM
         if: matrix.tool == 'SEALion'
-        run: echo "${{ secrets.SEALION_DEPLOYMENT_PRIVATE_KEY }}" > id_rsa
+        run: echo "${{ secrets.SEALION_DEPLOYMENT_PRIVATE_KEY }}" > /root/SoK/${{ matrix.tool }}/id_rsa
       # run the benchmark on the EC2 VM and shut it down afterward (this leads to termination due to the set termination policy)
       - name: invoke benchmark via AWS SSM
         uses: peterkimzz/aws-ssm-send-command@1.0.1
