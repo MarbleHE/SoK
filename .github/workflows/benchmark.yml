@@ -47,16 +47,16 @@ jobs:
     # the strategy executes this job (i.e., all steps of it) in parallel for each of the given tools
     strategy:
       matrix:
-        # TODO Uncomment this to run benchmarks in all programs
         # this must match the tool's directory name in the SoK repo
-        # tool: [SEAL, Lobster, ALCHEMY, Cingulata, SEALion]
-        tool: [SEAL]
+        tool: [SEAL, Lobster, ALCHEMY, Cingulata, SEALion]
     steps:
       # create a AWS EC2 instance and wait until it is ready to accept SSM commands
       - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
         id: container_creation
         run: |
           export instanceId=$(aws ec2 run-instances \
+            --tag-specifications \
+            'ResourceType=instance,Tags=[{Key=Name,Value=${{ github.run_id }}-${{ matrix.tool }}}]' \
             --image-id ${{ env.ami-ubuntu-docker }} \
             --count 1 --instance-type ${{ env.ec2-instance-type }} \
             --block-device-mapping DeviceName=/dev/sda1,Ebs={VolumeSize=${{ env.ec2-volume-size }}} \
