@@ -38,7 +38,9 @@ jobs:
     steps:
       - name: Get timestamp of workflow start
         id: get_time
-        run: echo "::set-output name=timestamp::$(date +'%Y%m%d_%H%M%S')"
+        run: |
+          sudo timedatectl set-timezone Europe/Zurich
+          echo "::set-output name=timestamp::$(date +'%Y%m%d_%H%M%S')"
 
   run-benchmarks:
     # ensure that job defining the output folder's name is executed first
