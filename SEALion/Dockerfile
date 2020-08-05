@@ -4,7 +4,7 @@ FROM marblehe/base_sealion
 # This usually happens in the base image but as SEALion is non-public, we need to install it here (i.e., before running benchmarks) so that it is not pushed to Dockerhub.
 
 # get SEALion from private repository
-COPY id_rsa /root/.ssh/id_rsa
+COPY /root/SoK/SEALion/id_rsa /root/.ssh/id_rsa
 RUN chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
 RUN ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa; git clone --recursive git@github.com:MarbleHE/sealion.git' 
 
