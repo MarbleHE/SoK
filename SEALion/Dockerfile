@@ -14,9 +14,12 @@ RUN CFLAGS=-O3 python3 setup.py install
 
 # =========================================
 
+# Install pandas, which is used to create the benchmarking csv
+RUN pip3 install pandas
+
 # copy eval program into container
 COPY source /root/eval
 WORKDIR /root/eval
 
 # execute the benchmark and upload benchmark results to S3
-CMD ["sh", "-c", "python3 mlp.py > result_benchmark_sealion.txt; aws s3 cp result_benchmark_sealion.txt ${S3_URL}/${S3_FOLDER}/SEALion/"]
+CMD ["sh", "-c", "python3 mnist.py; aws s3 cp sealion_nn.csv ${S3_URL}/${S3_FOLDER}/SEALion/"]
