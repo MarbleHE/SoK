@@ -107,6 +107,7 @@ jobs:
   generate-plots:
     # wait until all benchmark runs finish
     needs: run-benchmarks
+    runs-on: ubuntu-20.04
     steps:
       - name: Check out the SoK repository and cd into repository folder
         uses: actions/checkout@v2
