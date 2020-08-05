@@ -274,7 +274,7 @@ void log_time(std::stringstream &ss,
               std::chrono::time_point<std::chrono::high_resolution_clock> end,
               bool last = false) {
   ss << std::chrono::duration_cast<ms>(end - start).count();
-  if (!last) ss << ", ";
+  if (!last) ss << ",";
 }
 }  // namespace
 
