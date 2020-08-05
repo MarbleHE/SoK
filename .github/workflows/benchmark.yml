@@ -22,6 +22,9 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   # the default AWS region to be used for the AWS CLI
   AWS_DEFAULT_REGION: us-east-2
+  # terminate instance automatically after N minutes - this is important if the
+  # machine or the workflow had an error
+  instance-termination-timeout: 30
 
 jobs:
   # A job that creates a unique timestamp for each benchmark run. This is only executed once over all benchmarks so that
@@ -78,6 +81,7 @@ jobs:
           instance-ids: ${{ steps.container_creation.outputs.instance_id }}
           working-directory: /root
           command: |
+            echo "sudo halt" | at now + ${{ env.instance-termination-timeout }} minutes
             mkdir -p /root/.ssh/
             echo "${{ secrets.SOK_DEPLOYMENT_PRIVATE_KEY }}" > /root/.ssh/id_rsa
             chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
@@ -93,6 +97,17 @@ jobs:
       # print command ID that is helpful to debug execution of SSH command (alternatively, connect to VM via web session as it does not have a SSH key)
       - name: Print command ID
         run: echo -e "The Command ID is ${{ steps.ssm.outputs.command-id }}.\nRun 'aws ssm list-command-invocations --command-id ${{ steps.ssm.outputs.command-id }} --details' in AWS CLI to see task progress."
+      - name: Pause execution of workflow until benchmark finishes
+        run: |
+          until [[ $(aws ec2 describe-instance-status --instance-ids ${{ steps.container_creation.outputs.instance_id }} --query 'InstanceStatuses[0].InstanceState.Name' --output text) != "running" ]];
+          do
+            sleep 30;
+          done
+
+  generate-plots:
+    # wait until all benchmark runs finish
+    needs: run-benchmarks
+    steps:
       - name: Check out the SoK repository and cd into repository folder
         uses: actions/checkout@v2
       - name: Copy plotting scripts from repository to S3
@@ -113,5 +128,5 @@ jobs:
             ${{ runner.os }}-
       - name: Install dependencies
         run: pip install -r scripts/plotting/requirements.txt
-      - name: Create and exports plots to S3
+      - name: Generate plots and upload plots to S3
         run: python plot_all.py
