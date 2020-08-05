@@ -97,11 +97,16 @@ jobs:
       # print command ID that is helpful to debug execution of SSH command (alternatively, connect to VM via web session as it does not have a SSH key)
       - name: Print command ID
         run: echo -e "The Command ID is ${{ steps.ssm.outputs.command-id }}.\nRun 'aws ssm list-command-invocations --command-id ${{ steps.ssm.outputs.command-id }} --details' in AWS CLI to see task progress."
-      - name: Pause execution of workflow until benchmark finishes
+      - name: Block execution of workflow until benchmark finishes
         run: |
+          COUNTER=1
           until [[ $(aws ec2 describe-instance-status --instance-ids ${{ steps.container_creation.outputs.instance_id }} --query 'InstanceStatuses[0].InstanceState.Name' --output text) != "running" ]];
           do
-            sleep 30;
+            if [ "$COUNTER" -eq "${{ env.instance-termination-timeout }}" ]; then
+              echo "Timeout: Instance did not stop after ${{ env.instance-termination-timeout }} minutes. Ignoring and continuing workflow run."
+            fi
+            sleep 60;
+            COUNTER=$(( $COUNTER + 1 ))
           done
 
   generate-plots:
@@ -130,4 +135,4 @@ jobs:
       - name: Install dependencies
         run: pip install -r scripts/plotting/requirements.txt
       - name: Generate plots and upload plots to S3
-        run: python plot_all.py
+        run: python scripts/plotting/plot_all.py
