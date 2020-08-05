@@ -85,9 +85,7 @@ jobs:
             chmod 600 /root/.ssh/id_rsa; ssh-keyscan github.com >> /root/.ssh/known_hosts
             ssh-agent bash -c 'ssh-add /root/.ssh/id_rsa; git clone git@github.com:MarbleHE/SoK.git'
             cd /root/SoK/${{ matrix.tool }}
-            if [ "${{ matrix.tool }}" == "SEALion" ]; then
-              echo "${{ secrets.SEALION_DEPLOYMENT_PRIVATE_KEY }}" > id_rsa 
-            fi
+            if [ "${{ matrix.tool }}" == "SEALion" ]; then echo "${{ secrets.SEALION_DEPLOYMENT_PRIVATE_KEY }}" > id_rsa; fi
             docker run \
               -e S3_URL=${{ env.s3-repository-url }} \
               -e S3_FOLDER=${{ needs.setup.outputs.ts }} \
