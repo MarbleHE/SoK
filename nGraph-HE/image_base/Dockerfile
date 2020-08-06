@@ -27,18 +27,18 @@ FROM ubuntu:18.04
 RUN apt-get update && apt-get install -y \
     python3-pip virtualenv python3-dev \
     git \
-    unzip wget \
+    unzip wget curl \
     sudo \
     bash-completion \
     build-essential cmake \
     software-properties-common \
-    git \
+    git openssl libssl-dev libcurl4-openssl-dev \
     wget patch diffutils libtinfo-dev \
-    autoconf libtool \
+    autoconf libtool zlib1g zlib1g-dev \
     doxygen graphviz \
     yapf3 python3-yapf \
     python python-dev python3 python3-dev \
-    libomp-dev
+    libomp-dev libomp5 autoconf autogen pkg-config libgtk-3-dev
 
 RUN python3.6 -m pip install pip --upgrade && \ 
     pip3 install -U --user pip six 'numpy<1.19.0' wheel setuptools mock 'future>=0.17.1' && \ 
@@ -48,13 +48,9 @@ RUN python3.6 -m pip install pip --upgrade && \
     ln -s /usr/bin/python3.6 /usr/bin/python
 
 # Install clang-9
-RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-RUN apt-add-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main"
-RUN apt-get update && apt install -y clang-9 clang-tidy-9 clang-format-9
-
-RUN apt-get update && apt-get install -y gcc-4.8 g++-4.8
-RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8 && \
-  update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
+RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add - && \
+    apt-add-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-9 main" && \
+    apt-get update && apt install -y clang-9 clang-tidy-9 clang-format-9
 
 RUN apt-get clean autoclean && apt-get autoremove -y
 
@@ -62,13 +58,21 @@ RUN apt-get clean autoclean && apt-get autoremove -y
 RUN pip3 install --upgrade pip setuptools virtualenv==16.1.0
 
 # SEAL requires newer version of CMake
-RUN pip3 install cmake --upgrade
+RUN wget https://cmake.org/files/v3.15/cmake-3.15.0.tar.gz && \
+    tar -xvzf cmake-3.15.0.tar.gz && \
+    cd cmake-3.15.0 && \
+    export CC=clang-9 && \ 
+    export CXX=clang++-9 && \
+    ./bootstrap --system-curl && \
+    make -j$(nproc) && \
+    make install
 
 # Get bazel for ng-tf
-RUN wget https://github.com/bazelbuild/bazel/releases/download/0.25.2/bazel-0.25.2-installer-linux-x86_64.sh
-RUN chmod +x ./bazel-0.25.2-installer-linux-x86_64.sh
-RUN bash ./bazel-0.25.2-installer-linux-x86_64.sh
+RUN wget https://github.com/bazelbuild/bazel/releases/download/0.25.2/bazel-0.25.2-installer-linux-x86_64.sh && \
+    chmod +x ./bazel-0.25.2-installer-linux-x86_64.sh && \
+    bash ./bazel-0.25.2-installer-linux-x86_64.sh
 WORKDIR /home
+
 
 # *** end of Dockerfile from IntelAI/he-transformer repository ****************
 
@@ -77,25 +81,27 @@ ENV HE_TRANSFORMER /home/he-transformer
 # Build HE-Transformer
 # https://github.com/IntelAI/he-transformer#1-build-he-transformer
 WORKDIR /home
-RUN git clone https://github.com/IntelAI/he-transformer.git he-transformer
+RUN git clone https://github.com/IntelAI/he-transformer.git 
 
 WORKDIR $HE_TRANSFORMER
-COPY ngraph-tf.cmake /cmake/
+COPY ngraph-tf.cmake $HE_TRANSFORMER/cmake/ngraph-tf.cmake
+COPY fix_numpy_for_tf.patch $HE_TRANSFORMER/cmake/fix_numpy_for_tf.patch
+COPY CMakeLists.txt $HE_TRANSFORMER/test/CMakeLists.txt
 
 RUN mkdir build && \
     cd build && \ 
-    cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_C_COMPILER=clang-9 -Werror
-WORKDIR $HE_TRANSFORMER/build
-RUN env VERBOSE=1 make -j 144 install
+    cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_C_COMPILER=clang-9 -Werror && \
+    make -j$(nproc) install && \
+    rm -rf ~/.cache/bazel/
 
 # Build the Python bindings for client
 # https://github.com/IntelAI/he-transformer#1c-python-bindings-for-client
 RUN cd $HE_TRANSFORMER/build && \
-    source external/venv-tf-py3/bin/activate && \
+    . external/venv-tf-py3/bin/activate && \
     make install python_client && \
-    pip install python/dist/pyhe_client-*.whl && \
-    python3 -c "import pyhe_client"
+    pip install python/dist/pyhe_client-*.whl
 
-CMD ["/bin/bash"]
+WORKDIR $HE_TRANSFORMER/build
 
+CMD [ "/bin/bash" ]
 
