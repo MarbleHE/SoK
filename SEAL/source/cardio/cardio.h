@@ -9,13 +9,13 @@
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <memory>
 #include <numeric>
 #include <random>
 #include <vector>
-#include <fstream>
 
 typedef std::vector<seal::Ciphertext> CiphertextVector;
 typedef std::chrono::high_resolution_clock Time;
@@ -61,6 +61,8 @@ class Cardio {
   void print_ciphertext(std::string name, seal::Ciphertext &ctxt);
 
   void print_ciphertextvector(CiphertextVector &vec);
+
+  int ciphertextvector_to_int(CiphertextVector &vec);
 
   CiphertextVector ctxt_to_ciphertextvector(seal::Ciphertext &ctxt);
 

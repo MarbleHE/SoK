@@ -24,7 +24,7 @@ void Cardio::setup_context_bfv(std::size_t poly_modulus_degree,
   relinKeys =
       std::make_unique<seal::RelinKeys>(keyGenerator.relin_keys_local());
 
-  // Provide both public and secret key, however, we will use public-key 
+  // Provide both public and secret key, however, we will use public-key
   // encryption as this is the one used in a typical client-server scenario.
   encryptor =
       std::make_unique<seal::Encryptor>(context, *publicKey, *secretKey);
@@ -100,7 +100,7 @@ std::unique_ptr<seal::Ciphertext> Cardio::multvect(CiphertextVector bitvec) {
 
 std::unique_ptr<seal::Ciphertext> Cardio::equal(CiphertextVector lhs,
                                                 CiphertextVector rhs) {
-  assert(lhs.size() == rhs.size() && "equal supports same-sized inputs only!");
+  assert(("equal supports same-sized inputs only!", lhs.size() == rhs.size()));
 
   CiphertextVector comp;
   for (std::size_t i = 0; i < lhs.size(); ++i) {
@@ -269,6 +269,16 @@ void Cardio::print_ciphertextvector(CiphertextVector &vec) {
   std::cout << "val (dec):\t" << decimal_value << std::endl;
 }
 
+int Cardio::ciphertextvector_to_int(CiphertextVector &vec) {
+  std::stringstream ss;
+  for (int i = vec.size() - 1; i >= 0; --i) {
+    seal::Plaintext p;
+    decryptor->decrypt(vec[i], p);
+    ss << encoder->decode_int32(p);
+  }
+  return strtol(ss.str().c_str(), nullptr, 2);
+}
+
 namespace {
 void log_time(std::stringstream &ss,
               std::chrono::time_point<std::chrono::high_resolution_clock> start,
@@ -326,7 +336,7 @@ void Cardio::run_cardio() {
   // === server-side computation ====================================
 
   auto t4 = Time::now();
-  
+
   // homomorphically execute the Kreyvium algorithm
   // arithmetic addition of bits corresponds to bitwise XOR
   for (int i = 0; i < 8; ++i) {
@@ -349,14 +359,14 @@ void Cardio::run_cardio() {
   // cardiac risk factor assessment algorithm
   seal::Ciphertext zero;
   encryptor->encrypt_zero(zero);
-  CiphertextVector riskScore(8, zero);
+  CiphertextVector risk_score(8, zero);
 
   // (flags[SEX_FIELD] & (50 < age))
   seal::Ciphertext condition1;
   CiphertextVector fifty = encode_and_encrypt(50);
   evaluator->multiply(flags[SEX_FIELD], *lower(fifty, age), condition1);
   evaluator->relinearize_inplace(condition1, *relinKeys);
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition1));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition1));
 
   // flags[SEX_FIELD]+1 & (60 < age)
   // expected: true
@@ -367,29 +377,29 @@ void Cardio::run_cardio() {
   seal::Ciphertext condition2;
   evaluator->multiply(sex_female, *lower(sixty, age), condition2);
   evaluator->relinearize_inplace(condition2, *relinKeys);
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition2));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition2));
 
   // flags[ANTECEDENT_FIELD]
   // expected: true
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(flags[ANTECEDENT_FIELD]));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[ANTECEDENT_FIELD]));
 
   // flags[SMOKER_FIELD]
   // expected: true
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(flags[SMOKER_FIELD]));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[SMOKER_FIELD]));
 
   // flags[DIABETES_FIELD]
   // expected: true
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(flags[DIABETES_FIELD]));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[DIABETES_FIELD]));
 
   // flags[PRESSURE_FIELD]
   // expected: false
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(flags[PRESSURE_FIELD]));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[PRESSURE_FIELD]));
 
   // hdl < 40
   // expected: false
   CiphertextVector fourty = encode_and_encrypt(40);
   seal::Ciphertext condition7 = *lower(hdl, fourty);
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition7));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition7));
 
   // weight > height-90
   // iff. height < weight+90
@@ -397,13 +407,13 @@ void Cardio::run_cardio() {
   CiphertextVector ninety = encode_and_encrypt(90);
   CiphertextVector weight90 = add(weight, ninety);
   seal::Ciphertext condition8 = *lower(height, weight90);
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition8));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition8));
 
   // physical_act < 30
   // expected: false
   CiphertextVector thirty = encode_and_encrypt(30);
   seal::Ciphertext condition9 = *lower(physical_act, thirty);
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition9));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition9));
 
   // flags[SEX_FIELD] && (3 < drinking)
   // expected: true
@@ -411,7 +421,7 @@ void Cardio::run_cardio() {
   CiphertextVector three = encode_and_encrypt(3);
   evaluator->multiply(flags[SEX_FIELD], *lower(three, drinking), condition10);
   evaluator->relinearize_inplace(condition10, *relinKeys);
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition10));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition10));
 
   // !flags[SEX_FIELD] && (2 < drinking)
   // expected: true
@@ -419,7 +429,7 @@ void Cardio::run_cardio() {
   seal::Ciphertext condition11;
   evaluator->multiply(sex_female, *lower(two, drinking), condition11);
   evaluator->relinearize_inplace(condition11, *relinKeys);
-  riskScore = add(riskScore, ctxt_to_ciphertextvector(condition11));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition11));
 
   auto t5 = Time::now();
   log_time(ss_time, t4, t5, false);
@@ -428,9 +438,10 @@ void Cardio::run_cardio() {
 
   auto t6 = Time::now();
 
-  // decrypt and print the result
+  // decrypt and check result
   std::cout << "==== RISK SCORE ======" << std::endl;
-  print_ciphertextvector(riskScore);
+  assert(("Cardio benchmark does not produce expected result!", ciphertextvector_to_int(risk_score) == 6));
+
 
   auto t7 = Time::now();
   log_time(ss_time, t6, t7, true);
