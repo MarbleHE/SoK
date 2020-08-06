@@ -24,7 +24,8 @@ void Cardio::setup_context_bfv(std::size_t poly_modulus_degree,
   relinKeys =
       std::make_unique<seal::RelinKeys>(keyGenerator.relin_keys_local());
 
-  // secret key encryptor is more efficient
+  // Provide both public and secret key, however, we will use public-key 
+  // encryption as this is the one used in a typical client-server scenario.
   encryptor =
       std::make_unique<seal::Encryptor>(context, *publicKey, *secretKey);
   evaluator = std::make_unique<seal::Evaluator>(context);
