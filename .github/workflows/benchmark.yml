@@ -101,6 +101,7 @@ jobs:
           do
             if [ "$COUNTER" -eq "${{ env.instance-termination-timeout }}" ]; then
               echo "Timeout: Instance did not stop after ${{ env.instance-termination-timeout }} minutes. Ignoring and continuing workflow run."
+              break
             fi
             sleep 60
             COUNTER=$(( $COUNTER + 1 ))
