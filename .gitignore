@@ -4,3 +4,4 @@ __pycache__
 .idea
 .vscode
 **/build/*
+*id_rsa*
