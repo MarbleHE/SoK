@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 RUN ln -snf /usr/share/zoneinfo/$(curl https://ipapi.co/timezone) /etc/localtime
 RUN apt-get update && \
-    apt-get install -y build-essential clang libomp-dev cmake git fftw3 && \
+    apt-get install -y build-essential clang libomp-dev cmake git fftw3 libfftw3-dev libfftw3-doc curl && \
     git clone --recursive https://github.com/tfhe/tfhe.git && \
     mkdir /tfhe/build
 
