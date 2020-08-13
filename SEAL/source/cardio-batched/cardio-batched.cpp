@@ -92,14 +92,23 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
 
   const int len = lhs.size();
   if (len == 1) {
-    seal::Ciphertext lhs_neg;
     // andNY(lhs[0], rhs[0]) = !(lhs[0]) & rhs[0]
     seal::Plaintext one;
-    encoder->encode(1.0, lhs[0].scale(), one);  // TODO pass parms_id of lhs[0]
-    evaluator->mod_switch_to_inplace(one, lhs[0].parms_id());
-    evaluator->add_plain(lhs[0], one, lhs_neg);  // FIXME use XOR here
+    encoder->encode(1.0, lhs[0].parms_id(), lhs[0].scale(), one);
+    seal::Ciphertext lhs_neg = XOR(lhs[0], one);
+    evaluator->rescale_to_next_inplace(lhs_neg);
+    lhs_neg.scale() = initial_scale;
+    evaluator->mod_switch_to_inplace(rhs[0], lhs_neg.parms_id());
+    print_info(lhs_neg);
+    print_info(rhs[0]);
     evaluator->multiply(lhs_neg, rhs[0], *result);
     evaluator->relinearize_inplace(*result, *relinKeys);
+    print_info(*result);
+    evaluator->rescale_to_next_inplace(*result);
+    print_info(*result);
+
+    (*result).scale() = initial_scale;
+    print_info(*result);
     return result;
   }
 
@@ -115,29 +124,41 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
 
   // TODO remove equal and use formula:
   // ((h_result XOR 1) AND l_result) XOR h_result
-  seal::Ciphertext h_result = *equal(lhs_h, rhs_h);
+  seal::Ciphertext h_result = *lower(lhs_h, rhs_h);
   seal::Ciphertext l_result = *lower(lhs_l, rhs_l);
-
   print_info(h_result);
   print_info(l_result);
-  evaluator->mod_switch_to_inplace(l_result, h_result.parms_id());
 
-  seal::Ciphertext term2;
-  evaluator->multiply(h_result, l_result, term2);
-  evaluator->relinearize_inplace(term2, *relinKeys);
+  seal::Plaintext one;
+  encoder->encode(1.0, h_result.parms_id(), initial_scale, one);
+  seal::Ciphertext h_result_neg = XOR(h_result, one);
+  print_info(h_result_neg);
+  evaluator->rescale_to_next_inplace(h_result_neg);
+  h_result_neg.scale() = initial_scale;
+  print_info(h_result_neg);
+
+  seal::Ciphertext h_result_neg_And_l_result;
+  evaluator->mod_switch_to_inplace(l_result, h_result_neg.parms_id());
+  evaluator->multiply(h_result_neg, l_result, h_result_neg_And_l_result);
+  print_info(h_result_neg_And_l_result);
+  evaluator->relinearize_inplace(h_result_neg_And_l_result, *relinKeys);
+  evaluator->rescale_to_next_inplace(h_result_neg_And_l_result);
+  h_result_neg_And_l_result.scale() = initial_scale;
+  print_info(h_result_neg_And_l_result);
+
+  evaluator->mod_switch_to_inplace(h_result, h_result_neg_And_l_result.parms_id());
+  *result = XOR(h_result_neg_And_l_result, h_result);
+  evaluator->rescale_to_next_inplace(*result);
+  (*result).scale() = initial_scale;
+  print_info(*result);
+
+  // seal::Ciphertext term2;
+  // evaluator->multiply(h_result, l_result, term2);
+  // evaluator->relinearize_inplace(term2, *relinKeys);
   // evaluator->rescale_to_next_inplace(term2);
-  // term2.scale() = term1.scale();
+  // term2.scale() = initial_scale;
+  // *result = XOR(term1, term2);
 
-  // term2.scale() = term1.scale();
-
-  print_info(term1);
-  print_info(term2);
-  make_common(term1, term2);
-  print_info(term1);
-  print_info(term2);
-
-  // evaluator->add(term1, term2, *result);
-  *result = XOR(term1, term2);
   return result;
 }
 
@@ -451,11 +472,8 @@ void CardioBatched::run_cardio() {
   // auto t4 = Time::now();
 
   // homomorphically execute the Kreyvium algorithm to decrypt data
-  seal::Ciphertext result;
-  // TODO pass keystream (ks) as seal::Plaintext and overload XOR to work with
-  // a plain parameter
   seal::Plaintext ks = encode(keystream);
-  result = XOR(inputs, ks);
+  seal::Ciphertext result = XOR(inputs, ks);
   evaluator->rescale_to_next_inplace(result);
   result.scale() = initial_scale;
   print_ciphertext(result);
@@ -525,8 +543,6 @@ void CardioBatched::run_cardio() {
   std::vector<seal::Ciphertext> c_encoded = split_by_binary_rep(c);
 
   std::cout << "initial call to lower:" << std::endl;
-  print_info(b_encoded[0]);
-  print_info(c_encoded[0]);
   seal::Ciphertext lowerResult = *lower(b_encoded, c_encoded);
 
   print_vec(lowerResult);
