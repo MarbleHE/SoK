@@ -163,6 +163,8 @@ class CardioBatched {
 
   void internal_print_info(std::string variable_name, seal::Ciphertext &ctxt);
 
+  void make_common(seal::Ciphertext &lhs, seal::Ciphertext &rhs);
+
  public:
   void setup_context_ckks(std::size_t poly_modulus_degree);
 

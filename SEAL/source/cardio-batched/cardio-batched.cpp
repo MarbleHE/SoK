@@ -19,7 +19,7 @@ void CardioBatched::setup_context_ckks(std::size_t poly_modulus_degree) {
   params.set_poly_modulus_degree(poly_modulus_degree);
   params.set_coeff_modulus(seal::CoeffModulus::Create(
       poly_modulus_degree, {60, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
-                            30, 30, 30, 30, 60}));
+                            30, 30, 30, 30, 30, 30, 60}));
 
   // Instantiate context
   context = seal::SEALContext::Create(params);
@@ -112,34 +112,90 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
   CiphertextVector rhs_h = slice(rhs, len2);
 
   seal::Ciphertext term1 = *lower(lhs_h, rhs_h);
-  seal::Ciphertext term2;
 
   seal::Ciphertext h_result = *equal(lhs_h, rhs_h);
   seal::Ciphertext l_result = *lower(lhs_l, rhs_l);
 
+  evaluator->mod_switch_to_inplace(l_result, h_result.parms_id());
   print_info(h_result);
   print_info(l_result);
-
-  // evaluator->mod_switch_to_inplace(l_result, h_result.parms_id());
-
+  seal::Ciphertext term2;
   evaluator->multiply(h_result, l_result, term2);
   evaluator->relinearize_inplace(term2, *relinKeys);
   // evaluator->rescale_to_next_inplace(term2);
   // term2.scale() = term1.scale();
-  evaluator->mod_switch_to_inplace(term1, term2.parms_id());
 
   // term2.scale() = term1.scale();
 
   print_info(term1);
   print_info(term2);
+  make_common(term1, term2);
+  print_info(term1);
+  print_info(term2);
 
   // evaluator->add(term1, term2, *result);
-  // evaluator->rescale_to_next_inplace(term1);
-  // evaluator->rescale_to_next_inplace(term2);
-  // term1.scale() = initial_scale;
-  // term2.scale() = initial_scale;
   *result = XOR(term1, term2);
   return result;
+}
+
+void CardioBatched::make_common(seal::Ciphertext &lhs, seal::Ciphertext &rhs) {
+  auto get_level = [&](seal::Ciphertext &c) -> std::size_t {
+    return context->get_context_data(c.parms_id())->chain_index();
+  };
+
+  if ((get_level(lhs) > get_level(rhs)) &&
+      (get_level(lhs) - get_level(rhs)) > 3) {
+    evaluator->mod_switch_to_inplace(lhs, rhs.parms_id());
+  } else if ((get_level(rhs) > get_level(lhs)) &&
+             (get_level(rhs) - get_level(lhs)) > 3) {
+    evaluator->mod_switch_to_inplace(rhs, lhs.parms_id());
+  }
+
+  while ((int)log2(lhs.scale()) != (int)log2(rhs.scale())) {
+    if (log2(lhs.scale()) > log2(initial_scale) + 1) {
+      evaluator->rescale_to_next_inplace(lhs);
+      evaluator->mod_switch_to_inplace(rhs, lhs.parms_id());
+    } else if (log2(rhs.scale()) > log2(initial_scale) + 1) {
+      evaluator->rescale_to_next_inplace(rhs);
+      evaluator->mod_switch_to_inplace(lhs, rhs.parms_id());
+    }
+    print_info(lhs);
+    print_info(rhs);
+  }
+
+  lhs.scale() = rhs.scale();
+
+  // chain_idx -> ModSwitch
+  if (get_level(lhs) > get_level(rhs)) {
+    // if (get_level(lhs) - get_level(rhs) > 3) {
+    //   evaluator->mod_switch_to_inplace(lhs, rhs.parms_id());
+    // } else {
+    evaluator->rescale_to_inplace(lhs, rhs.parms_id());
+    // }
+    // evaluator->mod_switch_to_inplace(lhs, rhs.parms_id());
+  } else if (get_level(rhs) > get_level(lhs)) {
+    // if (get_level(rhs) - get_level(lhs) > 3) {
+    //   evaluator->mod_switch_to_inplace(rhs, lhs.parms_id());
+    // } else {
+    evaluator->rescale_to_inplace(rhs, lhs.parms_id());
+    // }
+    // evaluator->rescale_to_inplace(rhs, lhs.parms_id());
+  }
+
+  // Scale
+  // if (log2(lhs.scale()) > log2(rhs.scale())) {
+  //   evaluator->rescale_to_inplace(lhs, rhs.parms_id());
+  //   std::cout << "log2(lhs.scale()) > log2(rhs.scale())" << std::endl;
+  // } else if (log2(rhs.scale()) > log2(lhs.scale())) {
+  //   evaluator->rescale_to_inplace(rhs, lhs.parms_id());
+  //   std::cout << "log2(rhs.scale()) > log2(lhs.scale())" << std::endl;
+  // }
+
+  // Size
+  if (lhs.size() != rhs.size()) {
+    std::cerr << "Size mismatch between lhs (" << lhs.size() << ") and rhs ("
+              << rhs.size() << ")! Relinearization forgotten?" << std::endl;
+  }
 }
 
 void CardioBatched::internal_print_info(std::string variable_name,
@@ -211,6 +267,7 @@ seal::Ciphertext CardioBatched::XOR(seal::Ciphertext &lhs,
   evaluator->mod_switch_to_next_inplace(resultXor);
   print_info(resultXor);
   print_info(aAddB);
+  resultXor.scale() = aAddB.scale();
   evaluator->sub_inplace(resultXor, aAddB);
 
   return resultXor;
