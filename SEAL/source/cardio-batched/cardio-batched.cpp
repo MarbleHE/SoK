@@ -116,11 +116,8 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
 
   CiphertextVector lhs_l = slice(lhs, 0, len2);
   CiphertextVector lhs_h = slice(lhs, len2);
-
   CiphertextVector rhs_l = slice(rhs, 0, len2);
   CiphertextVector rhs_h = slice(rhs, len2);
-
-  seal::Ciphertext term1 = *lower(lhs_h, rhs_h);
 
   // TODO remove equal and use formula:
   // ((h_result XOR 1) AND l_result) XOR h_result
@@ -151,13 +148,6 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
   evaluator->rescale_to_next_inplace(*result);
   (*result).scale() = initial_scale;
   print_info(*result);
-
-  // seal::Ciphertext term2;
-  // evaluator->multiply(h_result, l_result, term2);
-  // evaluator->relinearize_inplace(term2, *relinKeys);
-  // evaluator->rescale_to_next_inplace(term2);
-  // term2.scale() = initial_scale;
-  // *result = XOR(term1, term2);
 
   return result;
 }
