@@ -165,8 +165,6 @@ class CardioBatched {
 
   void internal_print_info(std::string variable_name, seal::Ciphertext &ctxt);
 
-  void make_common(seal::Ciphertext &lhs, seal::Ciphertext &rhs);
-
  public:
   void setup_context_ckks(std::size_t poly_modulus_degree);
 
@@ -176,7 +174,8 @@ class CardioBatched {
 
   seal::Plaintext encode(std::vector<uint64_t> numbers);
 
-  seal::Plaintext encode(std::vector<uint64_t> numbers, seal::parms_id_type parms_id);
+  seal::Plaintext encode(std::vector<uint64_t> numbers,
+                         seal::parms_id_type parms_id);
 
   std::unique_ptr<seal::Ciphertext> equal(CiphertextVector &lhs,
                                           CiphertextVector &rhs);

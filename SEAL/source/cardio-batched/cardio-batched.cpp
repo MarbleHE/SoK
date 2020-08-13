@@ -11,48 +11,39 @@
  */
 
 void CardioBatched::setup_context_ckks(std::size_t poly_modulus_degree) {
-  std::cout << "[INFO] Sum of coeff_moduli must not exceed "
-            << seal::CoeffModulus::MaxBitCount(poly_modulus_degree) << " bits."
-            << std::endl;
-
   seal::EncryptionParameters params(seal::scheme_type::CKKS);
   params.set_poly_modulus_degree(poly_modulus_degree);
   params.set_coeff_modulus(seal::CoeffModulus::Create(
-      poly_modulus_degree, {60, 30, 30, 30, 30, 30, 30, 30, 30, 30,
-                            30, 30, 30, 30, 30, 30, 30, 30, 30, 60}));
+      poly_modulus_degree,
+      {60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 60}));
 
   // Instantiate context
   context = seal::SEALContext::Create(params);
 
   // Define initial ciphertext scale
-  initial_scale = std::pow(2.0, 30);
+  initial_scale = std::pow(2.0, 40);
 
   // Create keys
   seal::KeyGenerator keyGenerator(context);
 
-  std::cout << "Generating public key..." << std::endl;
   publicKey = std::make_unique<seal::PublicKey>(keyGenerator.public_key());
   // std::ofstream ofs_pk("public_key.dat", std::ios::binary);
   // publicKey->save(ofs_pk);
   // ofs_pk.close();
 
-  std::cout << "Generating secret key..." << std::endl;
   secretKey = std::make_unique<seal::SecretKey>(keyGenerator.secret_key());
   // std::ofstream ofs_sk("secret_key.dat", std::ios::binary);
   // secretKey->save(ofs_sk);
   // ofs_sk.close();
 
-  std::cout << "Generating relin keys..." << std::endl;
   relinKeys =
       std::make_unique<seal::RelinKeys>(keyGenerator.relin_keys_local());
   // std::ofstream ofs_rk("relin_keys.dat", std::ios::binary);
   // relinKeys->save(ofs_rk);
   // ofs_rk.close();
 
-  std::cout << "Generating galois keys..." << std::endl;
   // Only generate those keys that are actually required/used
-  std::vector<int> steps = {1,  -1,  2,  -2,  4,  -4,  8,   -8,
-                            16, -16, 32, -32, 64, -64, 128, -128};
+  std::vector<int> steps = {-1, -2, -3, -4, -5, -6, -7, 8, 16, 32, 56, 64, 72};
   galoisKeys =
       std::make_unique<seal::GaloisKeys>(keyGenerator.galois_keys_local(steps));
   // std::ofstream ofs_gk("galois_keys.dat", std::ios::binary);
@@ -65,7 +56,7 @@ void CardioBatched::setup_context_ckks(std::size_t poly_modulus_degree) {
   evaluator = std::make_unique<seal::Evaluator>(context);
   decryptor = std::make_unique<seal::Decryptor>(context, *secretKey);
   encoder = std::make_unique<seal::CKKSEncoder>(context);
-  std::cout << "Number of slots: " << encoder->slot_count() << std::endl;
+  // std::cout << "Number of slots: " << encoder->slot_count() << std::endl;
 }
 
 CiphertextVector CardioBatched::slice(CiphertextVector ctxt, int idx_begin,
@@ -80,13 +71,6 @@ CiphertextVector CardioBatched::slice(CiphertextVector ctxt, int idx_begin) {
 // return lhs < rhs
 std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
                                                        CiphertextVector &rhs) {
-  std::cout << "Call to lower(...) .............................." << std::endl;
-  for (size_t i = 0; i < lhs.size(); i++) {
-    print_info(lhs[i]);
-    print_info(rhs[i]);
-  }
-  std::cout << "..............................................." << std::endl;
-
   std::unique_ptr<seal::Ciphertext> result =
       std::make_unique<seal::Ciphertext>();
 
@@ -99,18 +83,22 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
     evaluator->rescale_to_next_inplace(lhs_neg);
     lhs_neg.scale() = initial_scale;
     evaluator->mod_switch_to_inplace(rhs[0], lhs_neg.parms_id());
-    print_info(lhs_neg);
-    print_info(rhs[0]);
+    // print_info(lhs_neg);
+    // print_info(rhs[0]);
     evaluator->multiply(lhs_neg, rhs[0], *result);
     evaluator->relinearize_inplace(*result, *relinKeys);
-    print_info(*result);
+    // print_info(*result);
     evaluator->rescale_to_next_inplace(*result);
-    print_info(*result);
+    // print_info(*result);
 
     (*result).scale() = initial_scale;
-    print_info(*result);
+    // print_info(*result);
     return result;
   }
+
+  auto get_level = [&](seal::Ciphertext &c) -> std::size_t {
+    return context->get_context_data(c.parms_id())->chain_index();
+  };
 
   const int len2 = len >> 1;
 
@@ -119,97 +107,34 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
   CiphertextVector rhs_l = slice(rhs, 0, len2);
   CiphertextVector rhs_h = slice(rhs, len2);
 
-  // TODO remove equal and use formula:
-  // ((h_result XOR 1) AND l_result) XOR h_result
-  seal::Ciphertext h_result = *lower(lhs_h, rhs_h);
-  seal::Ciphertext l_result = *lower(lhs_l, rhs_l);
-  print_info(h_result);
-  print_info(l_result);
+  seal::Ciphertext term1 = *lower(lhs_h, rhs_h);
+  // print_info(term1);
+  evaluator->mod_switch_to_inplace(lhs_h[0], rhs_h[0].parms_id());
+  seal::Ciphertext h_equal = *equal(lhs_h, rhs_h);
+  // print_info(h_equal);
+  seal::Ciphertext l_equal = *lower(lhs_l, rhs_l);
+  // print_info(l_equal);
 
-  seal::Plaintext one;
-  encoder->encode(1.0, h_result.parms_id(), initial_scale, one);
-  seal::Ciphertext h_result_neg = XOR(h_result, one);
-  print_info(h_result_neg);
-  evaluator->rescale_to_next_inplace(h_result_neg);
-  h_result_neg.scale() = initial_scale;
-  print_info(h_result_neg);
+  seal::Ciphertext term2;
 
-  seal::Ciphertext h_result_neg_And_l_result;
-  evaluator->mod_switch_to_inplace(l_result, h_result_neg.parms_id());
-  evaluator->multiply(h_result_neg, l_result, h_result_neg_And_l_result);
-  print_info(h_result_neg_And_l_result);
-  evaluator->relinearize_inplace(h_result_neg_And_l_result, *relinKeys);
-  evaluator->rescale_to_next_inplace(h_result_neg_And_l_result);
-  h_result_neg_And_l_result.scale() = initial_scale;
-  print_info(h_result_neg_And_l_result);
+  if (get_level(l_equal) > get_level(h_equal)) {
+    evaluator->mod_switch_to_inplace(l_equal, h_equal.parms_id());
+  } else if (get_level(l_equal) < get_level(h_equal)) {
+    evaluator->mod_switch_to_inplace(h_equal, l_equal.parms_id());
+  }
 
-  evaluator->mod_switch_to_inplace(h_result, h_result_neg_And_l_result.parms_id());
-  *result = XOR(h_result_neg_And_l_result, h_result);
+  evaluator->multiply(h_equal, l_equal, term2);
+  evaluator->relinearize_inplace(term2, *relinKeys);
+  evaluator->rescale_to_next_inplace(term2);
+  term2.scale() = initial_scale;
+  // print_info(term2);
+
+  evaluator->mod_switch_to_inplace(term1, term2.parms_id());
+  *result = XOR(term1, term2);
   evaluator->rescale_to_next_inplace(*result);
   (*result).scale() = initial_scale;
-  print_info(*result);
-
+  // print_info(*result);
   return result;
-}
-
-void CardioBatched::make_common(seal::Ciphertext &lhs, seal::Ciphertext &rhs) {
-  auto get_level = [&](seal::Ciphertext &c) -> std::size_t {
-    return context->get_context_data(c.parms_id())->chain_index();
-  };
-
-  if ((get_level(lhs) > get_level(rhs)) &&
-      (get_level(lhs) - get_level(rhs)) > 3) {
-    evaluator->mod_switch_to_inplace(lhs, rhs.parms_id());
-  } else if ((get_level(rhs) > get_level(lhs)) &&
-             (get_level(rhs) - get_level(lhs)) > 3) {
-    evaluator->mod_switch_to_inplace(rhs, lhs.parms_id());
-  }
-
-  while ((int)log2(lhs.scale()) != (int)log2(rhs.scale())) {
-    if (log2(lhs.scale()) > log2(initial_scale) + 1) {
-      evaluator->rescale_to_next_inplace(lhs);
-      evaluator->mod_switch_to_inplace(rhs, lhs.parms_id());
-    } else if (log2(rhs.scale()) > log2(initial_scale) + 1) {
-      evaluator->rescale_to_next_inplace(rhs);
-      evaluator->mod_switch_to_inplace(lhs, rhs.parms_id());
-    }
-    print_info(lhs);
-    print_info(rhs);
-  }
-
-  lhs.scale() = rhs.scale();
-
-  // chain_idx -> ModSwitch
-  if (get_level(lhs) > get_level(rhs)) {
-    // if (get_level(lhs) - get_level(rhs) > 3) {
-    //   evaluator->mod_switch_to_inplace(lhs, rhs.parms_id());
-    // } else {
-    evaluator->rescale_to_inplace(lhs, rhs.parms_id());
-    // }
-    // evaluator->mod_switch_to_inplace(lhs, rhs.parms_id());
-  } else if (get_level(rhs) > get_level(lhs)) {
-    // if (get_level(rhs) - get_level(lhs) > 3) {
-    //   evaluator->mod_switch_to_inplace(rhs, lhs.parms_id());
-    // } else {
-    evaluator->rescale_to_inplace(rhs, lhs.parms_id());
-    // }
-    // evaluator->rescale_to_inplace(rhs, lhs.parms_id());
-  }
-
-  // Scale
-  // if (log2(lhs.scale()) > log2(rhs.scale())) {
-  //   evaluator->rescale_to_inplace(lhs, rhs.parms_id());
-  //   std::cout << "log2(lhs.scale()) > log2(rhs.scale())" << std::endl;
-  // } else if (log2(rhs.scale()) > log2(lhs.scale())) {
-  //   evaluator->rescale_to_inplace(rhs, lhs.parms_id());
-  //   std::cout << "log2(rhs.scale()) > log2(lhs.scale())" << std::endl;
-  // }
-
-  // Size
-  if (lhs.size() != rhs.size()) {
-    std::cerr << "Size mismatch between lhs (" << lhs.size() << ") and rhs ("
-              << rhs.size() << ")! Relinearization forgotten?" << std::endl;
-  }
 }
 
 void CardioBatched::internal_print_info(std::string variable_name,
@@ -354,9 +279,16 @@ void CardioBatched::print_vec(seal::Ciphertext &ctxt) {
   std::vector<double> dec;
   encoder->decode(p, dec);
   // print the first 64 bits
-  for (size_t k = 0; k < 96; ++k) {
-    if (k % 4 == 0) std::cout << " ";
-    std::cout << (uint64_t)std::nearbyint(dec[k]);
+  for (size_t k = 0; k < 160; ++k) {
+    if (k % 8 == 0) {
+      std::cout << std::endl;
+    } else if (k % 4 == 0) {
+      std::cout << "\t";
+    } else {
+      std::cout << "  ";
+    }
+    // std::cout << (uint64_t)std::nearbyint(dec[k]);
+    std::cout << dec[k];
   }
   std::cout << std::endl;
 }
@@ -392,9 +324,9 @@ void CardioBatched::run_cardio() {
 
   // encode and encrypt keystream
   // assumption: this keystream is known by client and server
-  std::vector<uint64_t> keystream = {
-      121, 58,  242, 156, 29,  94,  136, 91,  227, 68, 251, 70,  212, 155, 223,
-      154, 221, 251, 235, 139, 190, 254, 238, 117, 45, 81,  252, 28,  223, 56};
+  std::vector<uint64_t> keystream = {121, 58,  242, 156, 29,  94,
+                                     136, 91,  227, 68,  251, 70,
+                                     212, 155, 223, 154, 221, 251};
 
   // === client-side computation ====================================
 
@@ -411,32 +343,28 @@ void CardioBatched::run_cardio() {
   uint64_t drinking = 4;
   uint64_t weight = 80;
 
-  //
-  //  +1  if man                                  && 50 < [age]
-  //  +1  if antecedent                           && 0 < [1]
-  //  +1  if smoking                              && 0 < [1]
-  //  +1  if diabetic                             && 0 < [1]
-  //  +1  if high blood pressure                  && 0 < [1]
-  //  +1  if man                                  && 3 < [alc_consumption]
-  //  +1  if (!man)                               && 2 < [alc_consumption]
-  //  +1  if TRUE                                 && [HDL] < 40
-  //  +1  if TRUE                                 && [height] < [weight+90]
-  //  +1  if TRUE                                 && [phy_act] < 30
+  // == Conditions ====
+  // F  +1  if man                                  && 50 < [age]
+  // T  +1  if antecedent                           && 0 < [1]
+  // T  +1  if smoking                              && 0 < [1]
+  // T  +1  if diabetic                             && 0 < [1]
+  // T  +1  if high blood pressure                  && 0 < [1]
+  // F  +1  if man                                  && 3 < [alc_consumption]
+  // T  +1  if (!man)                               && 2 < [alc_consumption]
+  // F  +1  if TRUE                                 && [HDL] < 40
+  // T  +1  if TRUE                                 && [height] < [weight+90]
+  // F  +1  if TRUE                                 && [phy_act] < 30
   //
 
   // encode and encrypt the inputs
   std::vector<uint64_t> in;
-  in.push_back(man ^ keystream[0]);         // bit 7
-  in.push_back(antecedent ^ keystream[1]);  // bit 15
-  in.push_back(smoking ^ keystream[2]);     // bit 23
-  in.push_back(diabetic ^ keystream[3]);    // bit 31
-  in.push_back(pressure ^ keystream[4]);    // bit 39
-  in.push_back(man ^ keystream[5]);         // bit 47
-  in.push_back(!man ^ keystream[6]);        // bit 55
-  // in.push_back(1 ^ keystream[5]);        // bit 63
-  // in.push_back(1 ^ keystream[6]);        // bit 71
-  // in.push_back(1 ^ keystream[7]);        // bit 78
-
+  in.push_back(man ^ keystream[0]);
+  in.push_back(antecedent ^ keystream[1]);
+  in.push_back(smoking ^ keystream[2]);
+  in.push_back(diabetic ^ keystream[3]);
+  in.push_back(pressure ^ keystream[4]);
+  in.push_back(man ^ keystream[5]);
+  in.push_back(!man ^ keystream[6]);
   in.push_back(age ^ keystream[7]);
   in.push_back(1 ^ keystream[8]);
   in.push_back(1 ^ keystream[9]);
@@ -447,7 +375,6 @@ void CardioBatched::run_cardio() {
   in.push_back(hdl ^ keystream[14]);
   in.push_back(height ^ keystream[15]);
   in.push_back(phy_act ^ keystream[16]);
-
   in.push_back(weight + 90 ^ keystream[17]);
 
   seal::Ciphertext inputs = encode_and_encrypt(in);
@@ -466,7 +393,7 @@ void CardioBatched::run_cardio() {
   seal::Ciphertext result = XOR(inputs, ks);
   evaluator->rescale_to_next_inplace(result);
   result.scale() = initial_scale;
-  print_ciphertext(result);
+  // print_ciphertext(result);
 
   // create a copy of the input vector
   seal::Ciphertext bool_flags = result;
@@ -532,10 +459,32 @@ void CardioBatched::run_cardio() {
   std::vector<seal::Ciphertext> b_encoded = split_by_binary_rep(b);
   std::vector<seal::Ciphertext> c_encoded = split_by_binary_rep(c);
 
-  std::cout << "initial call to lower:" << std::endl;
-  seal::Ciphertext lowerResult = *lower(b_encoded, c_encoded);
+  // lower_result := b_encoded < c_encoded
+  seal::Ciphertext lower_result = *lower(b_encoded, c_encoded);
 
-  print_vec(lowerResult);
+  // condition_result := bool_flags & lower_result
+  seal::Ciphertext condition_result;
+  evaluator->mod_switch_to_inplace(bool_flags, lower_result.parms_id());
+  evaluator->multiply(bool_flags, lower_result, condition_result);
+  evaluator->relinearize_inplace(condition_result, *relinKeys);
+
+  // perform sum & rotate to compute the result of the cardio program
+  seal::Ciphertext rot8, rot4, rot2, final_result;
+  evaluator->rotate_vector(condition_result, 8 * NUM_BITS, *galoisKeys, rot8);
+  evaluator->add_inplace(rot8, condition_result);
+  evaluator->rotate_vector(rot8, 4 * NUM_BITS, *galoisKeys, rot4);
+  evaluator->add_inplace(rot4, rot8);
+  evaluator->rotate_vector(rot4, 2 * NUM_BITS, *galoisKeys, rot2);
+  evaluator->add_inplace(rot2, rot4);
+  evaluator->rotate_vector(rot2, 1 * NUM_BITS, *galoisKeys, final_result);
+  evaluator->add_inplace(final_result, rot2);
+
+  // retrieve the final result (ciphertext slot 7)
+  seal::Plaintext p;
+  decryptor->decrypt(final_result, p);
+  std::vector<double> dec;
+  encoder->decode(p, dec);
+  std::cout << "Result: " << (uint64_t)dec[7] << std::endl;
 }
 
 std::unique_ptr<seal::Ciphertext> CardioBatched::multvect(
@@ -545,6 +494,8 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::multvect(
     for (std::size_t i = 0; i < size - k; i += 2 * k) {
       evaluator->multiply_inplace(bitvec[i], bitvec[i + k]);
       evaluator->relinearize_inplace(bitvec[i], *relinKeys);
+      evaluator->rescale_to_next_inplace(bitvec[i]);
+      // print_info(bitvec[i]);
     }
   }
   return std::make_unique<seal::Ciphertext>(bitvec[0]);
@@ -554,35 +505,30 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::equal(CiphertextVector &lhs,
                                                        CiphertextVector &rhs) {
   assert(("equal supports same-sized inputs only!", lhs.size() == rhs.size()));
 
-  std::cout << "Call to equal(...) .............................." << std::endl;
-  for (size_t i = 0; i < lhs.size(); i++) {
-    print_info(lhs[i]);
-    print_info(rhs[i]);
-  }
-  std::cout << "..............................................." << std::endl;
-
   CiphertextVector comp;
   for (std::size_t i = 0; i < lhs.size(); ++i) {
     seal::Ciphertext tmp;
     // evaluator->add(lhs[i], rhs[i], tmp);
-    print_info(lhs[i]);
-    print_info(rhs[i]);
+    // print_info(lhs[i]);
+    // print_info(rhs[i]);
     tmp = XOR(lhs[i], rhs[i]);
+    evaluator->rescale_to_next_inplace(tmp);
+    // print_info(tmp);
+    tmp.scale() = initial_scale;
+    // print_info(tmp);
 
-    seal::Plaintext ptxt;
-    encoder->encode(1.0, tmp.scale(), ptxt);
-    evaluator->mod_switch_to_inplace(ptxt, tmp.parms_id());
-    seal::Ciphertext one_ctxt;
-    encryptor->encrypt(ptxt, one_ctxt);
+    seal::Plaintext one;
+    encoder->encode(1.0, tmp.parms_id(), tmp.scale(), one);
+    // print_info(tmp);
 
-    print_info(tmp);
-    print_info(one_ctxt);
-    // evaluator->add_plain_inplace(tmp, ptxt);  // negate tmp
-    tmp = XOR(tmp, one_ctxt);
+    tmp = XOR(tmp, one);
+    evaluator->rescale_to_next_inplace(tmp);
+    // print_info(tmp);
+    tmp.scale() = initial_scale;
     comp.push_back(tmp);
   }
   std::unique_ptr<seal::Ciphertext> mv_result = multvect(comp);
-  print_info(*mv_result);
+  // print_info(*mv_result);
   return mv_result;
 }
 
