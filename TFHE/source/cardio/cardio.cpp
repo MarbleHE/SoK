@@ -31,7 +31,7 @@ int main() {
 
   // write ss_time into file
   std::ofstream myfile;
-  myfile.open("seal_cardio.csv", std::ios_base::app);
+  myfile.open("tfhe_cardio.csv", std::ios_base::app);
   myfile << ss_time.str() << std::endl;
   myfile.close();
   return 0;
