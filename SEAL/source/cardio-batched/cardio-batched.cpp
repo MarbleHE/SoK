@@ -1,11 +1,5 @@
 #include "cardio-batched.h"
 
-#define SEX_FIELD 0
-#define ANTECEDENT_FIELD 1
-#define SMOKER_FIELD 2
-#define DIABETES_FIELD 3
-#define PRESSURE_FIELD 4
-
 /*
  * Batched CKKS implementation for cardio benchmark.
  */
@@ -304,23 +298,30 @@ std::vector<seal::Ciphertext> CardioBatched::split_by_binary_rep(
   return result;
 }
 
+namespace {
+void log_time(std::stringstream &ss,
+              std::chrono::time_point<std::chrono::high_resolution_clock> start,
+              std::chrono::time_point<std::chrono::high_resolution_clock> end,
+              bool last = false) {
+  ss << std::chrono::duration_cast<ms>(end - start).count();
+  if (!last) ss << ",";
+}
+}  // namespace
+
 void CardioBatched::run_cardio() {
   std::stringstream ss_time;
-  // auto t0 = Time::now();
 
+  auto t0 = Time::now();
   // poly_modulus_degree:
   // - must be a power of two
   // - determines the number of ciphertext slots
   // - determines the max. of the sum of coeff_moduli bits
   setup_context_ckks(32768);
 
-  // auto t1 = Time::now();
-  // std::cout << "SEAL Setup: " << std::chrono::duration_cast<ms>(t1 -
-  // t0).count() << " ms" << std::endl;
+  auto t1 = Time::now();
+  log_time(ss_time, t0, t1, false);
 
-  // log_time(ss_time, t0, t1, false);
-
-  // auto t2 = Time::now();
+  auto t2 = Time::now();
 
   // encode and encrypt keystream
   // assumption: this keystream is known by client and server
@@ -354,7 +355,6 @@ void CardioBatched::run_cardio() {
   // F  +1  if TRUE                                 && [HDL] < 40
   // T  +1  if TRUE                                 && [height] < [weight+90]
   // F  +1  if TRUE                                 && [phy_act] < 30
-  //
 
   // encode and encrypt the inputs
   std::vector<uint64_t> in;
@@ -379,14 +379,14 @@ void CardioBatched::run_cardio() {
 
   seal::Ciphertext inputs = encode_and_encrypt(in);
 
-  // auto t3 = Time::now();
-  // log_time(ss_time, t2, t3, false);
+  auto t3 = Time::now();
+  log_time(ss_time, t2, t3, false);
 
   // // transmit data to server...
 
   // // === server-side computation ====================================
 
-  // auto t4 = Time::now();
+  auto t4 = Time::now();
 
   // homomorphically execute the Kreyvium algorithm to decrypt data
   seal::Plaintext ks = encode(keystream);
@@ -479,12 +479,26 @@ void CardioBatched::run_cardio() {
   evaluator->rotate_vector(rot2, 1 * NUM_BITS, *galoisKeys, final_result);
   evaluator->add_inplace(final_result, rot2);
 
+  auto t5 = Time::now();
+  log_time(ss_time, t4, t5, false);
+
+  auto t6 = Time::now();
+
   // retrieve the final result (ciphertext slot 7)
   seal::Plaintext p;
   decryptor->decrypt(final_result, p);
   std::vector<double> dec;
   encoder->decode(p, dec);
   std::cout << "Result: " << (uint64_t)dec[7] << std::endl;
+
+  auto t7 = Time::now();
+  log_time(ss_time, t6, t7, true);
+
+  // write ss_time into file
+  std::ofstream myfile;
+  myfile.open("seal_batched_cardio.csv", std::ios_base::app);
+  myfile << ss_time.str() << std::endl;
+  myfile.close();
 }
 
 std::unique_ptr<seal::Ciphertext> CardioBatched::multvect(
