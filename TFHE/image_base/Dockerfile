@@ -10,7 +10,7 @@ WORKDIR /tfhe/build
 
 # FFTW3 is the fastest FFT implementation, see https://github.com/tfhe/tfhe#dependencies for details
 # Note that there are no TFHE tests (existing tests are only for the FFT implementations Nayuki and Spqlios)
-RUN cmake ../src -DENABLE_TESTS=off -DENABLE_NAYUKI_PORTABLE=off -DENABLE_NAYUKI_AVX=off -DENABLE_SPQLIOS_AVX=off -DENABLE_SPQLIOS_FMA=off -DCMAKE_BUILD_TYPE=optim && \
+RUN cmake ../src -DENABLE_TESTS=off -DENABLE_FFTW=on -DENABLE_NAYUKI_PORTABLE=off -DENABLE_NAYUKI_AVX=off -DENABLE_SPQLIOS_AVX=off -DENABLE_SPQLIOS_FMA=off -DCMAKE_BUILD_TYPE=optim && \
     make && \
     make install
 
