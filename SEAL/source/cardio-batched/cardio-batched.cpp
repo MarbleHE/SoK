@@ -18,8 +18,8 @@ void CardioBatched::setup_context_ckks(std::size_t poly_modulus_degree) {
   seal::EncryptionParameters params(seal::scheme_type::CKKS);
   params.set_poly_modulus_degree(poly_modulus_degree);
   params.set_coeff_modulus(seal::CoeffModulus::Create(
-      poly_modulus_degree, {60, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30,
-                            30, 30, 30, 30, 30, 30, 60}));
+      poly_modulus_degree, {60, 30, 30, 30, 30, 30, 30, 30, 30, 30,
+                            30, 30, 30, 30, 30, 30, 30, 30, 30, 60}));
 
   // Instantiate context
   context = seal::SEALContext::Create(params);
@@ -95,9 +95,9 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
     seal::Ciphertext lhs_neg;
     // andNY(lhs[0], rhs[0]) = !(lhs[0]) & rhs[0]
     seal::Plaintext one;
-    encoder->encode(1.0, lhs[0].scale(), one);
+    encoder->encode(1.0, lhs[0].scale(), one);  // TODO pass parms_id of lhs[0]
     evaluator->mod_switch_to_inplace(one, lhs[0].parms_id());
-    evaluator->add_plain(lhs[0], one, lhs_neg);
+    evaluator->add_plain(lhs[0], one, lhs_neg);  // FIXME use XOR here
     evaluator->multiply(lhs_neg, rhs[0], *result);
     evaluator->relinearize_inplace(*result, *relinKeys);
     return result;
@@ -113,12 +113,15 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
 
   seal::Ciphertext term1 = *lower(lhs_h, rhs_h);
 
+  // TODO remove equal and use formula:
+  // ((h_result XOR 1) AND l_result) XOR h_result
   seal::Ciphertext h_result = *equal(lhs_h, rhs_h);
   seal::Ciphertext l_result = *lower(lhs_l, rhs_l);
 
-  evaluator->mod_switch_to_inplace(l_result, h_result.parms_id());
   print_info(h_result);
   print_info(l_result);
+  evaluator->mod_switch_to_inplace(l_result, h_result.parms_id());
+
   seal::Ciphertext term2;
   evaluator->multiply(h_result, l_result, term2);
   evaluator->relinearize_inplace(term2, *relinKeys);
@@ -215,62 +218,24 @@ void CardioBatched::internal_print_info(std::string variable_name,
 
 seal::Ciphertext CardioBatched::XOR(seal::Ciphertext &lhs,
                                     seal::Ciphertext &rhs) {
-  std::cout << "Call to XOR(...) .............................." << std::endl;
-  print_info(lhs);
-  print_info(rhs);
-  std::cout << "..............................................." << std::endl;
+  // computes (a-b)^2 by assuming a,b are binary inputs
+  // see https://stackoverflow.com/a/46674398
+  seal::Ciphertext result;
+  evaluator->sub(lhs, rhs, result);
+  evaluator->square_inplace(result);
+  evaluator->relinearize_inplace(result, *relinKeys);
+  return result;
+}
 
-  // a + b - ab(1 + a + b - ab)
-  // ==  a + b - a*b - a*a*b - a*b*b + a*b*a*b
-  // ==  a + b + (a*b)^2  - (a+b+1)*(a*b)
-
-  // compute a*b
-  seal::Ciphertext ab;
-  evaluator->multiply(lhs, rhs, ab);
-  evaluator->relinearize_inplace(ab, *relinKeys);
-
-  // use a*b to compute (a*b)^2
-  seal::Ciphertext abab;
-  evaluator->rescale_to_next_inplace(ab);
-  evaluator->square(ab, abab);
-  evaluator->relinearize_inplace(abab, *relinKeys);
-  evaluator->rescale_to_next_inplace(abab);
-
-  // compute a+b
-  seal::Ciphertext aAddB;
-  evaluator->add(lhs, rhs, aAddB);
-  evaluator->mod_switch_to_inplace(aAddB, abab.parms_id());
-
-  // compute (a+b)+(a*b)^2
-  seal::Ciphertext resultXor;
-  abab.scale() = aAddB.scale();
-  // evaluator->rescale_to_next_inplace(aAddB);
-  print_info(aAddB);
-  print_info(abab);
-  evaluator->add_many({aAddB, abab}, resultXor);
-
-  // compute (a+b)+1
-  seal::Plaintext one;
-  encoder->encode(1, aAddB.scale(), one);
-  evaluator->mod_switch_to_inplace(one, aAddB.parms_id());
-  evaluator->add_plain_inplace(aAddB, one);
-
-  // compute (a+b+1)*(a*b)
-  aAddB.scale() = initial_scale;
-  evaluator->mod_switch_to_next_inplace(ab);
-  evaluator->multiply_inplace(aAddB, ab);
-  evaluator->relinearize_inplace(aAddB, *relinKeys);
-
-  // compute ((a+b)+(a*b)^2)) - ((a+b+1)*(a*b))
-  evaluator->rescale_to_next_inplace(aAddB);
-  aAddB.scale() = initial_scale;
-  evaluator->mod_switch_to_next_inplace(resultXor);
-  print_info(resultXor);
-  print_info(aAddB);
-  resultXor.scale() = aAddB.scale();
-  evaluator->sub_inplace(resultXor, aAddB);
-
-  return resultXor;
+seal::Ciphertext CardioBatched::XOR(seal::Ciphertext &lhs,
+                                    seal::Plaintext &rhs) {
+  // computes (a-b)^2 by assuming a,b are binary inputs
+  // see https://stackoverflow.com/a/46674398
+  seal::Ciphertext result;
+  evaluator->sub_plain(lhs, rhs, result);
+  evaluator->square_inplace(result);
+  evaluator->relinearize_inplace(result, *relinKeys);
+  return result;
 }
 
 void CardioBatched::print_plaintext(seal::Plaintext &ptxt) {
@@ -343,6 +308,13 @@ void CardioBatched::print_ciphertext(seal::Ciphertext &ctxt) {
 
 seal::Ciphertext CardioBatched::encode_and_encrypt(
     std::vector<uint64_t> numbers) {
+  seal::Ciphertext encrypted_numbers(context);
+  encryptor->encrypt(encode(numbers), encrypted_numbers);
+  return encrypted_numbers;
+}
+
+seal::Plaintext CardioBatched::encode(std::vector<uint64_t> numbers,
+                                      seal::parms_id_type parms_id) {
   // transform each given number into a sequence of NUM_BITS bits
   std::vector<double> numbers_in_bits;
   for (auto n : numbers) {
@@ -356,13 +328,13 @@ seal::Ciphertext CardioBatched::encode_and_encrypt(
 
   // encode bit sequence into a seal::Plaintext
   seal::Plaintext encoded_numbers;
-  encoder->encode(numbers_in_bits, initial_scale, encoded_numbers);
+  encoder->encode(numbers_in_bits, parms_id, initial_scale, encoded_numbers);
 
-  // encrypt plaintext into a seal::Ciphertext
-  seal::Ciphertext encrypted_numbers(context);
-  encryptor->encrypt(encoded_numbers, encrypted_numbers);
+  return encoded_numbers;
+}
 
-  return encrypted_numbers;
+seal::Plaintext CardioBatched::encode(std::vector<uint64_t> numbers) {
+  return encode(numbers, context->first_parms_id());
 }
 
 void CardioBatched::print_vec(seal::Ciphertext &ctxt) {
@@ -412,7 +384,6 @@ void CardioBatched::run_cardio() {
   std::vector<uint64_t> keystream = {
       121, 58,  242, 156, 29,  94,  136, 91,  227, 68, 251, 70,  212, 155, 223,
       154, 221, 251, 235, 139, 190, 254, 238, 117, 45, 81,  252, 28,  223, 56};
-  seal::Ciphertext ks = encode_and_encrypt(keystream);
 
   // === client-side computation ====================================
 
@@ -481,69 +452,65 @@ void CardioBatched::run_cardio() {
 
   // homomorphically execute the Kreyvium algorithm to decrypt data
   seal::Ciphertext result;
+  // TODO pass keystream (ks) as seal::Plaintext and overload XOR to work with
+  // a plain parameter
+  seal::Plaintext ks = encode(keystream);
   result = XOR(inputs, ks);
+  evaluator->rescale_to_next_inplace(result);
+  result.scale() = initial_scale;
   print_ciphertext(result);
 
   // create a copy of the input vector
   seal::Ciphertext bool_flags = result;
-
+  // mask the flags
+  seal::Plaintext mask = encode({1, 1, 1, 1, 1, 1, 1}, bool_flags.parms_id());
+  evaluator->multiply_plain_inplace(bool_flags, mask);
+  evaluator->rescale_to_next_inplace(bool_flags);
+  bool_flags.scale() = initial_scale;
   // set 1 at bit positions 63, 71, 78 (required for batching scheme)
-  seal::Ciphertext addendum =
-      encode_and_encrypt({0, 0, 0, 0, 0, 0, 0, 1, 1, 1});
-  // bool_flags OR addendum
-  // == (bool_flags AND addendum) XOR (bool_flags XOR addendum)
-  seal::Ciphertext bool_flags_AND;
-  evaluator->mod_switch_to_inplace(addendum, bool_flags.parms_id());
-  evaluator->multiply(bool_flags, addendum, bool_flags_AND);
-  evaluator->relinearize_inplace(bool_flags_AND, *relinKeys);
-  seal::Ciphertext bool_flags_XOR = XOR(bool_flags, addendum);
-  evaluator->rescale_to_next_inplace(bool_flags_AND);
-  evaluator->mod_switch_to_inplace(bool_flags_AND, bool_flags_XOR.parms_id());
-  bool_flags_AND.scale() = initial_scale;
-  bool_flags = XOR(bool_flags_AND, bool_flags_XOR);
+  seal::Plaintext addendum =
+      encode({0, 0, 0, 0, 0, 0, 0, 1, 1, 1}, bool_flags.parms_id());
+  evaluator->add_plain_inplace(bool_flags, addendum);
 
   // prepare b by adding missing values and extracting values for lhs of smaller
   // equation
-  std::vector<double> mask_b(encoder->slot_count(), 0);
-  for (size_t i = 112; i < 112 + 3 * NUM_BITS; i++) mask_b[i] = 1;
+  std::vector<double> mask_b(encoder->slot_count(), 0.0);
+  for (size_t i = 112; i < 112 + 3 * NUM_BITS; i++) mask_b[i] = 1.0;
   seal::Plaintext mask_b_enc;
-  encoder->encode(mask_b, initial_scale, mask_b_enc);
-  seal::Ciphertext b = result;
-  evaluator->mod_switch_to_inplace(mask_b_enc, b.parms_id());
-  evaluator->multiply_plain_inplace(b, mask_b_enc);
+  encoder->encode(mask_b, result.parms_id(), initial_scale, mask_b_enc);
+  seal::Ciphertext b;
+  evaluator->multiply_plain(result, mask_b_enc, b);
   evaluator->relinearize_inplace(b, *relinKeys);
+  evaluator->rescale_to_next_inplace(b);
+  b.scale() = initial_scale;
   evaluator->rotate_vector_inplace(b, 56, *galoisKeys);
   // merge with the constants that are not given as inputs
-  seal::Ciphertext const_b = encode_and_encrypt({50, 0, 0, 0, 0, 3, 2});
-  evaluator->rescale_to_next_inplace(b);
-  b.scale() = const_b.scale();
-  evaluator->mod_switch_to_inplace(const_b, b.parms_id());
-  evaluator->add_inplace(b, const_b);
+  seal::Plaintext const_b = encode({50, 0, 0, 0, 0, 3, 2}, b.parms_id());
+  evaluator->add_plain_inplace(b, const_b);
 
   // prepare c by adding missing values and extracting values for rhs of smaller
   // equation
   std::vector<double> mask_c(encoder->slot_count(), 0);
   for (size_t i = 56; i < 56 + 7 * NUM_BITS; i++) mask_c[i] = 1;
   seal::Plaintext mask_c_enc;
-  encoder->encode(mask_c, initial_scale, mask_c_enc);
-  seal::Ciphertext c = result;
-  evaluator->mod_switch_to_inplace(mask_c_enc, c.parms_id());
-  evaluator->multiply_plain_inplace(c, mask_c_enc);
+  encoder->encode(mask_c, result.parms_id(), initial_scale, mask_c_enc);
+  seal::Ciphertext c;
+  evaluator->multiply_plain(result, mask_c_enc, c);
   evaluator->relinearize_inplace(c, *relinKeys);
+  evaluator->rescale_to_next_inplace(c);
+  c.scale() = initial_scale;
   evaluator->rotate_vector_inplace(c, 56, *galoisKeys);
   // merge with the constants that are not given as inputs
-  seal::Ciphertext const_c =
-      encode_and_encrypt({0, 0, 0, 0, 0, 0, 0, 40, 0, 30});
-  evaluator->rescale_to_next_inplace(c);
-  c.scale() = const_c.scale();
-  evaluator->mod_switch_to_inplace(const_c, c.parms_id());
-  evaluator->add_inplace(c, const_c);
+  seal::Plaintext const_c =
+      encode({0, 0, 0, 0, 0, 0, 0, 40, 0, 30}, c.parms_id());
+  evaluator->add_plain_inplace(c, const_c);
+
   // extract and merge weight+90 into other values in ciphertext c
   std::vector<double> mask_weight90(encoder->slot_count(), 0);
   for (size_t i = 136; i < 136 + 1 * NUM_BITS; i++) mask_weight90[i] = 1;
   seal::Plaintext mask_weight90_enc;
-  encoder->encode(mask_weight90, initial_scale, mask_weight90_enc);
-  evaluator->mod_switch_to_inplace(mask_weight90_enc, result.parms_id());
+  encoder->encode(mask_weight90, result.parms_id(), initial_scale,
+                  mask_weight90_enc);
   seal::Ciphertext weight90;
   evaluator->multiply_plain(result, mask_weight90_enc, weight90);
   evaluator->relinearize_inplace(weight90, *relinKeys);

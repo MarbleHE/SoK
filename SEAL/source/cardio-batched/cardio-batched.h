@@ -161,6 +161,8 @@ class CardioBatched {
 
   seal::Ciphertext XOR(seal::Ciphertext &lhs, seal::Ciphertext &rhs);
 
+  seal::Ciphertext XOR(seal::Ciphertext &lhs, seal::Plaintext &rhs);
+
   void internal_print_info(std::string variable_name, seal::Ciphertext &ctxt);
 
   void make_common(seal::Ciphertext &lhs, seal::Ciphertext &rhs);
@@ -171,6 +173,10 @@ class CardioBatched {
   void run_cardio();
 
   seal::Ciphertext encode_and_encrypt(std::vector<uint64_t> number);
+
+  seal::Plaintext encode(std::vector<uint64_t> numbers);
+
+  seal::Plaintext encode(std::vector<uint64_t> numbers, seal::parms_id_type parms_id);
 
   std::unique_ptr<seal::Ciphertext> equal(CiphertextVector &lhs,
                                           CiphertextVector &rhs);
