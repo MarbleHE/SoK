@@ -59,4 +59,4 @@ docker run -e S3_URL=s3://sok-repository-eval-benchmarks \
     -e AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID} \
     -e AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY} \
     -e AWS_DEFAULT_REGION=us-east-2 \
-    -it --rm ${TAG_NAME}
+    -it ${TAG_NAME}
