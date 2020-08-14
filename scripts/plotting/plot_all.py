@@ -29,7 +29,7 @@ def plot_all_cardio():
             # just skip any existing folder without a CSV file (e.g., the plot/ folder)
             continue
         elif len(s3_urls) > 1:
-            raise ValueError(f"Error: More than one CSV file for {name_filter} found!")
+            raise ValueError(f"Error: More than one CSV file for '{name_filter}'' found!\nCreate a separate folder for each tool configuration, e.g., SEAL-BFV, SEAL-CKKS.")
         # remove the directory (timestamped folder) segment from the tool's path
         tool_name = tp.replace(root_folder, "")
         # remove the trailing '/' from the tool's name (as it is a directory)
