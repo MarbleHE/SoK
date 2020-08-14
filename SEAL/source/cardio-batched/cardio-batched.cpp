@@ -496,9 +496,12 @@ void CardioBatched::run_cardio() {
 
   // write ss_time into file
   std::ofstream myfile;
-  myfile.open("seal_batched_cardio.csv", std::ios_base::app);
+  myfile.open("seal_batched_ckks_cardio.csv", std::ios::out | std::ios::app);
+  if (myfile.fail()) throw std::ios_base::failure(std::strerror(errno));
+  // make sure write fails with exception if something is wrong
+  myfile.exceptions(myfile.exceptions() | std::ios::failbit |
+                  std::ifstream::badbit);
   myfile << ss_time.str() << std::endl;
-  myfile.close();
 }
 
 std::unique_ptr<seal::Ciphertext> CardioBatched::multvect(

@@ -439,16 +439,16 @@ void Cardio::run_cardio() {
   auto t6 = Time::now();
 
   // decrypt and check result
-  std::cout << "==== RISK SCORE ======" << std::endl;
-  assert(("Cardio benchmark does not produce expected result!", ciphertextvector_to_int(risk_score) == 6));
-
+  int result = ciphertextvector_to_int(risk_score);
+  assert(("Cardio benchmark does not produce expected result!", result == 6));
+  std::cout << "Result: " << result << std::endl;
 
   auto t7 = Time::now();
   log_time(ss_time, t6, t7, true);
 
   // write ss_time into file
   std::ofstream myfile;
-  myfile.open("seal_cardio.csv", std::ios_base::app);
+  myfile.open("seal_bfv_cardio.csv", std::ios_base::app);
   myfile << ss_time.str() << std::endl;
   myfile.close();
 }
