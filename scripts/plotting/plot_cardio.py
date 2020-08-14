@@ -2,7 +2,7 @@ from typing import List
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-
+from matplotlib.ticker import FuncFormatter
 
 
 def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> plt.Figure:
@@ -18,7 +18,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     # Set the current figure to fig
     if fig is None:
-        fig = plt.figure()
+        fig = plt.figure(figsize=(8,6), dpi=90)
     plt.figure(fig.number)
 
     # Setup Axis, Title, etc
@@ -26,8 +26,13 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.title('Runtime for Cardio')
     plt.ylabel('Time (ms)')
     ind = np.arange(N)  # the x locations for the groups
-    plt.xticks(ind, labels)
+    plt.xticks(ind, labels, rotation='vertical', fontsize=9 )
+    # adds a thousand separator
+    fig.axes[0].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
     width = 0.35  # the width of the bars: can also be len(x) sequence
+    # add a grid
+    ax = plt.gca()
+    ax.grid(which='major', axis='y', linestyle=':')
 
     # Plot Bars
     for i in range(N):

@@ -1,10 +1,6 @@
 from pathlib import PosixPath
 from urllib.parse import urlparse
-
-import boto3
 import pandas as pd
-from botocore.exceptions import ClientError
-
 import plot_cardio
 from s3_utils import get_most_recent_folder_from_s3_bucket, get_folder_in_s3_path, get_csv_files_in_s3_path, \
     upload_file_to_s3_bucket
@@ -42,7 +38,7 @@ def plot_all_cardio():
 
     # call the plot
     fig = plot_cardio.plot(labels, data)
-    # fig.show()
+    fig.show()
 
     # save plot as PDF and PNG in S3
     filename = 'plot_cardio'
