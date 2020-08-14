@@ -9,7 +9,7 @@ env:
   # the instance type to be used for the EC2 benchmarking VMs
   ec2-instance-type: m5n.large
   # the AMI for the EC2 VMs (Ubuntu 20.04 + Docker)
-  ami-ubuntu-docker: ami-0da952e8afc41613f
+  ami-ubuntu-docker: ami-0545c20ee4d4e0ea3
   # the instance profile to be bound to the EC2 VM that allows SSM access
   iam-instance-profile-ssm: Arn=arn:aws:iam::400029883903:instance-profile/ec2-amazonSSMFullAccess
   # root volume size (GB) of the EC2 VM
