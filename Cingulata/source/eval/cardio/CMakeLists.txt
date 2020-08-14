@@ -46,7 +46,8 @@ add_custom_target(${PROG_NAME} ALL
   DEPENDS ${XML_PARAMS} runtime)
 
 set(APPS_DIR ${CMAKE_BINARY_DIR}/apps)
-set(CIRCUIT ${BLOP_NAME})
+set(UNOPTIMIZED_CIRCUIT ${BLIF_NAME})
+set(OPTIMIZED_CIRCUIT ${BLOP_NAME})
 
 # configure file and write into temporary directory
 configure_file(run.sh.in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/run.sh @ONLY)

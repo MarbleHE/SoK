@@ -21,19 +21,30 @@
 #
 #
 
+OPT_OUTPUT_FILENAME=cingulata_cardio_optimized.csv
+UNOPT_OUTPUT_FILENAME=cingulata_cardio_unoptimized.csv
+
+UNOPTIMIZED_CIRCUIT=@UNOPTIMIZED_CIRCUIT@
+OPTIMIZED_CIRCUIT=@OPTIMIZED_CIRCUIT@
+
+APPS_DIR=@APPS_DIR@
+
 get_timestamp_ms() {
   echo $(date +%s%3N)
 }
 
-CIRCUIT=@CIRCUIT@
-APPS_DIR=@APPS_DIR@
-OUTPUT_FILENAME=cingulata_cardio.csv
+write_to_files() {
+  for item in "$@"; do
+    echo -ne $item | tee -a $OPT_OUTPUT_FILENAME $UNOPT_OUTPUT_FILENAME >/dev/null
+  done
+}
 
-echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OUTPUT_FILENAME
+echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OPT_OUTPUT_FILENAME
+echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $UNOPT_OUTPUT_FILENAME
 
 RUN=1
 
-while [ $RUN -le 10 ]
+while [[ $RUN -le 10 ]]
 do
   RUN=$(( $RUN + 1))
   rm -rf input output
@@ -45,7 +56,7 @@ do
   # echo "FHE key generation"
   $APPS_DIR/generate_keys
   END_KEYGEN_T=$( get_timestamp_ms )
-  echo -n $((${END_KEYGEN_T}-${START_T}))"," >> $OUTPUT_FILENAME
+  write_to_files $((${END_KEYGEN_T}-${START_T}))","
 
   # echo "Input formatting & encryption"
   NR_THREADS=1
@@ -74,16 +85,21 @@ do
     $APPS_DIR/encrypt --threads $NR_THREADS $TMP
   done
   END_INPUT_ENC_T=$( get_timestamp_ms )
-  echo -n $((${END_INPUT_ENC_T}-${END_KEYGEN_T}))"," >> $OUTPUT_FILENAME
+  write_to_files $((${END_INPUT_ENC_T}-${END_KEYGEN_T}))","
 
-  # echo "FHE execution"
-  $APPS_DIR/dyn_omp $CIRCUIT --threads $NR_THREADS --clear-inps clear_data.data # -v
-  FHE_EXEC_T=$( get_timestamp_ms )
-  echo -n $((${FHE_EXEC_T}-${END_INPUT_ENC_T}))"," >> $OUTPUT_FILENAME
+  # echo "FHE execution" of ABC-optimized circuit
+  $APPS_DIR/dyn_omp $OPTIMIZED_CIRCUIT --threads $NR_THREADS --clear-inps clear_data.data # -v
+  FHE_EXEC_OPT_T=$( get_timestamp_ms )
+  echo -n $((${FHE_EXEC_OPT_T}-${END_INPUT_ENC_T}))"," >> $OPT_OUTPUT_FILENAME
+
+  # echo "FHE execution" with unoptimized circuit
+  $APPS_DIR/dyn_omp $UNOPTIMIZED_CIRCUIT --threads $NR_THREADS --clear-inps clear_data.data # -v
+  FHE_EXEC_UNOPT_T=$( get_timestamp_ms )
+  echo -n $((${FHE_EXEC_UNOPT_T}-${FHE_EXEC_OPT_T}))"," >> $UNOPT_OUTPUT_FILENAME
 
   echo -ne "Decrypted result: "
   OUT_FILES=`ls -v output/*`
   $APPS_DIR/helper --from-bin --bit-cnt 8 `$APPS_DIR/decrypt  $OUT_FILES`
   DECRYPT_T=$( get_timestamp_ms )
-  echo $((${DECRYPT_T}-${FHE_EXEC_T})) >> $OUTPUT_FILENAME
+  write_to_files $((${DECRYPT_T}-${FHE_EXEC_UNOPT_T}))"\n"
 done

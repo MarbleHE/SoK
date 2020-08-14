@@ -4,9 +4,13 @@ FROM marblehe/base_cingulata
 COPY source/eval /cingu/eval
 COPY source/CMakeLists.txt /cingu/CMakeLists.txt
 
+# copy entrypoint script and make it executable
+COPY source/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 # build the benchmark
 WORKDIR /cingu
 RUN mkdir build; cd build; cmake ..; make
 
 # execute the benchmark and upload benchmark results to S3
-CMD ["sh", "-c", "cd /cingu/build/eval/cardio; ./run.sh; aws s3 cp cingulata_cardio.csv ${S3_URL}/${S3_FOLDER}/Cingulata/"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
