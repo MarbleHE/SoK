@@ -80,9 +80,6 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
     std::vector<uint64_t> all_ones(encoder->slot_count(), 1);
     encoder->encode(all_ones, one);
     seal::Ciphertext lhs_neg = XOR(lhs[0], one);
-    // evaluator->mod_switch_to_inplace(rhs[0], lhs_neg.parms_id());
-    // print_info(lhs_neg);
-    // print_info(rhs[0]);
     evaluator->multiply(lhs_neg, rhs[0], *result);
     evaluator->relinearize_inplace(*result, *relinKeys);
     return result;
@@ -100,45 +97,20 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::lower(CiphertextVector &lhs,
   CiphertextVector rhs_h = slice(rhs, len2);
 
   seal::Ciphertext term1 = *lower(lhs_h, rhs_h);
-  // print_info(term1);
-  // evaluator->mod_switch_to_inplace(lhs_h[0], rhs_h[0].parms_id());
   seal::Ciphertext h_equal = *equal(lhs_h, rhs_h);
-  // print_info(h_equal);
   seal::Ciphertext l_equal = *lower(lhs_l, rhs_l);
-  // print_info(l_equal);
 
   seal::Ciphertext term2;
 
   if (get_level(l_equal) > get_level(h_equal)) {
-    // evaluator->mod_switch_to_inplace(l_equal, h_equal.parms_id());
   } else if (get_level(l_equal) < get_level(h_equal)) {
-    // evaluator->mod_switch_to_inplace(h_equal, l_equal.parms_id());
   }
 
   evaluator->multiply(h_equal, l_equal, term2);
   evaluator->relinearize_inplace(term2, *relinKeys);
-  // print_info(term2);
 
-  // evaluator->mod_switch_to_inplace(term1, term2.parms_id());
   *result = XOR(term1, term2);
-  // print_info(*result);
   return result;
-}
-
-void CardioBatched::internal_print_info(std::string variable_name,
-                                        seal::Ciphertext &ctxt) {
-  std::cerr << "internal_print_info without implementation!" << std::endl;
-  // std::ios old_fmt(nullptr);
-  // old_fmt.copyfmt(std::cout);
-
-  // std::cout << variable_name << "\n"
-  //           << "— chain_idx:\t"
-  //           << context->get_context_data(ctxt.parms_id())->chain_index()
-  //           << std::endl
-  //           << std::fixed << std::setprecision(10) << "— scale:\t"
-  //           << log2(ctxt.scale()) << " bits" << std::endl
-  //           << "— size:\t\t" << ctxt.size() << std::endl;
-  // std::cout.copyfmt(old_fmt);
 }
 
 seal::Ciphertext CardioBatched::XOR(seal::Ciphertext &lhs,
@@ -449,7 +421,6 @@ void CardioBatched::run_cardio() {
 
   // condition_result := bool_flags & lower_result
   seal::Ciphertext condition_result;
-  // evaluator->mod_switch_to_inplace(bool_flags, lower_result.parms_id());
   evaluator->multiply(bool_flags, lower_result, condition_result);
   evaluator->relinearize_inplace(condition_result, *relinKeys);
 
@@ -477,7 +448,8 @@ void CardioBatched::run_cardio() {
   uint64_t risk_value = dec[7];
   std::cout << "Result: " << risk_value << std::endl;
 
-  assert(("Cardio benchmark does not produce expected result!", risk_value == 6));
+  assert(
+      ("Cardio benchmark does not produce expected result!", risk_value == 6));
 
   auto t7 = Time::now();
   log_time(ss_time, t6, t7, true);
@@ -499,7 +471,6 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::multvect(
     for (std::size_t i = 0; i < size - k; i += 2 * k) {
       evaluator->multiply_inplace(bitvec[i], bitvec[i + k]);
       evaluator->relinearize_inplace(bitvec[i], *relinKeys);
-      // print_info(bitvec[i]);
     }
   }
   return std::make_unique<seal::Ciphertext>(bitvec[0]);
@@ -512,24 +483,16 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::equal(CiphertextVector &lhs,
   CiphertextVector comp;
   for (std::size_t i = 0; i < lhs.size(); ++i) {
     seal::Ciphertext tmp;
-    // evaluator->add(lhs[i], rhs[i], tmp);
-    // print_info(lhs[i]);
-    // print_info(rhs[i]);
     tmp = XOR(lhs[i], rhs[i]);
-    // print_info(tmp);
-    // print_info(tmp);
 
     seal::Plaintext one;
     std::vector<uint64_t> all_ones(encoder->slot_count(), 1);
     encoder->encode(all_ones, one);
-    // print_info(tmp);
 
     tmp = XOR(tmp, one);
-    // print_info(tmp);
     comp.push_back(tmp);
   }
   std::unique_ptr<seal::Ciphertext> mv_result = multvect(comp);
-  // print_info(*mv_result);
   return mv_result;
 }
 
