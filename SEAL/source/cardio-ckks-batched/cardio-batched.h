@@ -1,5 +1,5 @@
-#ifndef CARDIO_BATCHED_H_
-#define CARDIO_BATCHED_H_
+#ifndef CARDIO_BATCHED_CKKS_H_
+#define CARDIO_BATCHED_CKKS_H_
 #endif
 
 #include <math.h>

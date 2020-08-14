@@ -454,7 +454,7 @@ void Cardio::run_cardio() {
 }
 
 int main(int argc, char *argv[]) {
-  std::cout << "Starting benchmark 'cardio'..." << std::endl;
+  std::cout << "Starting benchmark 'cardio-bfv'..." << std::endl;
   Cardio().run_cardio();
   return 0;
 }

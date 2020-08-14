@@ -6,6 +6,7 @@ WORKDIR /root/eval
 
 # build the benchmark
 RUN cd /root/eval && mkdir build && cd /root/eval/build && cmake .. && make
+# RUN cd /root/eval && mkdir build
 
 WORKDIR /root/eval
 RUN chmod +x docker-entrypoint.sh

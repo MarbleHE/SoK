@@ -550,7 +550,7 @@ std::unique_ptr<seal::Ciphertext> CardioBatched::equal(CiphertextVector &lhs,
 }
 
 int main(int argc, char *argv[]) {
-  std::cout << "Starting benchmark 'cardio-batched'..." << std::endl;
+  std::cout << "Starting benchmark 'cardio-batched-ckks'..." << std::endl;
   CardioBatched().run_cardio();
   return 0;
 }
