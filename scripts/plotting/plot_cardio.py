@@ -18,15 +18,27 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     # Set the current figure to fig
     if fig is None:
-        fig = plt.figure(figsize=(8,6), dpi=90)
+        fig = plt.figure()
     plt.figure(fig.number)
+
+    # change size and DPI of resulting figure
+    plt.rcParams["figure.figsize"] = (8, 6)
+    plt.rcParams["figure.dpi"] = 90
+
+    # Nice names for labels: maps folder name -> short name
+    # and adds linebreaks where required
+    subs = {'Cingulata-UNOPT': 'Cingulata\n(unopt.)',
+            'SEAL-BFV-Batched': 'SEAL-BFV\n(batched)',
+            'SEAL-CKKS-Batched': 'SEAL-CKKS\n(batched)'}
+    labels = [subs.get(item, item) for item in labels]
 
     # Setup Axis, Title, etc
     N = len(labels)
-    plt.title('Runtime for Cardio')
+    # plt.title('Runtime for Cardio')
     plt.ylabel('Time (ms)')
     ind = np.arange(N)  # the x locations for the groups
-    plt.xticks(ind, labels, rotation='vertical', fontsize=9 )
+    plt.xticks(ind, labels, fontsize=9)
+    plt.yticks(np.arange(0, 100_000, step=10_000))
     # adds a thousand separator
     fig.axes[0].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
     width = 0.35  # the width of the bars: can also be len(x) sequence
@@ -38,13 +50,21 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     for i in range(N):
         df = pandas_dataframes[i]
         d1 = df['t_keygen'].mean()
+        d1_err = df['t_keygen'].std()
         p1 = plt.bar(ind[i], d1, width, color='red')
         d2 = df['t_input_encryption'][i].mean()
-        p2 = plt.bar(ind[i], d2 , width, bottom=d1, color='blue')
+        d2_err = df['t_input_encryption'][i].std()
+        p2 = plt.bar(ind[i], d2, width, bottom=d1, color='blue')
         d3 = df['t_computation'][i].mean()
-        p3 = plt.bar(ind[i], d3, width, bottom=d1+d2, color='green')
+        d3_err = df['t_computation'][i].std()
+        p3 = plt.bar(ind[i], d3, width, bottom=d1 + d2, color='green')
         d4 = df['t_decryption'][i].mean()
-        p4 = plt.bar(ind[i], d4, width, bottom=d1+d2+d3, color='cyan')
+        d4_err = df['t_decryption'][i].std()
+        total_err = (d1_err + d2_err + d3_err + d4_err)
+        # if total_err > 500:
+        p4 = plt.bar(ind[i], d4, width, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3, color='cyan')
+        # else:
+        #     p4 = plt.bar(ind[i], d4, width, bottom=d1 + d2 + d3, color='cyan')
 
     # Add Legend
     plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Decryption', 'Computation', 'Encryption', 'Key Generation'))

@@ -36,6 +36,10 @@ def plot_all_cardio():
         # read the CSV data from S3
         data.append(pd.read_csv(s3_urls[0]))
 
+    # switch SEAL-BFV-Batched with SEAL-BFV
+    labels[2], labels[3] = labels[3], labels[2]
+    data[2], data[3] = data[3], data[2]
+
     # call the plot
     fig = plot_cardio.plot(labels, data)
     fig.show()
