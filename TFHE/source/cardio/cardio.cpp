@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sstream>
 #include <fstream>
+#include <iostream>
 
 typedef std::chrono::milliseconds ms;
 typedef std::chrono::high_resolution_clock Time;
@@ -53,6 +54,15 @@ int decrypt_array(const LweSample *array, int nb_size, const TFheGateBootstrappi
     int_answer |= (ai << i);
   }
   return int_answer;
+}
+
+std::string decrypt_array_bits(const LweSample *array, int nb_size, const TFheGateBootstrappingSecretKeySet *key) {
+  std::string answer;
+  for (int i = 0; i < nb_size; i++) {
+    int ai = bootsSymDecrypt(&array[i], key);
+    answer = std::to_string(ai) + answer;
+  }
+  return answer;
 }
 
 void client() {
@@ -233,7 +243,7 @@ void sklansky_adder(LweSample *s,
   }
 
   // Compute c_out (carry out)
-  bootsAND(c_out, &G[nb_bits - 1][0], &P[nb_bits - 1][0], bk);
+  bootsXOR(c_out, &G[nb_bits - 1][0], &P[nb_bits - 1][nb_bits - 1], bk);
 
   // Clean up
   for (int i = 0; i < nb_bits; ++i) {
@@ -262,8 +272,7 @@ void equal(LweSample *result,
   for (int i = 0; i < nb_bits; ++i) {
     LweSample *tmp = new_gate_bootstrapping_ciphertext(bk->params);
     bootsXOR(tmp, &a[i], &b[i], bk);
-    bootsAND(tmp, tmp, one, bk);
-    bootsCOPY(&comp[i], tmp, bk);
+    bootsXOR(&comp[i], tmp, one, bk);
     delete_gate_bootstrapping_ciphertext(tmp);
   }
   //"multvec" with log depth
@@ -287,7 +296,8 @@ void less(LweSample *result,
           const LweSample *b,
           const int nb_bits,
           const TFheGateBootstrappingCloudKeySet *bk) {
-
+  //std::string indent(BIT_SIZE - nb_bits, '\t');
+  //fprintf(stderr, "%s less called with %d bits\n", indent.c_str(), nb_bits);
   if (nb_bits==1) {
     LweSample *lhs_neg = new_gate_bootstrapping_ciphertext(bk->params);
     LweSample *one = new_gate_bootstrapping_ciphertext(bk->params);
@@ -297,25 +307,39 @@ void less(LweSample *result,
     bootsAND(result, lhs_neg, &b[0], bk);
     delete_gate_bootstrapping_ciphertext(lhs_neg);
     delete_gate_bootstrapping_ciphertext(one);
+    //int result_ptxt = bootsSymDecrypt(result, SECRET_KEY);
+    // fprintf(stderr, "%s recursion ended and result is %d\n", indent.c_str(), result_ptxt);
     return;
   }
-  const int len2 = nb_bits >> 1;
+  const int len2 = (nb_bits >> 1);
 
-//  lhs_l = a[0, len2) = a, nb_bits
-//  lhs_h = a[len2, end) = a+len2, nb_bits-len2
-//  rhs_l = b[0, len2) = b, nb_bits
-//  rhs_h = b[len2, end) = b+len2, nb_bits-len2
+  //  lhs_l = a[0, len2) = a, nb_bits
+  //  lhs_h = a[len2-1, end) = a+len2-1, nb_bits-len2
+  //  rhs_l = b[0, len2) = b, nb_bits
+  //  rhs_h = b[len2-1, end) = b+len2-1, nb_bits-len2
 
+  int h_start = len2;
+  int h_nb_bits = std::max(nb_bits - h_start,1);
+  int l_start = 0;
+  int l_nb_bits = nb_bits - h_start;
   LweSample *term1 = new_gate_bootstrapping_ciphertext(bk->params);
   //lower(term1, lhs_h, rhs_h, ..., bk);
-  less(term1, a + len2, b + len2, nb_bits - len2, bk);
+  //fprintf(stderr, "%s calling less for h on %d, %d\n", indent.c_str(), h_start, h_nb_bits);
+  less(term1, a + h_start, b + h_start, h_nb_bits, bk);
+  //int term1_ptxt = bootsSymDecrypt(term1, SECRET_KEY);
+  //fprintf(stderr, "%s less h on %d, %d  is %d\n", indent.c_str(), h_start, h_nb_bits, term1_ptxt);
 
   LweSample *eq = new_gate_bootstrapping_ciphertext(bk->params);
   LweSample *ls = new_gate_bootstrapping_ciphertext(bk->params);
   //equal(eq,lhs_h,rhs_h,l,bk);
   equal(eq, a + len2, b + len2, nb_bits - len2, bk);
+  //int eq_ptxt = bootsSymDecrypt(eq, SECRET_KEY);
+  //fprintf(stderr, "%s equal h on %d, %d  is %d\n", indent.c_str(), len2, nb_bits - len2, eq_ptxt);
   //less(ls,lhs_l,rhs_l,l,bk);
-  less(ls, a, b, len2, bk);
+  //fprintf(stderr, "%s calling less for l on %d, %d\n", indent.c_str(), l_start,l_nb_bits);
+  less(ls, a + l_start, b + l_start, l_nb_bits, bk);
+  int less_ptxt = bootsSymDecrypt(ls, SECRET_KEY);
+  //fprintf(stderr, "%s less l on %d, %d is %d\n", indent.c_str(), l_start, l_nb_bits, less_ptxt);
 
   LweSample *term2 = new_gate_bootstrapping_ciphertext(bk->params);
   bootsAND(term2, eq, ls, bk);
@@ -325,6 +349,9 @@ void less(LweSample *result,
   delete_gate_bootstrapping_ciphertext(term2);
   delete_gate_bootstrapping_ciphertext(eq);
   delete_gate_bootstrapping_ciphertext(ls);
+
+  //int result_ptxt = bootsSymDecrypt(result, SECRET_KEY);
+  //fprintf(stderr, "%s function call for %d ended and result is %d\n", indent.c_str(), nb_bits, result_ptxt);
 }
 
 void cloud() {
@@ -361,22 +388,24 @@ void cloud() {
       import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &rh[j], params);
   fclose(cloud_data);
 
-//  // DEBUG: DECRYPT ALL THE CIPHERTEXTS
-//  printf("FLAGS:\n");
-//  for (int i = 0; i < NUM_COND; ++i) {
-//    int f = decrypt_array(flags[i], BIT_SIZE, SECRET_KEY);
-//    printf("%d\n", f);
-//  }
-//  printf("LHS:\n");
-//  for (int i = 0; i < NUM_COND; ++i) {
-//    int f = decrypt_array(lhs[i], BIT_SIZE, SECRET_KEY);
-//    printf("%d\n", f);
-//  }
-//  printf("RHS:\n");
-//  for (int i = 0; i < NUM_COND; ++i) {
-//    int f = decrypt_array(rhs[i], BIT_SIZE, SECRET_KEY);
-//    printf("%d\n", f);
-//  }
+  // DEBUG: DECRYPT ALL THE CIPHERTEXTS
+  //  fprintf(stderr, "FLAGS:\n");
+  //  for (int i = 0; i < NUM_COND; ++i) {
+  //    int f = decrypt_array(flags[i], BIT_SIZE, SECRET_KEY);
+  //    fprintf(stderr, "%d\n", f);
+  //  }
+  //  fprintf(stderr, "LHS:\n");
+  //  for (int i = 0; i < NUM_COND; ++i) {
+  //    int f = decrypt_array(lhs[i], BIT_SIZE, SECRET_KEY);
+  //    std::string s = decrypt_array_bits(lhs[i], BIT_SIZE, SECRET_KEY);
+  //    fprintf(stderr, "%d (%s)\n", f, s.c_str());
+  //  }
+  //  fprintf(stderr, "RHS:\n");
+  //  for (int i = 0; i < NUM_COND; ++i) {
+  //    int f = decrypt_array(rhs[i], BIT_SIZE, SECRET_KEY);
+  //    std::string s = decrypt_array_bits(rhs[i], BIT_SIZE, SECRET_KEY);
+  //    fprintf(stderr, "%d (%s)\n", f, s.c_str());
+  //  }
 
   // Calculate each condition
   LweSample *cond_results[NUM_COND];
