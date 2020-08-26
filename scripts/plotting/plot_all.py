@@ -26,7 +26,8 @@ def plot_all_cardio():
             # just skip any existing folder without a CSV file (e.g., the plot/ folder)
             continue
         elif len(s3_urls) > 1:
-            raise ValueError(f"Error: More than one CSV file for '{name_filter}'' found!\nCreate a separate folder for each tool configuration, e.g., SEAL-BFV, SEAL-CKKS.")
+            raise ValueError(
+                f"Error: More than one CSV file for '{name_filter}'' found!\nCreate a separate folder for each tool configuration, e.g., SEAL-BFV, SEAL-CKKS.")
         # remove the directory (timestamped folder) segment from the tool's path
         tool_name = tp.replace(root_folder, "")
         # remove the trailing '/' from the tool's name (as it is a directory)
@@ -37,9 +38,23 @@ def plot_all_cardio():
         # read the CSV data from S3
         data.append(pd.read_csv(s3_urls[0]))
 
-    # switch SEAL-BFV-Batched with SEAL-BFV
-    labels[2], labels[3] = labels[3], labels[2]
-    data[2], data[3] = data[3], data[2]
+    # sort the data (and labels) according to the following order
+    tool__plot_position = [
+        'Cingulata-UNOPT',
+        'Cingulata',
+        'Cingulata-MultiStart',
+        'Cingulata-MultiStart-OPT-PARAMS',
+        'Lobster',
+        'Lobster-OPT-PARAMS',
+        'TFHE',
+        'SEAL-BFV',
+        'SEAL-BFV-Batched',
+        'SEAL-CKKS-Batched',
+    ]
+    labeled_data = dict(zip(labels, data))
+    res = {key: labeled_data[key] for key in tool__plot_position}
+    labels = list(res.keys())
+    data = list(res.values())
 
     # call the plot
     fig = plot_cardio.plot(labels, data)
@@ -72,7 +87,8 @@ def plot_all_nn():
             # just skip any existing folder without a CSV file (e.g., the plot/ folder)
             continue
         elif len(s3_urls) > 1:
-            raise ValueError(f"Error: More than one CSV file for '{name_filter}'' found!\nCreate a separate folder for each tool configuration, e.g., SEAL-BFV, SEAL-CKKS.")
+            raise ValueError(
+                f"Error: More than one CSV file for '{name_filter}'' found!\nCreate a separate folder for each tool configuration, e.g., SEAL-BFV, SEAL-CKKS.")
         # remove the directory (timestamped folder) segment from the tool's path
         tool_name = tp.replace(root_folder, "")
         # remove the trailing '/' from the tool's name (as it is a directory)
@@ -82,7 +98,6 @@ def plot_all_nn():
         labels.append(tool_name)
         # read the CSV data from S3
         data.append(pd.read_csv(s3_urls[0]))
-
 
     # call the plot
     fig = plot_nn.plot(labels, data)
@@ -96,6 +111,7 @@ def plot_all_nn():
         fig.savefig(full_filename, format=ext)
         dst_path_s3 = str(PurePosixPath(urlparse(root_folder).path) / 'plot' / full_filename)
         upload_file_to_s3_bucket(full_filename, dst_path_s3)
+
 
 def plot_all():
     plot_all_cardio()
