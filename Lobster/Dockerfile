@@ -1,7 +1,6 @@
 FROM marblehe/base_lobster:latest
 
 # copy eval program into container
-RUN mkdir -p /root/Lobster/eval
 COPY source /root/Lobster/eval
 
 WORKDIR /root/Lobster/eval
