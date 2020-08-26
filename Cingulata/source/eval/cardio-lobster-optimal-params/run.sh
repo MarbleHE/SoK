@@ -21,11 +21,9 @@
 #
 #
 
-OPT_OUTPUT_FILENAME=cingulata_cardio_lobster.csv
-
-OPTIMIZED_CIRCUIT=@OPTIMIZED_CIRCUIT@
-
-APPS_DIR=@APPS_DIR@
+OPT_OUTPUT_FILENAME=cingulata_cardio_lobster_optimal.csv
+OPTIMIZED_CIRCUIT=cardio_lobster.blif
+APPS_DIR=../../build_bfv/apps
 
 get_timestamp_ms() {
   echo $(date +%s%3N)
@@ -58,31 +56,24 @@ do
   # echo "Input formatting & encryption"
   NR_THREADS=1
   KS=(241 210 225 219 92 43 197)
+  # these are the same inputs as used by Lobster
+  INPUTS=(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0)
 
   # Encrypt client data
-  # $APPS_DIR/helper --bit-cnt 1 --prefix %i_         --suffix '' 0 > clear_data.data
-  # $APPS_DIR/helper --bit-cnt 1 --prefix %i_         --suffix '' 1 >> clear_data.data
-  # $APPS_DIR/helper --bit-cnt 8 --prefix %i:age_           --suffix '' $((55 ^ KS[1])) >> clear_data.data
-  # $APPS_DIR/helper --bit-cnt 8 --prefix %i:hdl_           --suffix '' $((50 ^ KS[2])) >> clear_data.data
-  # $APPS_DIR/helper --bit-cnt 8 --prefix %i:height_        --suffix '' $((80 ^ KS[3])) >> clear_data.data
-  # $APPS_DIR/helper --bit-cnt 8 --prefix %i:weight_        --suffix '' $((80 ^ KS[4])) >> clear_data.data
-  # $APPS_DIR/helper --bit-cnt 8 --prefix %i:physical_act_  --suffix '' $((45 ^ KS[5])) >> clear_data.data
-  # $APPS_DIR/helper --bit-cnt 8 --prefix %i:drinking_      --suffix '' $((4 ^ KS[6]))  >> clear_data.data
-  # sed -i 's/%/\n/g' clear_data.data
-  # sed -i '/^$/d' clear_data.data
+  for (( i = 0; i < ${#INPUTS[@]}; i++ )); do
+    $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 1 --prefix "input/i:"$(($i + 5)) ${INPUTS[i]}`
+  done
+  # the helper tools creates a file in format <prefix><bit-position><suffix>
+  # as we do not need the bit position (always 0), we need to remove it here from the filename
+  (cd input && rename 's/....$//' * && for filename in *; do mv "$filename" "$filename.ct"; done)
 
-  # encrypt 7*8-bit kreyvium ciphered inputs and homomorphically mined kreyvium key
-  # for (( i = 0; i < ${#KS[@]}; i++ )); do
-  #   TMP=`$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:ks_"$i"_"  ${KS[i]}`
-  #   $APPS_DIR/encrypt --threads $NR_THREADS $TMP
-  # done
-  # END_INPUT_ENC_T=$( get_timestamp_ms )
-  # write_to_files $((${END_INPUT_ENC_T}-${END_KEYGEN_T}))","
+  END_ENCRYPTION_T=$( get_timestamp_ms )
+  write_to_files $((${END_ENCRYPTION_T}-${END_KEYGEN_T}))","
 
   # echo "FHE execution" of optimized circuit
-  $APPS_DIR/dyn_omp $OPTIMIZED_CIRCUIT --threads $NR_THREADS --clear-inps clear_data.data # -v
+  $APPS_DIR/dyn_omp $OPTIMIZED_CIRCUIT --threads $NR_THREADS
   FHE_EXEC_OPT_T=$( get_timestamp_ms )
-  echo -n $((${FHE_EXEC_OPT_T}-${END_KEYGEN_T}))"," >> $OPT_OUTPUT_FILENAME
+  write_to_files $((${FHE_EXEC_OPT_T}-${END_ENCRYPTION_T}))","
 
   echo -ne "Decrypted result: "
   OUT_FILES=`ls -v output/*`

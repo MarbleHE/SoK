@@ -21,12 +21,8 @@
 #
 #
 
-OPT_OUTPUT_FILENAME=cingulata_cardio_optimized.csv
-UNOPT_OUTPUT_FILENAME=cingulata_cardio_unoptimized.csv
-
-UNOPTIMIZED_CIRCUIT=bfv-cardio.blif
-OPTIMIZED_CIRCUIT=bfv-cardio-opt.blif
-
+OPT_OUTPUT_FILENAME=cingulata_cardio_lobster.csv
+OPTIMIZED_CIRCUIT=cardio_lobster.blif
 APPS_DIR=../../build_bfv/apps
 
 get_timestamp_ms() {
@@ -35,16 +31,15 @@ get_timestamp_ms() {
 
 write_to_files() {
   for item in "$@"; do
-    echo -ne $item | tee -a $OPT_OUTPUT_FILENAME $UNOPT_OUTPUT_FILENAME >/dev/null
+    echo -ne $item | tee -a $OPT_OUTPUT_FILENAME >/dev/null
   done
 }
 
 echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OPT_OUTPUT_FILENAME
-echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $UNOPT_OUTPUT_FILENAME
 
 RUN=1
 
-while [[ $RUN -le 10 ]]
+while [[ $RUN -le 1 ]]
 do
   RUN=$(( $RUN + 1))
   rm -rf input output
@@ -61,31 +56,28 @@ do
   # echo "Input formatting & encryption"
   NR_THREADS=1
   KS=(241 210 225 219 92 43 197)
+  # these are the same inputs as used by Lobster
+  INPUTS=(0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 1 0 0 0)
 
-  # encrypt the inputs
-  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 5 --prefix "input/i:flags_" 15`
-  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:age_" 55`
-  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:hdl_" 50`
-  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:height_" 80`
-  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:weight_" 80`
-  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:physical_act_" 45`
-  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:drinking_" 4`
-  END_INPUT_ENCRYPTION_T=$( get_timestamp_ms )
-  write_to_files $((${END_INPUT_ENCRYPTION_T}-${END_KEYGEN_T}))","
+  # Encrypt client data
+  for (( i = 0; i < ${#INPUTS[@]}; i++ )); do
+    $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 1 --prefix "input/i:"$(($i + 5)) ${INPUTS[i]}`
+  done
+  # the helper tools creates a file in format <prefix><bit-position><suffix>
+  # as we do not need the bit position (always 0), we need to remove it here from the filename
+  (cd input && rename 's/....$//' * && for filename in *; do mv "$filename" "$filename.ct"; done)
 
-  # echo "FHE execution" of ABC-optimized circuit
+  END_ENCRYPTION_T=$( get_timestamp_ms )
+  write_to_files $((${END_ENCRYPTION_T}-${END_KEYGEN_T}))","
+
+  # echo "FHE execution" of optimized circuit
   $APPS_DIR/dyn_omp $OPTIMIZED_CIRCUIT --threads $NR_THREADS
   FHE_EXEC_OPT_T=$( get_timestamp_ms )
-  echo -n $((${FHE_EXEC_OPT_T}-${END_INPUT_ENCRYPTION_T}))"," >> $OPT_OUTPUT_FILENAME
-
-  # echo "FHE execution" with unoptimized circuit
-  $APPS_DIR/dyn_omp $UNOPTIMIZED_CIRCUIT --threads $NR_THREADS
-  FHE_EXEC_UNOPT_T=$( get_timestamp_ms )
-  echo -n $((${FHE_EXEC_UNOPT_T}-${FHE_EXEC_OPT_T}))"," >> $UNOPT_OUTPUT_FILENAME
+  write_to_files $((${FHE_EXEC_OPT_T}-${END_ENCRYPTION_T}))","
 
   echo -ne "Decrypted result: "
   OUT_FILES=`ls -v output/*`
   $APPS_DIR/helper --from-bin --bit-cnt 8 `$APPS_DIR/decrypt  $OUT_FILES`
   DECRYPT_T=$( get_timestamp_ms )
-  write_to_files $((${DECRYPT_T}-${FHE_EXEC_UNOPT_T}))"\n"
+  write_to_files $((${DECRYPT_T}-${FHE_EXEC_OPT_T}))"\n"
 done
