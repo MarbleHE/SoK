@@ -5,6 +5,7 @@ set(SCRIPT_DIR ${cingulata_BINARY_DIR}/runtime/fhe_fv/script)
 
 set(benchmarks
       cardio
+      cardio-lobster
 )
 
 set(target_names "")
