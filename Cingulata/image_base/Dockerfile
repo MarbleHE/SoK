@@ -26,7 +26,8 @@ RUN apt-get update -qq \
     python3-numpy \
     tzdata \
     xxd \ 
-    yad
+    yad \
+    rename
 
 ###### install the AWS CLI required for result upload to S3
 ENV DEBIAN_FRONTEND=noninteractive
