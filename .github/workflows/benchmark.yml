@@ -24,7 +24,7 @@ env:
   AWS_DEFAULT_REGION: us-east-2
   # terminate instance automatically after N minutes - this is important if the
   # machine or the workflow had an error
-  instance-termination-timeout: 60
+  instance-termination-timeout: 150
 
 jobs:
   # A job that creates a unique timestamp for each benchmark run. This is only executed once over all benchmarks so that
