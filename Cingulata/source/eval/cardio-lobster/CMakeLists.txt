@@ -11,6 +11,7 @@ set(BLOP_NAME cardio_lobster.blif)
 # add_executable(${GEN_NAME} ${SRCS})
 # target_link_libraries(${GEN_NAME} common)
 
+
 if (USE_BFV)
   if(NOT DEFINED MODEL)
     set(MODEL bkz_sieve)
@@ -22,6 +23,8 @@ if (USE_BFV)
   if(NOT DEFINED POLITIC) 
         set(POLITIC Cingulata_BFV)
   endif()
+else()
+
 endif(USE_BFV)
 
 set(XML_PARAMS fhe_params.xml)

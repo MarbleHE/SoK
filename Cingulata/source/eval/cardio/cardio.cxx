@@ -18,6 +18,12 @@
     knowledge of the CeCILL-C license and that you accept its terms.
 */
 
+// === NOTE =======
+// This file is not used during the benchmarking run but serves for 
+// documentation purposes to see how the bfv-cardio.blif circuit was 
+// originally created.
+// ================
+
 #define blif_name "bfv-cardio.blif"
 
 #include <vector>
@@ -66,11 +72,11 @@ int main() {
   physical_act.read("physical_act");
   drinking.read("drinking");
 
-  vector<CiInt> keystream(7, CiInt::u8);
+  // vector<CiInt> keystream(7, CiInt::u8);
   // Read the pre-calculated keystream.
-  for (int i = 0; i < 7; i++) {
-    keystream[i].read("ks_" + to_string(i));
-  }
+  // for (int i = 0; i < 7; i++) {
+    // keystream[i].read("ks_" + to_string(i));
+  // }
 
   // keystream (see run.sh.in): KS=(241 210 225 219 92 43 197)
   //    keystream[0] = 241  = 1111 0001
@@ -82,13 +88,13 @@ int main() {
   //    keystream[6] = 197  = 1100 0101
 
   // symmetrically encrypt the input
-  for (int i = 0; i < 5; i++) { flags[i] ^= keystream[0][i];}
-  age ^= keystream[1];
-  hdl ^= keystream[2];
-  height ^= keystream[3];
-  weight ^= keystream[4];
-  physical_act ^= keystream[5];
-  drinking ^= keystream[6];
+  // for (int i = 0; i < 5; i++) { flags[i] ^= keystream[0][i];}
+  // age ^= keystream[1];
+  // hdl ^= keystream[2];
+  // height ^= keystream[3];
+  // weight ^= keystream[4];
+  // physical_act ^= keystream[5];
+  // drinking ^= keystream[6];
 
   vector<CiInt> risk_factors;
  

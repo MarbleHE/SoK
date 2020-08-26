@@ -1,0 +1,530 @@
+# Benchmark "cardio" written by ABC on Wed Aug 26 10:18:41 2020
+.model cardio
+.inputs i:flags_0 i:flags_1 i:flags_2 i:flags_3 i:flags_4 i:age_0 i:age_1 \
+ i:age_2 i:age_3 i:age_4 i:age_5 i:age_6 i:age_7 i:hdl_0 i:hdl_1 i:hdl_2 \
+ i:hdl_3 i:hdl_4 i:hdl_5 i:hdl_6 i:hdl_7 i:height_0 i:height_1 i:height_2 \
+ i:height_3 i:height_4 i:height_5 i:height_6 i:height_7 i:weight_0 \
+ i:weight_1 i:weight_2 i:weight_3 i:weight_4 i:weight_5 i:weight_6 \
+ i:weight_7 i:physical_act_0 i:physical_act_1 i:physical_act_2 \
+ i:physical_act_3 i:physical_act_4 i:physical_act_5 i:physical_act_6 \
+ i:physical_act_7 i:drinking_0 i:drinking_1 i:drinking_2 i:drinking_3 \
+ i:drinking_4 i:drinking_5 i:drinking_6 i:drinking_7
+.outputs o:risk_0 o:risk_1 o:risk_2 o:risk_3
+.names i:flags_2 n58
+0 1
+.names i:flags_0 n59
+0 1
+.names i:drinking_4 n60
+0 1
+.names i:drinking_5 n61
+0 1
+.names n61 n60 n62
+00 0
+.names i:drinking_6 n63
+0 1
+.names i:drinking_7 n64
+0 1
+.names n64 n63 n65
+00 0
+.names n65 n62 n66
+00 0
+.names i:drinking_0 n67
+0 1
+.names i:drinking_1 n68
+0 1
+.names n68 n67 n69
+00 0
+.names i:drinking_2 n70
+0 1
+.names i:drinking_3 n71
+0 1
+.names n71 n70 n72
+00 0
+.names n72 n69 n73
+00 0
+.names n73 n66 n74
+00 0
+.names n74 n59 n75
+11 1
+.names n75 i:flags_0 n76
+10 1
+01 1
+.names i:physical_act_6 n77
+0 1
+.names i:physical_act_7 n77 n78
+11 1
+.names n78 i:physical_act_7 n79
+10 1
+01 1
+.names i:physical_act_7 i:physical_act_6 n80
+11 1
+.names i:physical_act_5 n81
+0 1
+.names i:physical_act_4 n82
+0 1
+.names i:physical_act_5 n82 n83
+11 1
+.names n83 n81 n84
+10 1
+01 1
+.names n84 n80 n85
+11 1
+.names n85 n79 n86
+10 1
+01 1
+.names i:physical_act_3 n87
+0 1
+.names i:physical_act_2 n88
+0 1
+.names i:physical_act_3 n88 n89
+11 1
+.names n89 n87 n90
+10 1
+01 1
+.names i:physical_act_1 n91
+0 1
+.names i:physical_act_2 n91 n92
+11 1
+.names n92 i:physical_act_3 n93
+11 1
+.names n93 n90 n94
+10 1
+01 1
+.names i:physical_act_5 i:physical_act_4 n95
+11 1
+.names n95 n80 n96
+11 1
+.names n96 n94 n97
+11 1
+.names n97 n86 n98
+10 1
+01 1
+.names n98 n76 n99
+10 1
+01 1
+.names i:flags_1 n100
+0 1
+.names i:age_5 i:age_4 n101
+11 1
+.names i:age_7 i:age_6 n102
+11 1
+.names n102 n101 n103
+11 1
+.names n103 n104
+0 1
+.names i:age_3 n105
+0 1
+.names n105 i:age_2 n106
+11 1
+.names n106 n105 n107
+10 1
+01 1
+.names i:age_1 i:age_0 n108
+11 1
+.names i:age_2 n109
+0 1
+.names n105 n109 n110
+11 1
+.names n110 n108 n111
+11 1
+.names n111 n107 n112
+10 1
+01 1
+.names n112 n104 n113
+00 0
+.names n113 i:flags_0 n114
+11 1
+.names n114 n100 n115
+10 1
+01 1
+.names i:hdl_6 n116
+0 1
+.names i:hdl_7 n116 n117
+11 1
+.names n117 i:hdl_7 n118
+10 1
+01 1
+.names i:hdl_5 n119
+0 1
+.names i:hdl_7 i:hdl_6 n120
+11 1
+.names n120 n119 n121
+11 1
+.names n121 n118 n122
+10 1
+01 1
+.names i:hdl_3 n123
+0 1
+.names i:hdl_0 n124
+0 1
+.names i:hdl_1 n125
+0 1
+.names n125 n124 n126
+11 1
+.names i:hdl_2 n127
+0 1
+.names i:hdl_3 n127 n128
+11 1
+.names n128 n126 n129
+11 1
+.names n129 n123 n130
+10 1
+01 1
+.names i:hdl_4 n131
+0 1
+.names i:hdl_5 n131 n132
+11 1
+.names n132 n120 n133
+11 1
+.names n133 n130 n134
+11 1
+.names n134 n122 n135
+10 1
+01 1
+.names n135 n115 n136
+10 1
+01 1
+.names n136 i:flags_4 n137
+10 1
+01 1
+.names n137 n138
+0 1
+.names i:height_7 n139
+0 1
+.names i:weight_6 n140
+0 1
+.names i:weight_5 i:weight_4 n141
+11 1
+.names n141 n140 n142
+11 1
+.names n142 n140 n143
+10 1
+01 1
+.names i:weight_3 n144
+0 1
+.names i:weight_2 i:weight_1 n145
+11 1
+.names n145 n144 n146
+11 1
+.names n146 n144 n147
+10 1
+01 1
+.names n147 n148
+0 1
+.names i:weight_4 n149
+0 1
+.names i:weight_5 n149 n150
+11 1
+.names n150 n140 n151
+11 1
+.names n151 n148 n152
+11 1
+.names n152 n143 n153
+10 1
+01 1
+.names n153 i:weight_7 n154
+10 1
+01 1
+.names n154 n155
+0 1
+.names n155 n139 n156
+11 1
+.names n156 n157
+0 1
+.names n154 i:height_7 n158
+10 1
+01 1
+.names i:height_6 n159
+0 1
+.names n141 n160
+0 1
+.names n150 n148 n161
+11 1
+.names n161 n160 n162
+10 1
+01 1
+.names n162 n140 n163
+10 1
+01 1
+.names n163 n164
+0 1
+.names n164 n159 n165
+11 1
+.names n165 n158 n166
+11 1
+.names n166 n157 n167
+10 1
+01 1
+.names n163 i:height_6 n168
+10 1
+01 1
+.names n168 n158 n169
+11 1
+.names i:height_5 n170
+0 1
+.names n148 n149 n171
+11 1
+.names n171 n149 n172
+10 1
+01 1
+.names n172 i:weight_5 n173
+10 1
+01 1
+.names n173 n174
+0 1
+.names n174 n170 n175
+11 1
+.names n173 i:height_5 n176
+10 1
+01 1
+.names i:height_4 n177
+0 1
+.names n147 n149 n178
+10 1
+01 1
+.names n178 n179
+0 1
+.names n179 n177 n180
+11 1
+.names n180 n176 n181
+11 1
+.names n181 n175 n182
+10 1
+01 1
+.names n182 n169 n183
+11 1
+.names n183 n167 n184
+10 1
+01 1
+.names i:height_3 n185
+0 1
+.names n145 i:weight_3 n186
+10 1
+01 1
+.names n186 n187
+0 1
+.names n187 n185 n188
+11 1
+.names n186 i:height_3 n189
+10 1
+01 1
+.names i:height_2 n190
+0 1
+.names i:weight_1 n191
+0 1
+.names i:weight_2 n191 n192
+10 1
+01 1
+.names n192 n193
+0 1
+.names n193 n190 n194
+11 1
+.names n194 n189 n195
+11 1
+.names n195 n188 n196
+10 1
+01 1
+.names i:height_1 n197
+0 1
+.names n191 n197 n198
+11 1
+.names n191 n197 n199
+00 0
+.names n198 n200
+0 1
+.names i:height_0 n201
+0 1
+.names i:weight_0 n201 n202
+11 1
+.names n202 n200 n203
+11 1
+.names n203 n199 n204
+11 1
+.names n204 n198 n205
+10 1
+01 1
+.names n192 i:height_2 n206
+10 1
+01 1
+.names n206 n189 n207
+11 1
+.names n207 n205 n208
+11 1
+.names n208 n196 n209
+10 1
+01 1
+.names n178 i:height_4 n210
+10 1
+01 1
+.names n210 n209 n211
+11 1
+.names n211 n176 n212
+11 1
+.names n212 n169 n213
+11 1
+.names n213 n184 n214
+10 1
+01 1
+.names n214 n138 n215
+10 1
+01 1
+.names n215 n99 n216
+10 1
+01 1
+.names i:age_1 n217
+0 1
+.names n217 i:age_0 n218
+11 1
+.names n218 n217 n219
+10 1
+01 1
+.names n219 n220
+0 1
+.names i:age_3 i:age_2 n221
+11 1
+.names n221 n103 n222
+11 1
+.names n222 n220 n223
+11 1
+.names n223 n224
+0 1
+.names n224 n59 n225
+11 1
+.names n225 n216 n226
+10 1
+01 1
+.names n226 i:flags_3 n227
+10 1
+01 1
+.names n227 n58 o:risk_0
+10 1
+01 1
+.names n225 n229
+0 1
+.names n225 n99 n230
+10 1
+01 1
+.names n215 n231
+0 1
+.names n225 n231 n232
+10 1
+01 1
+.names n232 n230 n233
+11 1
+.names n233 n229 n234
+10 1
+01 1
+.names n234 n235
+0 1
+.names i:flags_3 i:flags_2 n236
+10 1
+01 1
+.names n226 n58 n237
+10 1
+01 1
+.names n237 n236 n238
+11 1
+.names n238 n58 n239
+10 1
+01 1
+.names n239 n235 n240
+10 1
+01 1
+.names i:flags_4 n241
+0 1
+.names n214 n241 n242
+10 1
+01 1
+.names n214 n136 n243
+10 1
+01 1
+.names n243 n242 n244
+11 1
+.names n244 n214 n245
+10 1
+01 1
+.names n245 n246
+0 1
+.names n135 n247
+0 1
+.names n135 n114 n248
+10 1
+01 1
+.names n135 i:flags_1 n249
+10 1
+01 1
+.names n249 n248 n250
+11 1
+.names n250 n247 n251
+10 1
+01 1
+.names n251 n246 n252
+10 1
+01 1
+.names n252 n253
+0 1
+.names n98 n254
+0 1
+.names n98 n75 n255
+10 1
+01 1
+.names n98 i:flags_0 n256
+10 1
+01 1
+.names n256 n255 n257
+11 1
+.names n257 n254 n258
+10 1
+01 1
+.names n258 n253 n259
+10 1
+01 1
+.names n259 n240 o:risk_1
+10 1
+01 1
+.names n258 n245 n261
+10 1
+01 1
+.names n258 n251 n262
+10 1
+01 1
+.names n262 n261 n263
+11 1
+.names n263 n258 n264
+10 1
+01 1
+.names n239 n265
+0 1
+.names n240 n266
+0 1
+.names n266 n265 n267
+11 1
+.names n267 n239 n268
+10 1
+01 1
+.names n268 n264 n269
+10 1
+01 1
+.names n259 n270
+0 1
+.names n270 n266 n271
+11 1
+.names n271 n269 o:risk_2
+10 1
+01 1
+.names n264 n273
+0 1
+.names n271 n273 n274
+10 1
+01 1
+.names n268 n275
+0 1
+.names n271 n275 n276
+10 1
+01 1
+.names n276 n274 n277
+11 1
+.names n277 n271 o:risk_3
+10 1
+01 1
+.end

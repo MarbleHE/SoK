@@ -24,10 +24,10 @@
 OPT_OUTPUT_FILENAME=cingulata_cardio_optimized.csv
 UNOPT_OUTPUT_FILENAME=cingulata_cardio_unoptimized.csv
 
-UNOPTIMIZED_CIRCUIT=@UNOPTIMIZED_CIRCUIT@
-OPTIMIZED_CIRCUIT=@OPTIMIZED_CIRCUIT@
+UNOPTIMIZED_CIRCUIT=bfv-cardio.blif
+OPTIMIZED_CIRCUIT=bfv-cardio-opt.blif
 
-APPS_DIR=@APPS_DIR@
+APPS_DIR=../../build_bfv/apps
 
 get_timestamp_ms() {
   echo $(date +%s%3N)
@@ -44,7 +44,7 @@ echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $UNOPT_OUTPUT_FI
 
 RUN=1
 
-while [[ $RUN -le 10 ]]
+while [[ $RUN -le 2 ]]
 do
   RUN=$(( $RUN + 1))
   rm -rf input output
@@ -62,38 +62,24 @@ do
   NR_THREADS=1
   KS=(241 210 225 219 92 43 197)
 
-  # Encrypt client data
-  # flags: 15 = 01111
-  #   - 0: woman
-  #   - 1: cardiology disease in family history
-  #   - 1: smoker
-  #   - 1: diabetes
-  #   - 1: high blood pressure
-  $APPS_DIR/helper --bit-cnt 5 --prefix %i:flags_         --suffix '' $((15 ^ KS[0])) > clear_data.data
-  $APPS_DIR/helper --bit-cnt 8 --prefix %i:age_           --suffix '' $((55 ^ KS[1])) >> clear_data.data
-  $APPS_DIR/helper --bit-cnt 8 --prefix %i:hdl_           --suffix '' $((50 ^ KS[2])) >> clear_data.data
-  $APPS_DIR/helper --bit-cnt 8 --prefix %i:height_        --suffix '' $((80 ^ KS[3])) >> clear_data.data
-  $APPS_DIR/helper --bit-cnt 8 --prefix %i:weight_        --suffix '' $((80 ^ KS[4])) >> clear_data.data
-  $APPS_DIR/helper --bit-cnt 8 --prefix %i:physical_act_  --suffix '' $((45 ^ KS[5])) >> clear_data.data
-  $APPS_DIR/helper --bit-cnt 8 --prefix %i:drinking_      --suffix '' $((4 ^ KS[6]))  >> clear_data.data
-  sed -i 's/%/\n/g' clear_data.data
-  sed -i '/^$/d' clear_data.data
-
-  # encrypt 7*8-bit kreyvium ciphered inputs and homomorphically mined kreyvium key
-  for (( i = 0; i < ${#KS[@]}; i++ )); do
-    TMP=`$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:ks_"$i"_"  ${KS[i]}`
-    $APPS_DIR/encrypt --threads $NR_THREADS $TMP
-  done
-  END_INPUT_ENC_T=$( get_timestamp_ms )
-  write_to_files $((${END_INPUT_ENC_T}-${END_KEYGEN_T}))","
+  # encrypt the inputs
+  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 5 --prefix "input/i:flags_" 15`
+  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:age_" 55`
+  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:hdl_" 50`
+  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:height_" 80`
+  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:weight_" 80`
+  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:physical_act_" 45`
+  $APPS_DIR/encrypt --threads $NR_THREADS `$APPS_DIR/helper --bit-cnt 8 --prefix "input/i:drinking_" 4`
+  END_INPUT_ENCRYPTION_T=$( get_timestamp_ms )
+  write_to_files $((${END_INPUT_ENCRYPTION_T}-${END_KEYGEN_T}))","
 
   # echo "FHE execution" of ABC-optimized circuit
-  $APPS_DIR/dyn_omp $OPTIMIZED_CIRCUIT --threads $NR_THREADS --clear-inps clear_data.data # -v
+  $APPS_DIR/dyn_omp $OPTIMIZED_CIRCUIT --threads $NR_THREADS
   FHE_EXEC_OPT_T=$( get_timestamp_ms )
-  echo -n $((${FHE_EXEC_OPT_T}-${END_INPUT_ENC_T}))"," >> $OPT_OUTPUT_FILENAME
+  echo -n $((${FHE_EXEC_OPT_T}-${END_INPUT_ENCRYPTION_T}))"," >> $OPT_OUTPUT_FILENAME
 
   # echo "FHE execution" with unoptimized circuit
-  $APPS_DIR/dyn_omp $UNOPTIMIZED_CIRCUIT --threads $NR_THREADS --clear-inps clear_data.data # -v
+  $APPS_DIR/dyn_omp $UNOPTIMIZED_CIRCUIT --threads $NR_THREADS
   FHE_EXEC_UNOPT_T=$( get_timestamp_ms )
   echo -n $((${FHE_EXEC_UNOPT_T}-${FHE_EXEC_OPT_T}))"," >> $UNOPT_OUTPUT_FILENAME
 
