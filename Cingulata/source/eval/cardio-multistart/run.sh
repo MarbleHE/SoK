@@ -39,7 +39,7 @@ echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OPT_OUTPUT_FILE
 
 RUN=1
 
-while [[ $RUN -le 1 ]]
+while [[ $RUN -le 10 ]]
 do
   RUN=$(( $RUN + 1))
   rm -rf input output
