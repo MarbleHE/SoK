@@ -212,6 +212,27 @@ size_t find_factor(size_t n) {
   return n1;
 
 }
+
+const int tab64[64] = {
+    63, 0, 58, 1, 59, 47, 53, 2,
+    60, 39, 48, 27, 54, 33, 42, 3,
+    61, 51, 37, 40, 49, 18, 28, 20,
+    55, 30, 34, 11, 43, 14, 22, 4,
+    62, 57, 46, 52, 38, 26, 32, 41,
+    50, 36, 17, 19, 29, 10, 13, 21,
+    56, 45, 25, 31, 35, 16, 9, 12,
+    44, 24, 15, 8, 23, 7, 6, 5};
+
+int log2_64(uint64_t value) {
+  value |= value >> 1;
+  value |= value >> 2;
+  value |= value >> 4;
+  value |= value >> 8;
+  value |= value >> 16;
+  value |= value >> 32;
+  return tab64[((uint64_t) ((value - (value >> 1))*0x07EDD5E59A4E28C2)) >> 58];
+}
+
 vec general_mvp_from_diagonals(std::vector<vec> diagonals, vec v) {
   const size_t m = diagonals.size();
   if (m==0) {
@@ -222,6 +243,12 @@ vec general_mvp_from_diagonals(std::vector<vec> diagonals, vec v) {
   if (n!=v.size() || n==0) {
     throw invalid_argument(
         "Matrix and vector must have matching non-zero dimension");
+  }
+  size_t n_div_m = n/m;
+  size_t log2_n_div_m = ceil(log2(n_div_m));
+  if (m*n_div_m!=n || (2ULL << (log2_n_div_m - 1)!=n_div_m && n_div_m!=1)) {
+    throw invalid_argument(
+        "Matrix dimension m must divide n and the result must be power of two");
   }
 
   // Hybrid algorithm based on "GAZELLE: A Low Latency Framework for Secure Neural Network Inference" by Juvekar et al.
@@ -239,12 +266,12 @@ vec general_mvp_from_diagonals(std::vector<vec> diagonals, vec v) {
   }
 
   vec r = t;
-  size_t end = log2(n/m);
-  for (int i = 0; i < end; ++i) {
-    vec rotated_t = t;
-    size_t offset = n/(2 << i);
-    rotate(rotated_t.begin(), rotated_t.begin() + offset, rotated_t.end());
-    r = add(r, rotated_t);
+  //TODO: if n/m isn't a power of two, we need to masking/padding here
+  for (int i = 0; i < log2_n_div_m; ++i) {
+    vec rotated_r = r;
+    size_t offset = n/(2ULL << i);
+    rotate(rotated_r.begin(), rotated_r.begin() + offset, rotated_r.end());
+    r = add(r, rotated_r);
   }
 
   r.resize(m);

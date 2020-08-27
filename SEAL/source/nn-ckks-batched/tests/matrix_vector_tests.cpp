@@ -472,17 +472,25 @@ namespace MVPlaintextTests
       }
     }
     
-    TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_mismatch)
+    TEST(PlaintextOperations, MatrixVectorFromDiagonals_mismatch)
     {
       // Mismatching sizes should throw exception
       EXPECT_THROW(general_mvp_from_diagonals(diagonals(random_square_matrix(16)), {}), invalid_argument);
       EXPECT_THROW(general_mvp_from_diagonals({}, random_vector(16)), invalid_argument);
       EXPECT_THROW(general_mvp_from_diagonals(vector(16, vec()), random_vector(16)), invalid_argument);
+
+      // Sizes where m doesn't divide n should throw errors
+      EXPECT_THROW(general_mvp_from_diagonals(diagonals(random_matrix(7,25)), random_vector(25)), invalid_argument);
+
+      // Sizes where m does divide n but the result isn't a power of two should throw errors
+      EXPECT_THROW(general_mvp_from_diagonals(diagonals(random_matrix(30,900)), random_vector(900)), invalid_argument);
     }
 
     TEST(PlaintextOperations, MatrixVectorFromDiagonals_Simple)
     {
       GeneralMatrixVector(2, 4);
+      GeneralMatrixVector(4, 8);
+      GeneralMatrixVector(2, 8);
     }
 
     TEST(PlaintextOperations, MatrixVectorFromDiagonals_SquareSizes)
@@ -492,9 +500,9 @@ namespace MVPlaintextTests
       GeneralMatrixVector(256, 256);
     }
 
-    TEST(PlaintextOperations, MatrixVectorFromDiagonals_30_900)
+    TEST(PlaintextOperations, MatrixVectorFromDiagonals_32_1024)
     {
-      GeneralMatrixVector(30, 900);
+      GeneralMatrixVector(32, 1024);
     }
 
 }
