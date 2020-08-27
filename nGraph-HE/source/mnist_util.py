@@ -274,3 +274,31 @@ def server_config_from_flags(FLAGS, tensor_param_name):
                 rewrite_options=rewriter_options)))
 
     return config
+
+
+def server_config(tensor_param_name):
+    rewriter_options = rewriter_config_pb2.RewriterConfig()
+    rewriter_options.meta_optimizer_iterations = rewriter_config_pb2.RewriterConfig.ONE
+    rewriter_options.min_graph_nodes = -1
+    server_config = rewriter_options.custom_optimizers.add()
+    server_config.name = "ngraph-optimizer"
+    server_config.parameter_map["ngraph_backend"].s = "HE_SEAL".encode()
+    server_config.parameter_map["device_id"].s = b""
+    server_config.parameter_map[
+        "encryption_parameters"].s = "/home/he-transformer/configs/he_seal_ckks_config_N13_L8.json".encode()
+    server_config.parameter_map["enable_client"].s = str(False).encode()
+    server_config.parameter_map["enable_gc"].s = (str(False)).encode()
+    server_config.parameter_map["mask_gc_inputs"].s = (str(False)).encode()
+    server_config.parameter_map["mask_gc_outputs"].s = (str(False)).encode()
+    server_config.parameter_map["num_gc_threads"].s = (str(1)).encode()
+
+    server_config.parameter_map[tensor_param_name].s = b"encrypt"
+    server_config.parameter_map[tensor_param_name].s += b",packed"
+
+    config = tf.compat.v1.ConfigProto()
+    config.MergeFrom(
+        tf.compat.v1.ConfigProto(
+            graph_options=tf.compat.v1.GraphOptions(
+                rewrite_options=rewriter_options)))
+
+    return config
