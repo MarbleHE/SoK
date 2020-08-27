@@ -17,6 +17,7 @@
 
 import time
 import numpy as np
+import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense, Activation
@@ -32,6 +33,7 @@ from mnist_util import (
     load_pb_file,
     print_nodes
 )
+
 
 def mnist_mlp_model(input):
     def square_activation(x):
@@ -54,83 +56,128 @@ def mnist_mlp_model(input):
 
 
 def test_network(FLAGS):
+    ####################
+    # BENCHMARKING     #
+    ####################
+    times = {
+        't_training': [],
+        't_keygen': [],
+        't_input_encryption': [],
+        't_computation': [],
+        't_decryption': [],
+        'test_accuracy': []
+    }
 
-    # Train the network
-    (x_train, y_train, x_test, y_test) = load_mnist_data()
+    all_times = []
 
-    x = Input(
-        shape=(
-            28,
-            28,
-            1,
-        ), name="input")
-    y = mnist_mlp_model(x)
+    def delta_ms(t0, t1):
+        return round(1000 * abs(t0 - t1))
 
-    mlp_model = Model(inputs=x, outputs=y)
-    print(mlp_model.summary())
+    for run in range(10):
+        cur_times = times
 
-    def loss(labels, logits):
-        return categorical_crossentropy(labels, logits, from_logits=True)
+        ####################
+        # TRAINING         #
+        ####################
+        (x_train, y_train, x_test, y_test) = load_mnist_data()
 
-    optimizer = SGD(learning_rate=0.008, momentum=0.9)
-    mlp_model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
+        x = Input(
+            shape=(
+                28,
+                28,
+                1,
+            ), name="input")
+        y = mnist_mlp_model(x)
 
-    mlp_model.fit(
-        x_train,
-        y_train,
-        epochs=10,
-        batch_size=128,
-        validation_data=(x_test, y_test),
-        verbose=1)
+        mlp_model = Model(inputs=x, outputs=y)
+        print(mlp_model.summary())
 
-    test_loss, test_acc = mlp_model.evaluate(x_test, y_test, verbose=1)
-    print("\nTest accuracy:", test_acc)
+        def loss(labels, logits):
+            return categorical_crossentropy(labels, logits, from_logits=True)
 
-    save_model(
-        tf.compat.v1.keras.backend.get_session(),
-        ["output/BiasAdd"],
-        "./models",
-        "mlp",
-    )
+        optimizer = SGD(learning_rate=0.008, momentum=0.9)
+        mlp_model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
 
-    # Load MNIST data (for test set)
-    (x_train, y_train, x_test, y_test) = load_mnist_data(
-        FLAGS.start_batch, FLAGS.batch_size)
+        t0 = time.perf_counter()
+        mlp_model.fit(
+            x_train,
+            y_train,
+            epochs=10,
+            batch_size=128,
+            validation_data=(x_test, y_test),
+            verbose=1)
 
-    # Load saved model
-    tf.import_graph_def(load_pb_file(FLAGS.model_file))
+        t1 = time.perf_counter()
+        cur_times['t_training'] = delta_ms(t0, t1)
 
-    print("loaded model")
-    print_nodes()
+        test_loss, test_acc = mlp_model.evaluate(x_test, y_test, verbose=1)
+        print("\nTest accuracy:", test_acc)
 
-    # Get input / output tensors
-    x_input = tf.compat.v1.get_default_graph().get_tensor_by_name(
-        FLAGS.input_node)
-    y_output = tf.compat.v1.get_default_graph().get_tensor_by_name(
-        FLAGS.output_node)
+        save_model(
+            tf.compat.v1.keras.backend.get_session(),
+            ["output/BiasAdd"],
+            "./models",
+            "mlp",
+        )
 
-    # Create configuration to encrypt input
-    config = server_config_from_flags(FLAGS, x_input.name)
-    with tf.compat.v1.Session(config=config) as sess:
-        sess.run(tf.compat.v1.global_variables_initializer())
-        start_time = time.time()
-        y_hat = y_output.eval(feed_dict={x_input: x_test})
-        elasped_time = time.time() - start_time
-        print("total time(s)", np.round(elasped_time, 3))
+        ################################
+        # PREDICTING ON ENCRYPTED DATA #
+        ################################
 
-    if not FLAGS.enable_client:
-        y_test_label = np.argmax(y_test, 1)
+        # Load MNIST data (for test set)
+        (x_train, y_train, x_test, y_test) = load_mnist_data(
+            FLAGS.start_batch, FLAGS.batch_size)
 
-        if FLAGS.batch_size < 60:
-            print("y_hat", np.round(y_hat, 2))
+        # Load saved model
+        tf.import_graph_def(load_pb_file(FLAGS.model_file))
 
-        y_pred = np.argmax(y_hat, 1)
-        correct_prediction = np.equal(y_pred, y_test_label)
-        error_count = np.size(correct_prediction) - np.sum(correct_prediction)
-        test_accuracy = np.mean(correct_prediction)
+        print("loaded model")
+        print_nodes()
 
-        print("Error count", error_count, "of", FLAGS.batch_size, "elements.")
-        print("Accuracy: %g " % test_accuracy)
+        # Get input / output tensors
+        x_input = tf.compat.v1.get_default_graph().get_tensor_by_name(
+            FLAGS.input_node)
+        y_output = tf.compat.v1.get_default_graph().get_tensor_by_name(
+            FLAGS.output_node)
+
+        # Create configuration to encrypt input
+        config = server_config_from_flags(FLAGS, x_input.name)
+
+        cur_times['t_keygen'] = 0  # TODO: FIND KEYGEN -seems to be buried pretty deep
+        cur_times['t_input_encryption'] = 0  # TODO: FIND ENCRYPTION?
+        cur_times['t_decryption'] = 0  # TODO: FIND DECRYPTION - seems to be buried pretty deep, too
+
+        t0 = time.perf_counter()
+        with tf.compat.v1.Session(config=config) as sess:
+            sess.run(tf.compat.v1.global_variables_initializer())
+            start_time = time.time()
+            y_hat = y_output.eval(feed_dict={x_input: x_test})
+            elasped_time = time.time() - start_time
+            print("total time(s)", np.round(elasped_time, 3))
+
+        t1 = time.perf_counter()
+        cur_times['t_computation'] = delta_ms(t0, t1)
+
+        if not FLAGS.enable_client:
+            y_test_label = np.argmax(y_test, 1)
+
+            if FLAGS.batch_size < 60:
+                print("y_hat", np.round(y_hat, 2))
+
+            y_pred = np.argmax(y_hat, 1)
+            correct_prediction = np.equal(y_pred, y_test_label)
+            error_count = np.size(correct_prediction) - np.sum(correct_prediction)
+            test_accuracy = np.mean(correct_prediction)
+
+            print("Error count", error_count, "of", FLAGS.batch_size, "elements.")
+            print("Accuracy: %g " % test_accuracy)
+            cur_times['test_accuracy'] = test_accuracy
+            print(cur_times)
+            all_times.append(cur_times)
+
+    # Output the benchmarking results
+    df = pd.DataFrame(all_times)
+    df.to_csv('ngraph-he_nn.csv', index=False)
 
 
 if __name__ == "__main__":
@@ -140,9 +187,7 @@ if __name__ == "__main__":
         "--encrypt_server_data=True",
         "--encryption_parameters=/home/he-transformer/configs/he_seal_ckks_config_N13_L8.json"
     ])
-
-    print("Hello World!")
-    print(str(FLAGS))
+    print("FLAGS:" + str(FLAGS))
 
     if unparsed:
         print("Unparsed flags:", unparsed)
