@@ -327,26 +327,26 @@ void CardioBatched::run_cardio() {
 
   // encode and encrypt the inputs
   std::vector<uint64_t> in;
-  in.push_back(man ^ keystream[0]);
-  in.push_back(antecedent ^ keystream[1]);
-  in.push_back(smoking ^ keystream[2]);
-  in.push_back(diabetic ^ keystream[3]);
-  in.push_back(pressure ^ keystream[4]);
-  in.push_back(man ^ keystream[5]);
-  in.push_back(!man ^ keystream[6]);
-  in.push_back(age ^ keystream[7]);
-  in.push_back(1 ^ keystream[8]);
-  in.push_back(1 ^ keystream[9]);
-  in.push_back(1 ^ keystream[10]);
-  in.push_back(1 ^ keystream[11]);
-  in.push_back(drinking ^ keystream[12]);
-  in.push_back(drinking ^ keystream[13]);
-  in.push_back(hdl ^ keystream[14]);
-  in.push_back(height ^ keystream[15]);
-  in.push_back(phy_act ^ keystream[16]);
-  in.push_back(weight + 90 ^ keystream[17]);
+  in.push_back(man);
+  in.push_back(antecedent);
+  in.push_back(smoking);
+  in.push_back(diabetic);
+  in.push_back(pressure);
+  in.push_back(man);
+  in.push_back(!man);
+  in.push_back(age);
+  in.push_back(1);
+  in.push_back(1);
+  in.push_back(1);
+  in.push_back(1);
+  in.push_back(drinking);
+  in.push_back(drinking);
+  in.push_back(hdl);
+  in.push_back(height);
+  in.push_back(phy_act);
+  in.push_back(weight + 90);
 
-  seal::Ciphertext inputs = encode_and_encrypt(in);
+  seal::Ciphertext result = encode_and_encrypt(in);
 
   auto t3 = Time::now();
   log_time(ss_time, t2, t3, false);
@@ -358,8 +358,8 @@ void CardioBatched::run_cardio() {
   auto t4 = Time::now();
 
   // homomorphically execute the Kreyvium algorithm to decrypt data
-  seal::Plaintext ks = encode(keystream);
-  seal::Ciphertext result = XOR(inputs, ks);
+  // seal::Plaintext ks = encode(keystream);
+  // seal::Ciphertext result = XOR(inputs, ks);
 
   // create a copy of the input vector
   seal::Ciphertext bool_flags = result;
