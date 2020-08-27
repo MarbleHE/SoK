@@ -57,6 +57,10 @@ def plot_all_cardio():
     data = list(res.values())
 
     # call the plot
+    if len(labels) == 0:
+        import sys
+        sys.stderr.write("ERROR: Plotting cardio failed because no data is available!")
+        return
     fig = plot_cardio.plot(labels, data)
     fig.show()
 
@@ -100,6 +104,11 @@ def plot_all_nn():
         data.append(pd.read_csv(s3_urls[0]))
 
     # call the plot
+    if len(labels) == 0:
+        import sys
+        sys.stderr.write("ERROR: Plotting neural networks failed because no data is available!")
+        return
+
     fig = plot_nn.plot(labels, data)
     fig.show()
 
