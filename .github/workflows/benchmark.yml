@@ -88,7 +88,7 @@ jobs:
             cd /root/SoK/${{ matrix.tool }}
             echo "${{ secrets.SEALION_DEPLOYMENT_PRIVATE_KEY }}" > id_sealion
             docker run -e S3_URL=${{ env.s3-repository-url }} \
-              -e S3_FOLDER=${{ needs.setup.outputs.ts }} \
+              -e S3_FOLDER=${{ needs.setup.outputs.ts }}__${{ github.run_id }} \
               -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
               -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
               -e AWS_DEFAULT_REGION=${{ env.AWS_DEFAULT_REGION }} \
