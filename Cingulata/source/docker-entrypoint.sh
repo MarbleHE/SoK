@@ -1,34 +1,41 @@
 #!/bin/bash
 
-# run cardio in Cingulata for both the ABC-optimized circuit and the unoptimized
-# circuit
-cd /cingu/eval/cardio
-./run.sh
-aws s3 cp cingulata_cardio_optimized.csv ${S3_URL}/${S3_FOLDER}/Cingulata/
-aws s3 cp cingulata_cardio_unoptimized.csv ${S3_URL}/${S3_FOLDER}/Cingulata-UNOPT/
-aws s3 cp fhe_parameters.txt ${S3_URL}/${S3_FOLDER}/Cingulata/
-aws s3 cp fhe_parameters.txt ${S3_URL}/${S3_FOLDER}/Cingulata-UNOPT/
+upload_file() {
+    TARGET_DIR=$1
+    shift
+    for item in "$@"; do
+        aws s3 cp $item ${S3_URL}/${S3_FOLDER}/${TARGET_DIR}/
+    done  
+}
 
-# run cardio in Cingulata with circuit optimized by Lobster and same parameters as Cingulata uses
-cd /cingu/eval/cardio-lobster
-./run.sh
-aws s3 cp cingulata_cardio_lobster.csv ${S3_URL}/${S3_FOLDER}/Lobster/
-aws s3 cp fhe_parameters.txt ${S3_URL}/${S3_FOLDER}/Lobster/
+echo "Running cardio-cingulata..."
+cd /cingu/eval/cardio-cingulata \
+    && ./run.sh \
+    && upload_file Cingulata-OPT cingulata_cardio_optimized.csv fhe_parameters.txt \
+    && upload_file Cingulata-Baseline cingulata_cardio_unoptimized.csv fhe_parameters.txt
 
-# run cardio in Cingulata with circuit optimized by Lobster and parameters determined by CinguParam
-cd /cingu/eval/cardio-lobster-optimal-params
-./run.sh
-aws s3 cp cingulata_cardio_lobster_optimal.csv ${S3_URL}/${S3_FOLDER}/Lobster-OPT-PARAMS/
-aws s3 cp fhe_parameters.txt ${S3_URL}/${S3_FOLDER}/Lobster-OPT-PARAMS/
+echo "Running cardio-lobster-baseline..."
+cd /cingu/eval/cardio-lobster-baseline \
+    && ./run.sh \
+    && upload_file Lobster-Baseline cardio_lobster_baseline_unoptimized.csv fhe_parameters.txt \
+    && upload_file Lobster-Baseline-OPT cardio_lobster_baseline_optimized.csv fhe_parameters.txt
 
-# run cardio in Cingulata with circuit optimized by Lobster and parameters determined by CinguParam
-cd /cingu/eval/cardio-multistart
-./run.sh
-aws s3 cp cingulata_cardio_multistart.csv ${S3_URL}/${S3_FOLDER}/Cingulata-MultiStart/
-aws s3 cp fhe_parameters.txt ${S3_URL}/${S3_FOLDER}/Cingulata-MultiStart/
+echo "Running cardio-lobster..."
+cd /cingu/eval/cardio-lobster \
+    && ./run.sh \
+    && upload_file Lobster cingulata_cardio_lobster.csv fhe_parameters.txt
 
-# run cardio in Cingulata with circuit optimized by Lobster and parameters determined by CinguParam
-cd /cingu/eval/cardio-multistart-optimal-params
-./run.sh
-aws s3 cp cingulata_cardio_multistart_optimal.csv ${S3_URL}/${S3_FOLDER}/Cingulata-MultiStart-OPT-PARAMS/
-aws s3 cp fhe_parameters.txt ${S3_URL}/${S3_FOLDER}/Cingulata-MultiStart-OPT-PARAMS/
+echo "Running cardio-lobster-optimal-params..."
+cd /cingu/eval/cardio-lobster-optimal-params \
+    && ./run.sh \
+    && upload_file Lobster-OPT-PARAMS cardio_lobster_optimal.csv fhe_parameters.txt
+
+echo "Running cardio-multistart..."
+cd /cingu/eval/cardio-multistart \
+    && ./run.sh \
+    && upload_file MultiStart cardio_multistart.csv fhe_parameters.txt
+
+echo "Running cardio-multistart-optimal-params..."
+cd /cingu/eval/cardio-multistart-optimal-params \
+    && ./run.sh \
+    && upload_file MultiStart-OPT-PARAMS cingulata_cardio_multistart_optimal.csv fhe_parameters.txt
