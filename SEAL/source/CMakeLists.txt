@@ -31,3 +31,10 @@ set_target_properties(cardio_ckks_batched PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(cardio_ckks_batched SEAL::seal)
 configure_file(cardio-ckks-batched/run-cardio-ckks-batched.sh.in tmp/run-cardio-ckks-batched.sh)
 file (COPY ${CMAKE_BINARY_DIR}/tmp/run-cardio-ckks-batched.sh DESTINATION ${CMAKE_BINARY_DIR} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+
+# NN batched CKKS
+add_executable(nn_ckks_batched nn-ckks-batched/nn-batched.cpp common.h)
+set_target_properties(nn_ckks_batched PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(nn_ckks_batched SEAL::seal)
+configure_file(nn-ckks-batched/run-nn-ckks-batched.sh.in tmp/run-nn-ckks-batched.sh)
+file (COPY ${CMAKE_BINARY_DIR}/tmp/run-nn-ckks-batched.sh DESTINATION ${CMAKE_BINARY_DIR} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
