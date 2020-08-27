@@ -205,7 +205,7 @@ namespace MVPlaintextTests
     }
 
 
-	TEST(PlaintextOperations, Diagonals)
+	TEST(PlaintextOperations, DiagonalsOnSquare)
 	{
 		const auto m = random_square_matrix(dim);
 		const auto r = diagonals(m);
@@ -218,10 +218,46 @@ namespace MVPlaintextTests
 				EXPECT_EQ(r[d][i], m[i][(i + d) % dim]);
 			}
 		}
-
-		// Non-square
-		EXPECT_THROW(diag(matrix(dim), 0), invalid_argument);
 	}
+
+    TEST(PlaintextOperations, Diagonals)
+    {
+      const auto m = random_matrix(dim, dim2);
+      const auto r = diagonals(m);
+      ASSERT_EQ(r.size(), dim);
+      for (size_t d = 0; d < dim; ++d)
+      {
+        ASSERT_EQ(r[d].size(), dim2);
+        for (size_t i = 0; i < dim2; ++i)
+        {
+          EXPECT_EQ(r[d][i], m[i % dim][(i + d) % dim2]);
+        }
+      }
+
+      // Zero sized
+      EXPECT_THROW(diag(matrix(dim), 0), invalid_argument);
+    }
+
+    TEST(PlaintextOperations, Diagonals_2_4)
+    {
+      const auto m = random_matrix(2, 4);
+      const auto r = diagonals(m);
+      ASSERT_EQ(r.size(), 2);
+      ASSERT_EQ(r[0].size(), 4);
+
+      ASSERT_EQ(r[0][0], m[0][0]);
+      ASSERT_EQ(r[0][1], m[1][1]);
+      ASSERT_EQ(r[0][2], m[0][2]);
+      ASSERT_EQ(r[0][3], m[1][3]);
+
+      ASSERT_EQ(r[1][0], m[0][1]);
+      ASSERT_EQ(r[1][1], m[1][2]);
+      ASSERT_EQ(r[1][2], m[0][3]);
+      ASSERT_EQ(r[1][3], m[1][0]);
+
+      // Zero sized
+      EXPECT_THROW(diag(matrix(dim), 0), invalid_argument);
+    }
 
 	TEST(PlaintextOperations, DuplicateVector)
 	{
