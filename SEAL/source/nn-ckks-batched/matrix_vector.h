@@ -117,6 +117,17 @@ vec mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v);
 
 
 /**
+ * \brief Computes the matrix-vector-product between a matrix M represented by its diagonals, and a vector.
+ *  Plaintext implementation of the FHE-optimized approach due to Juvekar et al. (Hybrid diagonal-representation) and the baby-step giant-step algorithm
+ * \param diagonals Matrix of size m x n represented by the its (generalized) diagonals (numbering starts with the main diagonal and moves up with wrap-around, i.e. the last element is the diagonal one below the main diagonal)
+ * \param v Vector of length n
+ * \return The matrix-vector product between M and v, a vector of length n
+ * \throw std::invalid_argument if the dimensions mismatch
+ */
+vec general_mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v);
+
+
+/**
  * \brief Test if x is a perfect square, i.e. x = y^2 for an integer y?
  * \param x Integer to test
  * \return True if x = y^2 for integer y, false otherwise

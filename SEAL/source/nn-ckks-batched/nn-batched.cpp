@@ -135,13 +135,21 @@ void NNBatched::run_nn() {
 
   // === client-side computation ====================================
 
-  /// vectorized MNIST image (28x28px, 1 channel)
-  std::vector<double> image(784, 0);
+  /// Size of the input vector, i.e. 30x30 image
+  size_t input_size = 900; // 30x30
+
+  // We pad the MNIST images from 28x28 to 30x30
+  // because of fast MVP we use requires that the input size divides # of units in the dense layers
+
+  /// vectorized (padded) MNIST image
+  std::vector<double> image(input_size, 0);
 
 
   // encode and encrypt the input
+  // We duplicate because we require rotations to work consistently
+  // (see documentation of fast mvp method)
   auto t2 = Time::now();
-  seal::Ciphertext image_ctxt = encode_and_encrypt(image);
+  seal::Ciphertext image_ctxt = encode_and_encrypt(duplicate(image));
 
   auto t3 = Time::now();
   log_time(ss_time, t2, t3, false);
@@ -153,16 +161,20 @@ void NNBatched::run_nn() {
   auto t4 = Time::now();
 
   // Create the Weights and Biases for the first dense layer
-  DenseLayer d1(30, 784);
+  DenseLayer d1(30, input_size);
 
 
 
   // First, compute the MVP between d1_weights and the input
+
+  // PTXT check
+  auto r = general_mvp_from_diagonals_bsgs(d1.weights_as_diags(),image);
+  // CTXT actual
   seal::Ciphertext result;
   ptxt_matrix_enc_vector_product_bsgs(*galoisKeys,
                                       *evaluator,
                                       *encoder,
-                                      784,
+                                      input_size,
                                       d1.weights_as_diags(),
                                       image_ctxt,
                                       result);
@@ -178,6 +190,7 @@ void NNBatched::run_nn() {
   DenseLayer d2(10, 30);
 
   // Weights
+  //TODO: Do we first need to "duplicate" the current vector, i.e. mask, rotate and add?
   ptxt_matrix_enc_vector_product_bsgs(*galoisKeys, *evaluator, *encoder, 30, d2.weights_as_diags(), result, result);
 
   // Bias
@@ -217,21 +230,12 @@ void NNBatched::run_nn() {
   write_parameters_to_file(context, "fhe_parameters_nn.txt");
 }
 
-int main(int argc, char *argv[]) {
-  std::cout << "Starting benchmark 'nn-batched-ckks'..." << std::endl;
-  NNBatched().run_nn();
-  return 0;
-}
 
 DenseLayer::DenseLayer(size_t units, size_t input_size) {
-  if (units!=input_size) {
-    throw std::invalid_argument("Only square matrices currently supported.");
-    //TODO: Extend logic to general rectangular matrices
-  }
   bias_vec = random_vector(units);
   diags = std::vector<vec>();
   for (int i = 0; i < units; ++i) {
-    diags.push_back(random_vector((units)));
+    diags.push_back(random_vector((input_size)));
   }
 }
 
