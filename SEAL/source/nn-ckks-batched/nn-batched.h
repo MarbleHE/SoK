@@ -18,6 +18,7 @@
 #include <cmath>
 
 #include "helpers.h"
+#include "matrix_vector.h"
 #include "seal/seal.h"
 
 typedef std::chrono::high_resolution_clock Time;
@@ -60,5 +61,32 @@ class NNBatched {
 
   seal::Plaintext encode(std::vector<double> numbers, seal::parms_id_type parms_id);
 };
+
+class DenseLayer {
+ private:
+  std::vector<vec> diags;
+  vec bias_vec;
+ public:
+  /// Create random weights and biases for a dense or fully-connected layer
+  /// \param units number of units, i.e. output size
+  /// \param input_size dimension of input
+  /// \throws std::invalid_argument if units != input_size because fast MVP is only defined over square matrices
+  DenseLayer(size_t units, size_t input_size);
+
+  /// Get Weights
+  /// \return The weights matrix of size input_size x units, represented by its diagonals
+  const std::vector<vec> &weights_as_diags();
+
+  /// Get Weights
+  /// \return A bias vector of length units
+  const vec &bias();
+};
+/// Create only the required power-of-two rotations
+/// This can save quite a bit, for example for poly_modulus_degree = 16384
+/// The default galois keys (with zlib compression) are 247 MB large
+/// Whereas with dimension = 256, they are only 152 MB
+/// For poly_modulus_degree = 32768, the default keys are 532 MB large
+/// while with dimension = 256, they are only 304 MB
+std::vector<int> custom_steps(size_t dimension);
 
 int main(int argc, char *argv[]);

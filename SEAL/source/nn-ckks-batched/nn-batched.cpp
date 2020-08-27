@@ -1,5 +1,26 @@
 #include "nn-batched.h"
 #include "../common.h"
+#include "matrix_vector_crypto.h"
+
+/// Create only the required power-of-two rotations
+/// This can save quite a bit, for example for poly_modulus_degree = 16384
+/// The default galois keys (with zlib compression) are 247 MB large
+/// Whereas with dimension = 256, they are only 152 MB
+/// For poly_modulus_degree = 32768, the default keys are 532 MB large
+/// while with dimension = 256, they are only 304 MB
+std::vector<int> custom_steps(size_t dimension) {
+  if (dimension==256) {
+    // Slight further optimization: No -128, no -256
+    return {1, -1, 2, -2, 4, -4, 8, -8, 16, -16, 32, -32, 64, -64, 128, 256};
+  } else {
+    std::vector<int> steps{};
+    for (int i = 1; i <= dimension; i <<= 1) {
+      steps.push_back(i);
+      steps.push_back(-i);
+    }
+    return steps;
+  }
+}
 
 /*
  * Batched CKKS implementation for nn benchmark.
@@ -38,7 +59,7 @@ void NNBatched::setup_context_ckks(std::size_t poly_modulus_degree) {
   // ofs_rk.close();
 
   // Only generate those keys that are actually required/used
-  std::vector<int> steps = {-1, -2, -3, -4, -5, -6, -7, 8, 16, 32, 56, 64, 72};
+  std::vector<int> steps = custom_steps(784);
   galoisKeys =
       std::make_unique<seal::GaloisKeys>(keyGenerator.galois_keys_local(steps));
   // std::ofstream ofs_gk("galois_keys.dat", std::ios::binary);
@@ -55,7 +76,7 @@ void NNBatched::setup_context_ckks(std::size_t poly_modulus_degree) {
 }
 
 void NNBatched::internal_print_info(std::string variable_name,
-                                        seal::Ciphertext &ctxt) {
+                                    seal::Ciphertext &ctxt) {
   std::ios old_fmt(nullptr);
   old_fmt.copyfmt(std::cout);
 
@@ -112,23 +133,15 @@ void NNBatched::run_nn() {
   auto t1 = Time::now();
   log_time(ss_time, t0, t1, false);
 
-  auto t2 = Time::now();
-
-  // encode and encrypt keystream
-  // assumption: this keystream is known by client and server
-  std::vector<uint64_t> keystream = {121, 58,  242, 156, 29,  94,
-                                     136, 91,  227, 68,  251, 70,
-                                     212, 155, 223, 154, 221, 251};
-
   // === client-side computation ====================================
 
-  // define input values
+  /// vectorized MNIST image (28x28px, 1 channel)
+  std::vector<double> image(784, 0);
 
 
-  // encode and encrypt the inputs
-  std::vector<double> in;
-
-  seal::Ciphertext result = encode_and_encrypt(in);
+  // encode and encrypt the input
+  auto t2 = Time::now();
+  seal::Ciphertext image_ctxt = encode_and_encrypt(image);
 
   auto t3 = Time::now();
   log_time(ss_time, t2, t3, false);
@@ -139,20 +152,55 @@ void NNBatched::run_nn() {
 
   auto t4 = Time::now();
 
- seal::Ciphertext final_result;
+  // Create the Weights and Biases for the first dense layer
+  DenseLayer d1(30, 784);
+
+
+
+  // First, compute the MVP between d1_weights and the input
+  seal::Ciphertext result;
+  ptxt_matrix_enc_vector_product_bsgs(*galoisKeys,
+                                      *evaluator,
+                                      *encoder,
+                                      784,
+                                      d1.weights_as_diags(),
+                                      image_ctxt,
+                                      result);
+
+  // Now add the bias
+  seal::Plaintext b1 = encode(d1.bias());
+  evaluator->add_plain_inplace(result, b1);
+
+  // Activation, x -> x^2
+  evaluator->square_inplace(result);
+
+  // Create the Weights and Biases for the second  dense layer
+  DenseLayer d2(10, 30);
+
+  // Weights
+  ptxt_matrix_enc_vector_product_bsgs(*galoisKeys, *evaluator, *encoder, 30, d2.weights_as_diags(), result, result);
+
+  // Bias
+  seal::Plaintext b2 = encode(d2.bias());
+  evaluator->add_plain_inplace(result, b2);
+
+  // Activation, x -> x^2
+  evaluator->square_inplace(result);
 
   auto t5 = Time::now();
   log_time(ss_time, t4, t5, false);
 
+  // // === retrieve final result ====================================
   auto t6 = Time::now();
-
-  // retrieve the final result (ciphertext slot 7)
   seal::Plaintext p;
-  decryptor->decrypt(final_result, p);
+  decryptor->decrypt(result, p);
   std::vector<double> dec;
   encoder->decode(p, dec);
-  std::cout << "Result: " << (uint64_t)dec[7] << std::endl;
 
+  std::cout << "Result:" << std::endl;
+  for (int i = 0; i < 10; ++i) {
+    std::cout << (double) dec[i] << std::endl;
+  }
   auto t7 = Time::now();
   log_time(ss_time, t6, t7, true);
 
@@ -162,16 +210,34 @@ void NNBatched::run_nn() {
   if (myfile.fail()) throw std::ios_base::failure(std::strerror(errno));
   // make sure write fails with exception if something is wrong
   myfile.exceptions(myfile.exceptions() | std::ios::failbit |
-                  std::ifstream::badbit);
+      std::ifstream::badbit);
   myfile << ss_time.str() << std::endl;
 
   // write FHE parameters into file
   write_parameters_to_file(context, "fhe_parameters_nn.txt");
 }
 
-
 int main(int argc, char *argv[]) {
   std::cout << "Starting benchmark 'nn-batched-ckks'..." << std::endl;
   NNBatched().run_nn();
   return 0;
+}
+
+DenseLayer::DenseLayer(size_t units, size_t input_size) {
+  if (units!=input_size) {
+    throw std::invalid_argument("Only square matrices currently supported.");
+    //TODO: Extend logic to general rectangular matrices
+  }
+  bias_vec = random_vector(units);
+  diags = std::vector<vec>();
+  for (int i = 0; i < units; ++i) {
+    diags.push_back(random_vector((units)));
+  }
+}
+
+const std::vector<vec> &DenseLayer::weights_as_diags() {
+  return diags;
+}
+const vec &DenseLayer::bias() {
+  return bias_vec;
 }
