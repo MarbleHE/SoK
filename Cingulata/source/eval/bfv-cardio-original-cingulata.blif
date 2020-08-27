@@ -1,0 +1,687 @@
+# Circuit created by Cingulata
+.model cardio
+.inputs i:flags_0 i:flags_1 i:flags_2 i:flags_3 i:flags_4 i:age_0 i:age_1 i:age_2 i:age_3 i:age_4 i:age_5 i:age_6 i:age_7 i:hdl_0 i:hdl_1 i:hdl_2 i:hdl_3 i:hdl_4 i:hdl_5 i:hdl_6 i:hdl_7 i:height_0 i:height_1 i:height_2 i:height_3 i:height_4 i:height_5 i:height_6 i:height_7 i:weight_0 i:weight_1 i:weight_2 i:weight_3 i:weight_4 i:weight_5 i:weight_6 i:weight_7 i:physical_act_0 i:physical_act_1 i:physical_act_2 i:physical_act_3 i:physical_act_4 i:physical_act_5 i:physical_act_6 i:physical_act_7 i:drinking_0 i:drinking_1 i:drinking_2 i:drinking_3 i:drinking_4 i:drinking_5 i:drinking_6 i:drinking_7 
+.outputs o:risk_0 o:risk_1 o:risk_2 o:risk_3 
+.names i:age_1 i:age_0 n0
+11 1
+.names n1
+1
+.names i:age_2 n1 n2
+01 1
+10 1
+.names n3
+1
+.names i:age_3 n3 n4
+01 1
+10 1
+.names n2 n4 n5
+11 1
+.names n5 n0 n6
+11 1
+.names n7
+1
+.names i:age_3 n7 n8
+01 1
+10 1
+.names n8 i:age_2 n9
+11 1
+.names i:age_3 n9 n10
+01 1
+10 1
+.names n10 n6 n11
+01 1
+10 1
+.names i:age_4 i:age_5 n12
+11 1
+.names i:age_6 i:age_7 n13
+11 1
+.names n12 n13 n14
+11 1
+.names n14 n11 n15
+11 1
+.names i:age_6 i:age_7 n16
+11 1
+.names n17
+1
+.names n15 n17 n18
+01 1
+10 1
+.names i:flags_0 n18 n19
+11 1
+.names n20
+1
+.names i:age_1 n20 n21
+01 1
+10 1
+.names n21 i:age_0 n22
+11 1
+.names i:age_1 n22 n23
+01 1
+10 1
+.names i:age_2 i:age_3 n24
+11 1
+.names n24 n23 n25
+11 1
+.names i:age_4 i:age_5 n26
+11 1
+.names i:age_6 i:age_7 n27
+11 1
+.names n26 n27 n28
+11 1
+.names n28 n25 n29
+11 1
+.names i:age_6 i:age_7 n30
+11 1
+.names n31
+1
+.names n29 n31 n32
+01 1
+10 1
+.names n33
+1
+.names i:flags_0 n33 n34
+01 1
+10 1
+.names n34 n32 n35
+11 1
+.names n36
+1
+.names i:hdl_0 n36 n37
+01 1
+10 1
+.names n38
+1
+.names i:hdl_1 n38 n39
+01 1
+10 1
+.names n39 n37 n40
+11 1
+.names n41
+1
+.names i:hdl_2 n41 n42
+01 1
+10 1
+.names n42 i:hdl_3 n43
+11 1
+.names n43 n40 n44
+11 1
+.names n45
+1
+.names i:hdl_3 n45 n46
+01 1
+10 1
+.names n46 n44 n47
+01 1
+10 1
+.names n48
+1
+.names i:hdl_4 n48 n49
+01 1
+10 1
+.names n49 i:hdl_5 n50
+11 1
+.names i:hdl_6 i:hdl_7 n51
+11 1
+.names n50 n51 n52
+11 1
+.names n52 n47 n53
+11 1
+.names n54
+1
+.names i:hdl_5 n54 n55
+01 1
+10 1
+.names i:hdl_6 i:hdl_7 n56
+11 1
+.names n56 n55 n57
+11 1
+.names n58
+1
+.names i:hdl_6 n58 n59
+01 1
+10 1
+.names i:hdl_7 n59 n60
+11 1
+.names n61
+1
+.names i:hdl_7 n61 n62
+01 1
+10 1
+.names n62 n60 n63
+01 1
+10 1
+.names n63 n57 n64
+01 1
+10 1
+.names n64 n53 n65
+01 1
+10 1
+.names n66
+1
+.names n65 n66 n67
+01 1
+10 1
+.names n68
+1
+.names i:weight_1 n68 n69
+01 1
+10 1
+.names n70
+1
+.names i:weight_3 n70 n71
+01 1
+10 1
+.names n72
+1
+.names i:weight_4 n72 n73
+01 1
+10 1
+.names n74
+1
+.names i:weight_6 n74 n75
+01 1
+10 1
+.names n71 i:weight_2 n76
+11 1
+.names i:weight_5 i:weight_4 n77
+11 1
+.names i:weight_5 n73 n78
+11 1
+.names i:weight_2 i:weight_1 n79
+11 1
+.names n76 i:weight_1 n80
+11 1
+.names i:weight_3 n80 n81
+01 1
+10 1
+.names n75 n77 n82
+11 1
+.names i:weight_6 n82 n83
+01 1
+10 1
+.names n75 n78 n84
+11 1
+.names n73 n81 n85
+11 1
+.names i:weight_4 n85 n86
+01 1
+10 1
+.names n78 n81 n87
+11 1
+.names n77 n87 n88
+01 1
+10 1
+.names n84 n81 n89
+11 1
+.names n83 n89 n90
+01 1
+10 1
+.names i:weight_2 i:weight_1 n91
+01 1
+10 1
+.names n71 n79 n92
+01 1
+10 1
+.names n73 n81 n93
+01 1
+10 1
+.names i:weight_5 n86 n94
+01 1
+10 1
+.names n75 n88 n95
+01 1
+10 1
+.names i:weight_7 n90 n96
+01 1
+10 1
+.names n97
+1
+.names i:height_0 n97 n98
+01 1
+10 1
+.names n98 i:weight_0 n99
+11 1
+.names i:height_1 n69 n100
+01 1
+10 1
+.names n101
+1
+.names n100 n101 n102
+01 1
+10 1
+.names n102 n99 n103
+11 1
+.names n104
+1
+.names i:height_1 n104 n105
+01 1
+10 1
+.names n105 n69 n106
+11 1
+.names n106 n103 n107
+01 1
+10 1
+.names i:height_2 n91 n108
+01 1
+10 1
+.names n109
+1
+.names n108 n109 n110
+01 1
+10 1
+.names i:height_3 n92 n111
+01 1
+10 1
+.names n112
+1
+.names n111 n112 n113
+01 1
+10 1
+.names n110 n113 n114
+11 1
+.names n114 n107 n115
+11 1
+.names n116
+1
+.names i:height_2 n116 n117
+01 1
+10 1
+.names n117 n91 n118
+11 1
+.names i:height_3 n92 n119
+01 1
+10 1
+.names n120
+1
+.names n119 n120 n121
+01 1
+10 1
+.names n121 n118 n122
+11 1
+.names n123
+1
+.names i:height_3 n123 n124
+01 1
+10 1
+.names n124 n92 n125
+11 1
+.names n125 n122 n126
+01 1
+10 1
+.names n126 n115 n127
+01 1
+10 1
+.names i:height_4 n93 n128
+01 1
+10 1
+.names n129
+1
+.names n128 n129 n130
+01 1
+10 1
+.names i:height_5 n94 n131
+01 1
+10 1
+.names n132
+1
+.names n131 n132 n133
+01 1
+10 1
+.names i:height_6 n95 n134
+01 1
+10 1
+.names n135
+1
+.names n134 n135 n136
+01 1
+10 1
+.names i:height_7 n96 n137
+01 1
+10 1
+.names n138
+1
+.names n137 n138 n139
+01 1
+10 1
+.names n130 n133 n140
+11 1
+.names n136 n139 n141
+11 1
+.names n140 n141 n142
+11 1
+.names n142 n127 n143
+11 1
+.names n144
+1
+.names i:height_4 n144 n145
+01 1
+10 1
+.names n145 n93 n146
+11 1
+.names i:height_5 n94 n147
+01 1
+10 1
+.names n148
+1
+.names n147 n148 n149
+01 1
+10 1
+.names n149 n146 n150
+11 1
+.names n151
+1
+.names i:height_5 n151 n152
+01 1
+10 1
+.names n152 n94 n153
+11 1
+.names n153 n150 n154
+01 1
+10 1
+.names i:height_6 n95 n155
+01 1
+10 1
+.names n156
+1
+.names n155 n156 n157
+01 1
+10 1
+.names i:height_7 n96 n158
+01 1
+10 1
+.names n159
+1
+.names n158 n159 n160
+01 1
+10 1
+.names n157 n160 n161
+11 1
+.names n161 n154 n162
+11 1
+.names n163
+1
+.names i:height_6 n163 n164
+01 1
+10 1
+.names n164 n95 n165
+11 1
+.names i:height_7 n96 n166
+01 1
+10 1
+.names n167
+1
+.names n166 n167 n168
+01 1
+10 1
+.names n168 n165 n169
+11 1
+.names n170
+1
+.names i:height_7 n170 n171
+01 1
+10 1
+.names n171 n96 n172
+11 1
+.names n172 n169 n173
+01 1
+10 1
+.names n173 n162 n174
+01 1
+10 1
+.names n174 n143 n175
+01 1
+10 1
+.names n176
+1
+.names i:physical_act_1 n176 n177
+01 1
+10 1
+.names i:physical_act_2 i:physical_act_3 n178
+11 1
+.names n178 n177 n179
+11 1
+.names n180
+1
+.names i:physical_act_2 n180 n181
+01 1
+10 1
+.names i:physical_act_3 n181 n182
+11 1
+.names n183
+1
+.names i:physical_act_3 n183 n184
+01 1
+10 1
+.names n184 n182 n185
+01 1
+10 1
+.names n185 n179 n186
+01 1
+10 1
+.names i:physical_act_4 i:physical_act_5 n187
+11 1
+.names i:physical_act_6 i:physical_act_7 n188
+11 1
+.names n187 n188 n189
+11 1
+.names n189 n186 n190
+11 1
+.names n191
+1
+.names i:physical_act_4 n191 n192
+01 1
+10 1
+.names i:physical_act_5 n192 n193
+11 1
+.names n194
+1
+.names i:physical_act_5 n194 n195
+01 1
+10 1
+.names n195 n193 n196
+01 1
+10 1
+.names i:physical_act_6 i:physical_act_7 n197
+11 1
+.names n197 n196 n198
+11 1
+.names n199
+1
+.names i:physical_act_6 n199 n200
+01 1
+10 1
+.names i:physical_act_7 n200 n201
+11 1
+.names n202
+1
+.names i:physical_act_7 n202 n203
+01 1
+10 1
+.names n203 n201 n204
+01 1
+10 1
+.names n204 n198 n205
+01 1
+10 1
+.names n205 n190 n206
+01 1
+10 1
+.names n207
+1
+.names n206 n207 n208
+01 1
+10 1
+.names i:drinking_2 i:drinking_3 n209
+11 1
+.names i:drinking_4 i:drinking_5 n210
+11 1
+.names i:drinking_6 i:drinking_7 n211
+11 1
+.names n210 n211 n212
+11 1
+.names i:drinking_6 i:drinking_7 n213
+11 1
+.names i:drinking_1 i:drinking_0 n214
+11 1
+.names i:drinking_2 i:drinking_3 n215
+11 1
+.names n215 n214 n216
+11 1
+.names i:drinking_4 i:drinking_5 n217
+11 1
+.names i:drinking_6 i:drinking_7 n218
+11 1
+.names n217 n218 n219
+11 1
+.names n219 n216 n220
+11 1
+.names i:drinking_6 i:drinking_7 n221
+11 1
+.names n222
+1
+.names n220 n222 n223
+01 1
+10 1
+.names n224
+1
+.names i:flags_0 n224 n225
+01 1
+10 1
+.names n225 n223 n226
+11 1
+.names n19 i:flags_1 n227
+01 1
+10 1
+.names n227 n67 n228
+01 1
+10 1
+.names i:flags_1 n67 n229
+01 1
+10 1
+.names n19 n67 n230
+01 1
+10 1
+.names n230 n229 n231
+11 1
+.names n231 n67 n232
+01 1
+10 1
+.names n226 i:flags_0 n233
+01 1
+10 1
+.names n233 n208 n234
+01 1
+10 1
+.names i:flags_0 n208 n235
+01 1
+10 1
+.names n226 n208 n236
+01 1
+10 1
+.names n236 n235 n237
+11 1
+.names n237 n208 n238
+01 1
+10 1
+.names i:flags_4 n228 n239
+01 1
+10 1
+.names n239 n175 n240
+01 1
+10 1
+.names n228 n175 n241
+01 1
+10 1
+.names i:flags_4 n175 n242
+01 1
+10 1
+.names n242 n241 n243
+11 1
+.names n243 n175 n244
+01 1
+10 1
+.names n234 n240 n245
+01 1
+10 1
+.names n245 n35 n246
+01 1
+10 1
+.names n240 n35 n247
+01 1
+10 1
+.names n234 n35 n248
+01 1
+10 1
+.names n248 n247 n249
+11 1
+.names n249 n35 n250
+01 1
+10 1
+.names i:flags_3 n246 n251
+01 1
+10 1
+.names n251 i:flags_2 o:risk_0
+01 1
+10 1
+.names n246 i:flags_2 n252
+01 1
+10 1
+.names i:flags_3 i:flags_2 n253
+01 1
+10 1
+.names n253 n252 n254
+11 1
+.names n254 i:flags_2 n255
+01 1
+10 1
+.names n250 n255 n256
+01 1
+10 1
+.names n250 n255 n257
+01 1
+10 1
+.names n255 n257 n258
+11 1
+.names n258 n255 n259
+01 1
+10 1
+.names n244 n232 n260
+01 1
+10 1
+.names n260 n238 n261
+01 1
+10 1
+.names n232 n238 n262
+01 1
+10 1
+.names n244 n238 n263
+01 1
+10 1
+.names n263 n262 n264
+11 1
+.names n264 n238 n265
+01 1
+10 1
+.names n256 n261 o:risk_1
+01 1
+10 1
+.names n256 n261 n266
+11 1
+.names n265 n259 n267
+01 1
+10 1
+.names n267 n266 o:risk_2
+01 1
+10 1
+.names n259 n266 n268
+01 1
+10 1
+.names n265 n266 n269
+01 1
+10 1
+.names n269 n268 n270
+11 1
+.names n270 n266 o:risk_3
+01 1
+10 1
+.end

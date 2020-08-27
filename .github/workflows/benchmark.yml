@@ -25,6 +25,8 @@ env:
   # terminate instance automatically after N minutes - this is important if the
   # machine or the workflow had an error
   instance-termination-timeout: 150
+  # the number of test runs to be executed for each tool
+  NUM_RUNS: 1
 
 jobs:
   # A job that creates a unique timestamp for each benchmark run. This is only executed once over all benchmarks so that
@@ -89,7 +91,8 @@ jobs:
               -e S3_FOLDER=${{ needs.setup.outputs.ts }} \
               -e AWS_ACCESS_KEY_ID=${{ env.AWS_ACCESS_KEY_ID }} \
               -e AWS_SECRET_ACCESS_KEY=${{ env.AWS_SECRET_ACCESS_KEY }} \
-              -e AWS_DEFAULT_REGION=${{ env.AWS_DEFAULT_REGION }} $(docker build -q .) && \
+              -e AWS_DEFAULT_REGION=${{ env.AWS_DEFAULT_REGION }} \
+              -e NUM_RUNS=${{ env.NUM_RUNS }} $(docker build -q .) && \
             shutdown -h now
       # print command ID that is helpful to debug execution of SSH command (alternatively, connect to VM via web session as it does not have a SSH key)
       - name: Print command ID

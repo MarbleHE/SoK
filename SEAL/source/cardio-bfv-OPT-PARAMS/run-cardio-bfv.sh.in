@@ -1,12 +1,12 @@
 #!/bin/bash
 
 RUN=1
-OUTPUT_FILENAME=seal_batched_ckks_cardio.csv
+OUTPUT_FILENAME=seal_bfv_cardio_optimal.csv
 
 echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OUTPUT_FILENAME
 
 while (( $RUN <= $NUM_RUNS ))
 do
     RUN=$(( $RUN + 1))
-    ./cardio_ckks_batched
+    ./cardio_bfv
 done

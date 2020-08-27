@@ -1,4 +1,5 @@
 #include "cardio-batched.h"
+#include "../common.h"
 
 /*
  * Batched BFV implementation for cardio benchmark.
@@ -462,6 +463,9 @@ void CardioBatched::run_cardio() {
   myfile.exceptions(myfile.exceptions() | std::ios::failbit |
                     std::ifstream::badbit);
   myfile << ss_time.str() << std::endl;
+
+  // write FHE parameters into file
+  write_parameters_to_file(context, "fhe_parameters.txt");
 }
 
 std::unique_ptr<seal::Ciphertext> CardioBatched::multvect(

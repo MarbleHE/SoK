@@ -1,4 +1,5 @@
 #include "cardio.h"
+
 #include "../common.h"
 
 #define SEX_FIELD 0
@@ -12,12 +13,11 @@ void Cardio::setup_context_bfv(std::size_t poly_modulus_degree,
   /// Wrapper for parameters
   seal::EncryptionParameters params(seal::scheme_type::BFV);
   params.set_poly_modulus_degree(poly_modulus_degree);
-  // Cingulata params + an additional moduli (44) as computation otherwise 
-  // cannot be performed
-  params.set_coeff_modulus(seal::CoeffModulus::Create(
-      poly_modulus_degree, {30, 40, 44, 50, 54, 60, 60}));
+  // Default SEAL params: correspond to approx. 128 bit of security
+  params.set_coeff_modulus(seal::CoeffModulus::BFVDefault(
+      poly_modulus_degree, seal::sec_level_type::tc128));
   params.set_plain_modulus(plain_modulus);
-  
+
   // Instantiate context
   context = seal::SEALContext::Create(params);
 
