@@ -182,15 +182,11 @@ vec mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v) {
   return r;
 }
 
-/// Split n int n1 and n2 s.t. n1 * n2 = n and n1 is close to sqrt(n)
-/// \param n number to be factored, must not be prime
-/// \return n1
-/// \throw std::invalid_argument if n cannot be factored
 size_t find_factor(size_t n) {
   size_t sqrt_n = sqrt(n); //approximate, because size_t->double->size_t
   size_t n1 = sqrt_n;
   size_t n2 = n/sqrt_n;
-  while (n1 < n && n1*n2!=n) {
+  while (n1 < n - 1 && n1*n2!=n) {
     n1++;
     n2 = n/n1;
   }

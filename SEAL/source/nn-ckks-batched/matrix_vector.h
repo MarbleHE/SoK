@@ -68,7 +68,6 @@ vec add(vec a, vec b);
  */
 vec mult(vec a, vec b);
 
-
 /**
  * \brief The d-th diagonal of a matrix. The matrix M must be square.
  * \param M A *square* matrix of size dim x dim
@@ -78,7 +77,6 @@ vec mult(vec a, vec b);
  */
 vec diag(matrix M, size_t d);
 
-
 /**
  * \brief Returns a list of all the diagonals of a matrix. The matrix must be square. Numbering starts with the main diagonal and moves up with wrap-around, i.e. the last element is the diagonal one below the main diagonal).
  * \param M A *square* matrix of size dim x dim.
@@ -86,7 +84,6 @@ vec diag(matrix M, size_t d);
  * \throw std::invalid_argument if M is non-square
  */
 std::vector<vec> diagonals(const matrix M);
-
 
 /**
  * \brief Returns a vector of twice the length, with the elements repeated in the same sequence
@@ -115,6 +112,13 @@ vec mvp_from_diagonals(std::vector<vec> diagonals, vec v);
  */
 vec mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v);
 
+/**
+ * \brief Split n int n1 and n2 s.t. n1 * n2 = n and n1 is close to sqrt(n)
+ * \param n number to be factored, must not be prime
+ * \return n1
+ * \throw std::invalid_argument if n cannot be factored
+ */
+size_t find_factor(size_t n);
 
 /**
  * \brief Computes the matrix-vector-product between a matrix M represented by its diagonals, and a vector.
@@ -125,7 +129,6 @@ vec mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v);
  * \throw std::invalid_argument if the dimensions mismatch
  */
 vec general_mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v);
-
 
 /**
  * \brief Test if x is a perfect square, i.e. x = y^2 for an integer y?
@@ -165,6 +168,6 @@ vec rnn_with_squaring(vec x, vec h, matrix W_x, matrix W_h, vec b);
  * \param[in] tolerance Ratio by which values can disagree. Default 0.001, i.e. 0.1%
  * \throw std::invalid_argument if the dimensions mismatch
  */
-bool equal(vec r, vec expected, float tolerance=0.001);
+bool equal(vec r, vec expected, float tolerance = 0.001);
 
 ///@} // End of Plaintext Matrix-Vector Helpers

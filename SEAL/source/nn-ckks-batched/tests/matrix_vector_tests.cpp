@@ -343,4 +343,18 @@ namespace MVPlaintextTests
 		EXPECT_THROW(rnn_with_squaring(x, h, W_x, {}, b), invalid_argument);
 		EXPECT_THROW(rnn_with_squaring(x, h, W_x, W_h, {}), invalid_argument);
 	}
+
+	TEST(PlaintextOperations, Factoring)
+	{
+	  const size_t prime = 953;
+	  vector<size_t> ns = { 1, 2, 6, 10, 25, 54, 117, 468, 550, 900, 792};
+
+	  EXPECT_THROW(find_factor(prime),invalid_argument);
+	  for(auto n: ns) {
+	    auto n1 = find_factor(n);
+	    auto n2 = n/n1;
+        EXPECT_EQ(n1 * n2, n);
+	  }
+
+	}
 }
