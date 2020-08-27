@@ -78,19 +78,19 @@ vec add(vec a, vec b);
 vec mult(vec a, vec b);
 
 /**
- * \brief The d-th diagonal of a matrix. The matrix M must be square.
- * \param M A *square* matrix of size dim x dim
- * \param d Index of the diagonal, where d = 0 is the main diagonal. Wraps around, i.e. d = dim is the last diagonal (the one below main diagonal)
- * \return d-th diagonal  of M, a vector of length dim
- * \throw std::invalid_argument if M is non-square or d is geq than matrix dimension
+ * \brief The d-th (generalized) diagonal of a matrix. The matrix M must be "squat".
+ * \param M A matrix of size m x n, where m <= n
+ * \param d Index of the diagonal, where d = 0 is the main diagonal. Wraps around, i.e. d = n is the last diagonal (the one below main diagonal)
+ * \return d-th diagonal  of M, a vector of length m
+ * \throw std::invalid_argument if M is non-squat or d is geq than n
  */
 vec diag(matrix M, size_t d);
 
 /**
- * \brief Returns a list of all the diagonals of a matrix. The matrix must be square. Numbering starts with the main diagonal and moves up with wrap-around, i.e. the last element is the diagonal one below the main diagonal).
- * \param M A *square* matrix of size dim x dim.
- * \return The list of length dim of all the diagonals of M, each a vector of length dim
- * \throw std::invalid_argument if M is non-square
+ * \brief Returns a list of all the (generalized) diagonals of a "squat" matrix. Numbering starts with the main diagonal and moves up with wrap-around, i.e. the last element is the diagonal one below the main diagonal).
+ * \param M A matrix of size m x n, where m <= n
+ * \return The list of length m of all the diagonals of M, each a vector of length n
+ * \throw std::invalid_argument if M is non-squat
  */
 std::vector<vec> diagonals(const matrix M);
 

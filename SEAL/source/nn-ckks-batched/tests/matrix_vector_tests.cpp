@@ -170,7 +170,7 @@ namespace MVPlaintextTests
 		EXPECT_THROW(mult(v1, {}), invalid_argument);
 	}
 
-	TEST(PlaintextOperations, Diag)
+	TEST(PlaintextOperations, DiagOnSquare)
 	{
 		const auto m = random_square_matrix(dim);
 		for (size_t d = 0; d < dim; ++d)
@@ -183,12 +183,27 @@ namespace MVPlaintextTests
 			}
 		}
 
-		// Non-square
-		EXPECT_THROW(diag(matrix(dim), 0), invalid_argument);
-
 		// Non-existent diagonal
 		EXPECT_THROW(diag(m, dim + 1), invalid_argument);
 	}
+
+    TEST(PlaintextOperations, Diag)
+    {
+      const auto m = random_matrix(dim, dim2);
+      for (size_t d = 0; d < dim; ++d)
+      {
+        const auto r = diag(m, d);
+        ASSERT_EQ(r.size(), dim2);
+        for (size_t i = 0; i < dim2; ++i)
+        {
+          EXPECT_EQ(r[i], m[i % dim][(i + d) % dim2]);
+        }
+      }
+
+      // Non-existent diagonal
+      EXPECT_THROW(diag(m, dim2 + 1), invalid_argument);
+    }
+
 
 	TEST(PlaintextOperations, Diagonals)
 	{
@@ -243,7 +258,7 @@ namespace MVPlaintextTests
 		EXPECT_THROW(mvp_from_diagonals(vector(dim, vec()), v), invalid_argument);
 	}
 
-	void MatrixVectorBSGS(size_t dimension)
+	void SquareMatrixVectorBSGS(size_t dimension)
 	{
 		const auto m = random_square_matrix(dimension);
 		const auto v = random_vector(dimension);
@@ -258,11 +273,11 @@ namespace MVPlaintextTests
 		}
 	}
 
-	TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_mismatch)
+	TEST(PlaintextOperations, SquareMatrixVectorFromDiagonalsBSGS_mismatch)
 	{
 		// Non-square-number sizes should give errors
-		EXPECT_THROW(MatrixVectorBSGS(15), invalid_argument);
-		EXPECT_THROW(MatrixVectorBSGS(205), invalid_argument);
+		EXPECT_THROW(SquareMatrixVectorBSGS(15), invalid_argument);
+		EXPECT_THROW(SquareMatrixVectorBSGS(205), invalid_argument);
 
 		// Mismatching sizes should throw exception, even if some are square numbers
 		EXPECT_THROW(mvp_from_diagonals_bsgs(diagonals(random_square_matrix(16)), {}), invalid_argument);
@@ -270,19 +285,19 @@ namespace MVPlaintextTests
 		EXPECT_THROW(mvp_from_diagonals_bsgs(vector(16, vec()), random_vector(16)), invalid_argument);
 	}
 
-	TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_16)
+	TEST(PlaintextOperations, SquareMatrixVectorFromDiagonalsBSGS_16)
 	{
-		MatrixVectorBSGS(16);
+		SquareMatrixVectorBSGS(16);
 	}
 
-	TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_49)
+	TEST(PlaintextOperations, SquareMatrixVectorFromDiagonalsBSGS_49)
 	{
-		MatrixVectorBSGS(49);
+		SquareMatrixVectorBSGS(49);
 	}
 
-	TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_256)
+	TEST(PlaintextOperations, SquareMatrixVectorFromDiagonalsBSGS_256)
 	{
-		MatrixVectorBSGS(256);
+		SquareMatrixVectorBSGS(256);
 	}
 
 	TEST(PlaintextOperations, PerfectSquare)
@@ -396,5 +411,42 @@ namespace MVPlaintextTests
 	  }
 	}
 
+    void MatrixVectorBSGS(size_t dimension1, size_t dimension2)
+    {
+      const auto m = random_matrix(dimension1, dimension2);
+      const auto v = random_vector(dimension2);
+      const auto expected = mvp(m, v);
+    
+      vec r = general_mvp_from_diagonals_bsgs(diagonals(m), v);
+    
+      ASSERT_EQ(r.size(), dimension2);
+      for (size_t i = 0; i < dimension2; ++i)
+      {
+        EXPECT_FLOAT_EQ(r[i], expected[i]);
+      }
+    }
+    
+    TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_mismatch)
+    {
+      // Mismatching sizes should throw exception
+      EXPECT_THROW(general_mvp_from_diagonals_bsgs(diagonals(random_square_matrix(16)), {}), invalid_argument);
+      EXPECT_THROW(general_mvp_from_diagonals_bsgs({}, random_vector(16)), invalid_argument);
+      EXPECT_THROW(general_mvp_from_diagonals_bsgs(vector(16, vec()), random_vector(16)), invalid_argument);
+    }
+    
+    TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_16_18)
+    {
+      MatrixVectorBSGS(16,18);
+    }
+    
+    TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_49)
+    {
+      MatrixVectorBSGS(49,49);
+    }
+    
+    TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_256)
+    {
+      MatrixVectorBSGS(256,256);
+    }
 
 }

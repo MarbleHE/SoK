@@ -103,22 +103,28 @@ vec mult(vec a, vec b) {
 }
 
 vec diag(matrix M, size_t d) {
-  const size_t dim = M.size();
-  if (dim==0 || M[0].size()!=dim || d >= dim) {
-    throw invalid_argument("Matrix must be square and d must be smaller than matrix dimension.");
+  const size_t m = M.size();
+  const size_t n = m > 0 ? M[0].size() : 0;
+  if (m==0 || n==0 || m > n) {
+    throw invalid_argument("Matrix must have non-zero dimensions and must have m <= n.");
   }
-  vec diag(dim);
-  for (size_t i = 0; i < dim; i++) {
-    diag[i] = M[i][(i + d)%dim];
+  if (d > n) {
+    throw invalid_argument("Invalid Diagonal Index.");
+  }
+  vec diag(n);
+  for (size_t k = 0; k < n; k++) {
+    diag[k] = M[k % m][(k+d) % n];
   }
   return diag;
 }
 
 vector<vec> diagonals(const matrix M) {
-  if (M.size()==0) {
-    throw invalid_argument("Matrix must be square and have non-zero dimension.");
+  const size_t m = M.size();
+  const size_t n = m > 0 ? M[0].size() : 0;
+  if (m==0 || n==0 || m > n) {
+    throw invalid_argument("Matrix must have non-zero dimensions and must have m <= n.");
   }
-  vector<vec> diagonals(M.size());
+  vector<vec> diagonals(m);
   for (size_t i = 0; i < M.size(); ++i) {
     diagonals[i] = diag(M, i);
   }
@@ -227,7 +233,7 @@ vec general_mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v) {
   // Talk presented at the Microsoft Research Private AI Bootcamp on 2019-12-02.
   // Available at https://youtu.be/d2bIhv9ExTs (Recording) or https://github.com/WeiDaiWD/Private-AI-Bootcamp-Materials (Slides)
 
-  vec r(dim_k, 0);
+  vec r(dim_n, 0);
 
   // Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n1 rotations
   vector<vec> rotated_vs(n1, v);
@@ -236,9 +242,9 @@ vec general_mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v) {
   }
 
   for (size_t k = 0; k < n1; ++k) {
-    vec inner_sum(dim_k, 0);
+    vec inner_sum(dim_n, 0);
     for (size_t j = 0; j < n1; ++j) {
-      // Take the current_diagonal and rotate it by -k*sqrt_dim to match the not-yet-enough-rotated vector v
+      // Take the current_diagonal and rotate it by -k*n1 to match the not-yet-enough-rotated vector v
       vec current_diagonal = diagonals[(k*n1 + j)%dim_k];
       rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k*n1,
              current_diagonal.end());
