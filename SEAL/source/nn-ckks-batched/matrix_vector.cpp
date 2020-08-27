@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 
 using namespace std;
 
@@ -272,4 +273,22 @@ vec rnn_with_squaring(vec x, vec h, matrix W_x, matrix W_h, vec b)
 		t = t * t;
 	}
 	return r;
+}
+
+bool equal(vec r, vec expected, float tolerance)
+{
+  bool equal = true;
+  for (size_t i = 0; i < r.size(); ++i)
+  {
+    // Test if value is within tolerance of the actual value or 10 sig figs
+    const auto difference = abs(r[i] - expected[i]);
+    if (difference > max(0.000000001, tolerance * abs(expected[i])))
+    {
+      equal = false;
+      std::cout << "\tERROR: difference of " << difference << " detected, where r[" << i << "]: " << r[i] <<
+           " and expected[" << i << "]: " << expected[i] << std::endl;
+      //throw runtime_error("Comparison to expected failed");
+    }
+  }
+  return equal;
 }

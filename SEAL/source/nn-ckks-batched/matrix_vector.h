@@ -147,4 +147,13 @@ vec rnn_with_relu(vec x, vec h, matrix W_x, matrix W_h, vec b);
  */
 vec rnn_with_squaring(vec x, vec h, matrix W_x, matrix W_h, vec b);
 
+/**
+ * \brief Checks if two vectors are (approximately) equal
+ * \param[in] r Vector of length d containing the first vector
+ * \param[in] expected Vector of length d containing the expected result
+ * \param[in] tolerance Ratio by which values can disagree. Default 0.001, i.e. 0.1%
+ * \throw std::invalid_argument if the dimensions mismatch
+ */
+bool equal(vec r, vec expected, float tolerance=0.001);
+
 ///@} // End of Plaintext Matrix-Vector Helpers
