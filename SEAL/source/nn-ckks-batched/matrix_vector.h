@@ -137,7 +137,7 @@ size_t find_factor(size_t n);
  * \return The matrix-vector product between M and v, a vector of length n
  * \throw std::invalid_argument if the dimensions mismatch
  */
-vec general_mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v);
+vec general_mvp_from_diagonals(std::vector<vec> diagonals, vec v);
 
 /**
  * \brief Test if x is a perfect square, i.e. x = y^2 for an integer y?

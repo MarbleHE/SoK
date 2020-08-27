@@ -213,7 +213,7 @@ size_t find_factor(size_t n) {
   return n1;
 
 }
-vec general_mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v) {
+vec general_mvp_from_diagonals(std::vector<vec> diagonals, vec v) {
   const size_t dim_k = diagonals.size();
   if (dim_k==0) {
     throw invalid_argument(
@@ -235,26 +235,26 @@ vec general_mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v) {
 
   vec r(dim_n, 0);
 
-  // Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n1 rotations
-  vector<vec> rotated_vs(n1, v);
-  for (size_t j = 0; j < n1; ++j) {
-    rotate(rotated_vs[j].begin(), rotated_vs[j].begin() + j, rotated_vs[j].end());
-  }
-
-  for (size_t k = 0; k < n1; ++k) {
-    vec inner_sum(dim_n, 0);
-    for (size_t j = 0; j < n1; ++j) {
-      // Take the current_diagonal and rotate it by -k*n1 to match the not-yet-enough-rotated vector v
-      vec current_diagonal = diagonals[(k*n1 + j)%dim_k];
-      rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k*n1,
-             current_diagonal.end());
-
-      // inner_sum += rot(current_diagonal) * current_rot_v
-      inner_sum = add(inner_sum, mult(current_diagonal, rotated_vs[j]));
-    }
-    rotate(inner_sum.begin(), inner_sum.begin() + (k*n1), inner_sum.end());
-    r = add(r, inner_sum);
-  }
+//  // Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n1 rotations
+//  vector<vec> rotated_vs(n1, v);
+//  for (size_t j = 0; j < n1; ++j) {
+//    rotate(rotated_vs[j].begin(), rotated_vs[j].begin() + j, rotated_vs[j].end());
+//  }
+//
+//  for (size_t k = 0; k < n1; ++k) {
+//    vec inner_sum(dim_n, 0);
+//    for (size_t j = 0; j < n1; ++j) {
+//      // Take the current_diagonal and rotate it by -k*n1 to match the not-yet-enough-rotated vector v
+//      vec current_diagonal = diagonals[(k*n1 + j)%dim_k];
+//      rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k*n1,
+//             current_diagonal.end());
+//
+//      // inner_sum += rot(current_diagonal) * current_rot_v
+//      inner_sum = add(inner_sum, mult(current_diagonal, rotated_vs[j]));
+//    }
+//    rotate(inner_sum.begin(), inner_sum.begin() + (k*n1), inner_sum.end());
+//    r = add(r, inner_sum);
+//  }
   return r;
 }
 

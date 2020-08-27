@@ -411,13 +411,13 @@ namespace MVPlaintextTests
 	  }
 	}
 
-    void MatrixVectorBSGS(size_t dimension1, size_t dimension2)
+    void GeneralMatrixVector(size_t dimension1, size_t dimension2)
     {
       const auto m = random_matrix(dimension1, dimension2);
       const auto v = random_vector(dimension2);
       const auto expected = mvp(m, v);
     
-      vec r = general_mvp_from_diagonals_bsgs(diagonals(m), v);
+      vec r = general_mvp_from_diagonals(diagonals(m), v);
     
       ASSERT_EQ(r.size(), dimension2);
       for (size_t i = 0; i < dimension2; ++i)
@@ -429,24 +429,21 @@ namespace MVPlaintextTests
     TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_mismatch)
     {
       // Mismatching sizes should throw exception
-      EXPECT_THROW(general_mvp_from_diagonals_bsgs(diagonals(random_square_matrix(16)), {}), invalid_argument);
-      EXPECT_THROW(general_mvp_from_diagonals_bsgs({}, random_vector(16)), invalid_argument);
-      EXPECT_THROW(general_mvp_from_diagonals_bsgs(vector(16, vec()), random_vector(16)), invalid_argument);
+      EXPECT_THROW(general_mvp_from_diagonals(diagonals(random_square_matrix(16)), {}), invalid_argument);
+      EXPECT_THROW(general_mvp_from_diagonals({}, random_vector(16)), invalid_argument);
+      EXPECT_THROW(general_mvp_from_diagonals(vector(16, vec()), random_vector(16)), invalid_argument);
     }
     
-    TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_16_18)
+    TEST(PlaintextOperations, MatrixVectorFromDiagonals_SquareSizes)
     {
-      MatrixVectorBSGS(16,18);
+      GeneralMatrixVector(16, 16);
+      GeneralMatrixVector(49, 49);
+      GeneralMatrixVector(256, 256);
     }
-    
-    TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_49)
+
+    TEST(PlaintextOperations, MatrixVectorFromDiagonals_900_30)
     {
-      MatrixVectorBSGS(49,49);
-    }
-    
-    TEST(PlaintextOperations, MatrixVectorFromDiagonalsBSGS_256)
-    {
-      MatrixVectorBSGS(256,256);
+      GeneralMatrixVector(900, 30);
     }
 
 }

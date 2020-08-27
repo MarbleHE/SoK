@@ -168,7 +168,7 @@ void NNBatched::run_nn() {
   // First, compute the MVP between d1_weights and the input
 
   // PTXT check
-  auto r = general_mvp_from_diagonals_bsgs(d1.weights_as_diags(),image);
+  auto r = general_mvp_from_diagonals(d1.weights_as_diags(), image);
   // CTXT actual
   seal::Ciphertext result;
   ptxt_matrix_enc_vector_product_bsgs(*galoisKeys,
