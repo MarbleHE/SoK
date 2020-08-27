@@ -27,7 +27,8 @@ RUN apt-get update -qq \
     tzdata \
     xxd \ 
     yad \
-    rename
+    rename \
+    xmlstarlet
 
 ###### install the AWS CLI required for result upload to S3
 ENV DEBIAN_FRONTEND=noninteractive
