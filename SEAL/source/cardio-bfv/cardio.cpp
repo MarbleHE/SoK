@@ -1,4 +1,5 @@
 #include "cardio.h"
+#include "../common.h"
 
 #define SEX_FIELD 0
 #define ANTECEDENT_FIELD 1
@@ -12,9 +13,11 @@ void Cardio::setup_context_bfv(std::size_t poly_modulus_degree,
   seal::EncryptionParameters params(seal::scheme_type::BFV);
   params.set_poly_modulus_degree(poly_modulus_degree);
   // Default SEAL params: corresponds to approx. 128 bit of security
-  // params.set_coeff_modulus(seal::CoeffModulus::BFVDefault(poly_modulus_degree, seal::sec_level_type::tc128));
-  // Cingulata params + an additional moduli (44): corresponds to 128 201 bit of security
-  params.set_coeff_modulus(seal::CoeffModulus::Create(poly_modulus_degree, {30, 40, 44, 50, 54, 60, 60})); 
+  // params.set_coeff_modulus(seal::CoeffModulus::BFVDefault(poly_modulus_degree,
+  // seal::sec_level_type::tc128)); Cingulata params + an additional moduli
+  // (44): corresponds to 128 201 bit of security
+  params.set_coeff_modulus(seal::CoeffModulus::Create(
+      poly_modulus_degree, {30, 40, 44, 50, 54, 60, 60}));
   params.set_plain_modulus(plain_modulus);  /// 2
 
   // Instantiate context
@@ -384,7 +387,8 @@ void Cardio::run_cardio() {
 
   // flags[ANTECEDENT_FIELD]
   // expected: true
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[ANTECEDENT_FIELD]));
+  risk_score =
+      add(risk_score, ctxt_to_ciphertextvector(flags[ANTECEDENT_FIELD]));
 
   // flags[SMOKER_FIELD]
   // expected: true
@@ -454,10 +458,14 @@ void Cardio::run_cardio() {
   myfile.open("seal_bfv_cardio.csv", std::ios_base::app);
   myfile << ss_time.str() << std::endl;
   myfile.close();
+
+  // write FHE parameters into file
+  write_parameters_to_file(context, "fhe_parameters.txt");
 }
 
 int main(int argc, char *argv[]) {
   std::cout << "Starting benchmark 'cardio-bfv'..." << std::endl;
   Cardio().run_cardio();
+
   return 0;
 }

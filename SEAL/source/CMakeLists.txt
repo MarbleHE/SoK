@@ -12,21 +12,21 @@ set(CMAKE_BUILD_TYPE DEBUG)
 # target_link_libraries(laplacian SEAL::seal)
 
 # Cardio BFV
-add_executable(cardio_bfv cardio-bfv/cardio.cpp)
+add_executable(cardio_bfv cardio-bfv/cardio.cpp common.h)
 set_target_properties(cardio_bfv PROPERTIES LINKER_LANGUAGE CXX) 
 target_link_libraries(cardio_bfv SEAL::seal)
 configure_file(cardio-bfv/run-cardio-bfv.sh.in tmp/run-cardio-bfv.sh)
 file (COPY ${CMAKE_BINARY_DIR}/tmp/run-cardio-bfv.sh DESTINATION ${CMAKE_BINARY_DIR} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 
 # Cardio batched BFV
-add_executable(cardio_bfv_batched cardio-bfv-batched/cardio-batched.cpp)
+add_executable(cardio_bfv_batched cardio-bfv-batched/cardio-batched.cpp common.h)
 set_target_properties(cardio_bfv_batched PROPERTIES LINKER_LANGUAGE CXX) 
 target_link_libraries(cardio_bfv_batched SEAL::seal)
 configure_file(cardio-bfv-batched/run-cardio-bfv-batched.sh.in tmp/run-cardio-bfv-batched.sh)
 file (COPY ${CMAKE_BINARY_DIR}/tmp/run-cardio-bfv-batched.sh DESTINATION ${CMAKE_BINARY_DIR} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 
-# # Cardio batched CKKS
-add_executable(cardio_ckks_batched cardio-ckks-batched/cardio-batched.cpp)
+# Cardio batched CKKS
+add_executable(cardio_ckks_batched cardio-ckks-batched/cardio-batched.cpp common.h)
 set_target_properties(cardio_ckks_batched PROPERTIES LINKER_LANGUAGE CXX) 
 target_link_libraries(cardio_ckks_batched SEAL::seal)
 configure_file(cardio-ckks-batched/run-cardio-ckks-batched.sh.in tmp/run-cardio-ckks-batched.sh)
