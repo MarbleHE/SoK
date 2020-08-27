@@ -302,16 +302,16 @@ void Cardio::run_cardio() {
   log_time(ss_time, t0, t1, false);
 
   auto t2 = Time::now();
-  // encode and encrypt keystream
-  int32_t keystream[] = {241, 210, 225, 219, 92, 43, 197};
+  // // encode and encrypt keystream
+  // int32_t keystream[] = {241, 210, 225, 219, 92, 43, 197};
 
-  auto ks0 = encode_and_encrypt(keystream[0]);
-  auto ks1 = encode_and_encrypt(keystream[1]);
-  auto ks2 = encode_and_encrypt(keystream[2]);
-  auto ks3 = encode_and_encrypt(keystream[3]);
-  auto ks4 = encode_and_encrypt(keystream[4]);
-  auto ks5 = encode_and_encrypt(keystream[5]);
-  auto ks6 = encode_and_encrypt(keystream[6]);
+  // auto ks0 = encode_and_encrypt(keystream[0]);
+  // auto ks1 = encode_and_encrypt(keystream[1]);
+  // auto ks2 = encode_and_encrypt(keystream[2]);
+  // auto ks3 = encode_and_encrypt(keystream[3]);
+  // auto ks4 = encode_and_encrypt(keystream[4]);
+  // auto ks5 = encode_and_encrypt(keystream[5]);
+  // auto ks6 = encode_and_encrypt(keystream[6]);
 
   // === client-side computation ====================================
 
@@ -323,13 +323,13 @@ void Cardio::run_cardio() {
   //  flags_3 = 1
   //  flags_4 = 1
   // instead of 15 we encode 30 as the bit order in Cingulata is reversed
-  auto flags = encode_and_encrypt(30 ^ keystream[0]);  // 30 == 0001 1110
-  auto age = encode_and_encrypt(55 ^ keystream[1]);
-  auto hdl = encode_and_encrypt(50 ^ keystream[2]);
-  auto height = encode_and_encrypt(80 ^ keystream[3]);
-  auto weight = encode_and_encrypt(80 ^ keystream[4]);
-  auto physical_act = encode_and_encrypt(45 ^ keystream[5]);
-  auto drinking = encode_and_encrypt(4 ^ keystream[6]);
+  auto flags = encode_and_encrypt(30);  // 30 == 0001 1110
+  auto age = encode_and_encrypt(55);
+  auto hdl = encode_and_encrypt(50);
+  auto height = encode_and_encrypt(80);
+  auto weight = encode_and_encrypt(80);
+  auto physical_act = encode_and_encrypt(45);
+  auto drinking = encode_and_encrypt(4);
 
   auto t3 = Time::now();
   log_time(ss_time, t2, t3, false);
@@ -342,22 +342,22 @@ void Cardio::run_cardio() {
 
   // homomorphically execute the Kreyvium algorithm
   // arithmetic addition of bits corresponds to bitwise XOR
-  for (int i = 0; i < 8; ++i) {
-    // for (int i = 0; i < 5; i++) { flags[i] ^= keystream[0][i];}
-    evaluator->add_inplace(flags[i], ks0[i]);
-    // age ^= keystream[1];
-    evaluator->add_inplace(age[i], ks1[i]);
-    // hdl ^= keystream[2];
-    evaluator->add_inplace(hdl[i], ks2[i]);
-    // height ^= keystream[3];
-    evaluator->add_inplace(height[i], ks3[i]);
-    // weight ^= keystream[4];
-    evaluator->add_inplace(weight[i], ks4[i]);
-    // physical_act ^= keystream[5];
-    evaluator->add_inplace(physical_act[i], ks5[i]);
-    // drinking ^= keystream[6];
-    evaluator->add_inplace(drinking[i], ks6[i]);
-  }
+  // for (int i = 0; i < 8; ++i) {
+  //   // for (int i = 0; i < 5; i++) { flags[i] ^= keystream[0][i];}
+  //   evaluator->add_inplace(flags[i], ks0[i]);
+  //   // age ^= keystream[1];
+  //   evaluator->add_inplace(age[i], ks1[i]);
+  //   // hdl ^= keystream[2];
+  //   evaluator->add_inplace(hdl[i], ks2[i]);
+  //   // height ^= keystream[3];
+  //   evaluator->add_inplace(height[i], ks3[i]);
+  //   // weight ^= keystream[4];
+  //   evaluator->add_inplace(weight[i], ks4[i]);
+  //   // physical_act ^= keystream[5];
+  //   evaluator->add_inplace(physical_act[i], ks5[i]);
+  //   // drinking ^= keystream[6];
+  //   evaluator->add_inplace(drinking[i], ks6[i]);
+  // }
 
   // cardiac risk factor assessment algorithm
   seal::Ciphertext zero;
