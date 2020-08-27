@@ -238,7 +238,7 @@ vec general_mvp_from_diagonals(std::vector<vec> diagonals, vec v) {
     t = add(t, temp);
   }
 
-  vec r(n, 0);
+  vec r = t;
   size_t end = log2(n/m);
   for (int i = 0; i < end; ++i) {
     vec rotated_t = t;
