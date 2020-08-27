@@ -82,3 +82,9 @@ do
   DECRYPT_T=$( get_timestamp_ms )
   write_to_files $((${DECRYPT_T}-${FHE_EXEC_OPT_T}))"\n"
 done
+
+# Write FHE parameters into file for S3 upload
+echo "== FHE parameters ====" > fhe_parameters.txt
+echo "n:" $(xmlstarlet sel -t -v '/fhe_params/extra/n' < fhe_params.xml) >> fhe_parameters.txt
+echo "q:" "$(xmlstarlet sel -t -v '/fhe_params/extra/q_bitsize_SEAL_BFV' < fhe_params.xml)" "($(xmlstarlet sel -t -v '/fhe_params/ciphertext/coeff_modulo_log2' < fhe_params.xml) bit)" >> fhe_parameters.txt
+echo "T:" "$(xmlstarlet sel -t -v '/fhe_params/plaintext/coeff_modulo' < fhe_params.xml)" >> fhe_parameters.txt
