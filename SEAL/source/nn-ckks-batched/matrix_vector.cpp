@@ -113,7 +113,7 @@ vec diag(matrix M, size_t d) {
   }
   vec diag(n);
   for (size_t k = 0; k < n; k++) {
-    diag[k] = M[k % m][(k+d) % n];
+    diag[k] = M[k%m][(k + d)%n];
   }
   return diag;
 }
@@ -213,13 +213,13 @@ size_t find_factor(size_t n) {
 
 }
 vec general_mvp_from_diagonals(std::vector<vec> diagonals, vec v) {
-  const size_t dim_k = diagonals.size();
-  if (dim_k==0) {
+  const size_t m = diagonals.size();
+  if (m==0) {
     throw invalid_argument(
         "Matrix must not be empty!");
   }
-  const size_t dim_n = diagonals[0].size();
-  if (dim_n!=v.size() || dim_n==0) {
+  const size_t n = diagonals[0].size();
+  if (n!=v.size() || n==0) {
     throw invalid_argument(
         "Matrix and vector must have matching non-zero dimension");
   }
@@ -230,29 +230,26 @@ vec general_mvp_from_diagonals(std::vector<vec> diagonals, vec v) {
   // "DArL: Dynamic Parameter Adjustment for LWE-based Secure Inference" by Bian et al. 2019.
   // Available at https://ieeexplore.ieee.org/document/8715110/ (paywall)
 
-  vec t(dim_n, 0);
+  vec t(n, 0);
+  for (size_t i = 0; i < m; ++i) {
+    vec rotated_v = v;
+    rotate(rotated_v.begin(), rotated_v.begin() + i, rotated_v.end());
+    auto temp = mult(diagonals[i], rotated_v);
+    t = add(t, temp);
+  }
 
-//  // Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n1 rotations
-//  vector<vec> rotated_vs(n1, v);
-//  for (size_t j = 0; j < n1; ++j) {
-//    rotate(rotated_vs[j].begin(), rotated_vs[j].begin() + j, rotated_vs[j].end());
-//  }
-//
-//  for (size_t k = 0; k < n1; ++k) {
-//    vec inner_sum(dim_n, 0);
-//    for (size_t j = 0; j < n1; ++j) {
-//      // Take the current_diagonal and rotate it by -k*n1 to match the not-yet-enough-rotated vector v
-//      vec current_diagonal = diagonals[(k*n1 + j)%dim_k];
-//      rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k*n1,
-//             current_diagonal.end());
-//
-//      // inner_sum += rot(current_diagonal) * current_rot_v
-//      inner_sum = add(inner_sum, mult(current_diagonal, rotated_vs[j]));
-//    }
-//    rotate(inner_sum.begin(), inner_sum.begin() + (k*n1), inner_sum.end());
-//    r = add(r, inner_sum);
-//  }
-  return t;
+  vec r(n, 0);
+  size_t end = log2(n/m);
+  for (int i = 0; i < end; ++i) {
+    vec rotated_t = t;
+    size_t offset = n/(2 << i);
+    rotate(rotated_t.begin(), rotated_t.begin() + offset, rotated_t.end());
+    r = add(r, rotated_t);
+  }
+
+  r.resize(m);
+
+  return r;
 }
 
 bool perfect_square(unsigned long long x) {

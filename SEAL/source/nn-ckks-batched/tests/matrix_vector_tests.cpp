@@ -429,8 +429,8 @@ namespace MVPlaintextTests
     
       vec r = general_mvp_from_diagonals(diagonals(m), v);
     
-      ASSERT_EQ(r.size(), dimension2);
-      for (size_t i = 0; i < dimension2; ++i)
+      ASSERT_EQ(r.size(), dimension1);
+      for (size_t i = 0; i < dimension1; ++i)
       {
         EXPECT_FLOAT_EQ(r[i], expected[i]);
       }
@@ -443,7 +443,12 @@ namespace MVPlaintextTests
       EXPECT_THROW(general_mvp_from_diagonals({}, random_vector(16)), invalid_argument);
       EXPECT_THROW(general_mvp_from_diagonals(vector(16, vec()), random_vector(16)), invalid_argument);
     }
-    
+
+    TEST(PlaintextOperations, MatrixVectorFromDiagonals_Simple)
+    {
+      GeneralMatrixVector(2, 4);
+    }
+
     TEST(PlaintextOperations, MatrixVectorFromDiagonals_SquareSizes)
     {
       GeneralMatrixVector(16, 16);
