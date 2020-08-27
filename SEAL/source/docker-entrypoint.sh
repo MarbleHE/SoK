@@ -21,4 +21,4 @@ aws s3 cp fhe_parameters.txt ${S3_URL}/${S3_FOLDER}/SEAL-CKKS-Batched/
 # cardio nn batched
 ./run-nn-ckks-batched.sh
 aws s3 cp seal_batched_ckks_cardio.csv ${S3_URL}/${S3_FOLDER}/SEAL-CKKS-Batched/
-aws s3 cp fhe_parameters.txt ${S3_URL}/${S3_FOLDER}/SEAL-CKKS-Batched/
+aws s3 cp fhe_parameters_nn.txt ${S3_URL}/${S3_FOLDER}/SEAL-CKKS-Batched/
