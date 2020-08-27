@@ -80,7 +80,7 @@ do
   OUT_FILES=`ls -v output/*`
   $APPS_DIR/helper --from-bin --bit-cnt 8 `$APPS_DIR/decrypt  $OUT_FILES`
   DECRYPT_T=$( get_timestamp_ms )
-  echo -n $((${DECRYPT_T}-${FHE_EXEC_UNOPT_T}))"\n" >> $UNOPT_OUTPUT_FILENAME
+  echo -ne $((${DECRYPT_T}-${FHE_EXEC_UNOPT_T}))"\n" >> $UNOPT_OUTPUT_FILENAME
 done
 
 # reset the run counter
@@ -125,7 +125,7 @@ do
   OUT_FILES=`ls -v output/*`
   $APPS_DIR/helper --from-bin --bit-cnt 8 `$APPS_DIR/decrypt  $OUT_FILES`
   DECRYPT_T=$( get_timestamp_ms )
-  echo -n $((${DECRYPT_T}-${FHE_EXEC_OPT_T}))"\n" >> $OPT_OUTPUT_FILENAME
+  echo -ne $((${DECRYPT_T}-${FHE_EXEC_OPT_T}))"\n" >> $OPT_OUTPUT_FILENAME
 done
 
 # Write FHE parameters into file for S3 upload
