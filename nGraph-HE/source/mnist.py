@@ -17,6 +17,7 @@
 
 import time
 import os
+import copy
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -173,7 +174,7 @@ def main():
     num_runs = os.getenv("NUM_RUNS") if os.getenv("NUM_RUNS") is not None else 10
     for run in range(num_runs):
         global cur_times
-        cur_times = times
+        cur_times = copy.copy(times)
 
         train_model()
         ################################
