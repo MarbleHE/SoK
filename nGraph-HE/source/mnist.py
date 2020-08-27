@@ -16,6 +16,7 @@
 """An MNIST classifier using convolutional layers and relu activations. """
 
 import time
+import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -23,18 +24,39 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense, Activation
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.losses import categorical_crossentropy
+import ngraph_bridge
 
 # Add parent directory to path
 from mnist_util import (
     load_mnist_data,
-    server_argument_parser,
-    server_config_from_flags,
+    server_config,
     save_model,
     load_pb_file,
     print_nodes
 )
 
+####################
+# BENCHMARKING     #
+####################
+times = {
+    't_training': [],
+    't_keygen': [],
+    't_input_encryption': [],
+    't_computation': [],
+    't_decryption': [],
+    'test_accuracy': []
+}
+all_times = []
+cur_times = []
 
+
+def delta_ms(t0, t1):
+    return round(1000 * abs(t0 - t1))
+
+
+####################
+# MODEL DEFINITION #
+####################
 def mnist_mlp_model(input):
     def square_activation(x):
         return x * x
@@ -55,126 +77,120 @@ def mnist_mlp_model(input):
     return y
 
 
-def test_network(FLAGS):
-    ####################
-    # BENCHMARKING     #
-    ####################
-    times = {
-        't_training': [],
-        't_keygen': [],
-        't_input_encryption': [],
-        't_computation': [],
-        't_decryption': [],
-        'test_accuracy': []
-    }
+####################
+# TRAINING         #
+####################
+def train_model():
+    (x_train, y_train, x_test, y_test) = load_mnist_data()
 
-    all_times = []
+    x = Input(
+        shape=(
+            28,
+            28,
+            1,
+        ), name="input")
+    y = mnist_mlp_model(x)
 
-    def delta_ms(t0, t1):
-        return round(1000 * abs(t0 - t1))
+    mlp_model = Model(inputs=x, outputs=y)
+    print(mlp_model.summary())
 
+    def loss(labels, logits):
+        return categorical_crossentropy(labels, logits, from_logits=True)
+
+    optimizer = SGD(learning_rate=0.008, momentum=0.9)
+    mlp_model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
+
+    t0 = time.perf_counter()
+    mlp_model.fit(
+        x_train,
+        y_train,
+        epochs=10,
+        batch_size=128,
+        validation_data=(x_test, y_test),
+        verbose=1)
+
+    t1 = time.perf_counter()
+    cur_times['t_training'] = delta_ms(t0, t1)
+
+    test_loss, test_acc = mlp_model.evaluate(x_test, y_test, verbose=1)
+    print("\nTest accuracy:", test_acc)
+
+    save_model(
+        tf.compat.v1.keras.backend.get_session(),
+        ["output/BiasAdd"],
+        "./models",
+        "mlp",
+    )
+
+    # If we want to have training and testing in the same run, we must clean up after training
+    tf.keras.backend.clear_session
+    tf.reset_default_graph()
+
+
+####################
+# TESTING          #
+####################
+def test_network():
+    batch_size = 4000
+    # Load MNIST data (for test set)
+    (x_train, y_train, x_test, y_test) = load_mnist_data(start_batch=0, batch_size=batch_size)
+
+    # Load saved model
+    tf.import_graph_def(load_pb_file("models/mlp.pb"))
+
+    print("loaded model")
+    print_nodes()
+
+    # Get input / output tensors
+    x_input = tf.compat.v1.get_default_graph().get_tensor_by_name("import/input:0")
+    y_output = tf.compat.v1.get_default_graph().get_tensor_by_name("import/output/BiasAdd:0")
+
+    # Create configuration to encrypt input
+    config = server_config(x_input.name)
+    with tf.compat.v1.Session(config=config) as sess:
+        sess.run(tf.compat.v1.global_variables_initializer())
+        start_time = time.time()
+        y_hat = y_output.eval(feed_dict={x_input: x_test})
+        elasped_time = time.time() - start_time
+        print("total time(s)", np.round(elasped_time, 3))
+
+    y_test_label = np.argmax(y_test, 1)
+
+    if batch_size < 60:
+        print("y_hat", np.round(y_hat, 2))
+
+    y_pred = np.argmax(y_hat, 1)
+    correct_prediction = np.equal(y_pred, y_test_label)
+    error_count = np.size(correct_prediction) - np.sum(correct_prediction)
+    test_accuracy = np.mean(correct_prediction)
+
+    print("Error count", error_count, "of", batch_size, "elements.")
+    print("Accuracy: %g " % test_accuracy)
+    cur_times['test_accuracy'] = test_accuracy
+
+
+def main():
     num_runs = os.getenv("NUM_RUNS") if os.getenv("NUM_RUNS") is not None else 10
     for run in range(num_runs):
+        global cur_times
         cur_times = times
 
-        ####################
-        # TRAINING         #
-        ####################
-        (x_train, y_train, x_test, y_test) = load_mnist_data()
-
-        x = Input(
-            shape=(
-                28,
-                28,
-                1,
-            ), name="input")
-        y = mnist_mlp_model(x)
-
-        mlp_model = Model(inputs=x, outputs=y)
-        print(mlp_model.summary())
-
-        def loss(labels, logits):
-            return categorical_crossentropy(labels, logits, from_logits=True)
-
-        optimizer = SGD(learning_rate=0.008, momentum=0.9)
-        mlp_model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
-
-        t0 = time.perf_counter()
-        mlp_model.fit(
-            x_train,
-            y_train,
-            epochs=10,
-            batch_size=128,
-            validation_data=(x_test, y_test),
-            verbose=1)
-
-        t1 = time.perf_counter()
-        cur_times['t_training'] = delta_ms(t0, t1)
-
-        test_loss, test_acc = mlp_model.evaluate(x_test, y_test, verbose=1)
-        print("\nTest accuracy:", test_acc)
-
-        save_model(
-            tf.compat.v1.keras.backend.get_session(),
-            ["output/BiasAdd"],
-            "./models",
-            "mlp",
-        )
-
+        train_model()
         ################################
         # PREDICTING ON ENCRYPTED DATA #
         ################################
-
-        # Load MNIST data (for test set)
-        (x_train, y_train, x_test, y_test) = load_mnist_data(
-            FLAGS.start_batch, FLAGS.batch_size)
-
-        # Load saved model
-        tf.import_graph_def(load_pb_file(FLAGS.model_file))
-
-        print("loaded model")
-        print_nodes()
-
-        # Get input / output tensors
-        x_input = tf.compat.v1.get_default_graph().get_tensor_by_name(
-            FLAGS.input_node)
-        y_output = tf.compat.v1.get_default_graph().get_tensor_by_name(
-            FLAGS.output_node)
-
-        # Create configuration to encrypt input
-        config = server_config_from_flags(FLAGS, x_input.name)
-
         cur_times['t_keygen'] = 0  # TODO: FIND KEYGEN -seems to be buried pretty deep
         cur_times['t_input_encryption'] = 0  # TODO: FIND ENCRYPTION?
         cur_times['t_decryption'] = 0  # TODO: FIND DECRYPTION - seems to be buried pretty deep, too
 
         t0 = time.perf_counter()
-        with tf.compat.v1.Session(config=config) as sess:
-            sess.run(tf.compat.v1.global_variables_initializer())
-            start_time = time.time()
-            y_hat = y_output.eval(feed_dict={x_input: x_test})
-            elasped_time = time.time() - start_time
-            print("total time(s)", np.round(elasped_time, 3))
+
+        test_network()
 
         t1 = time.perf_counter()
         cur_times['t_computation'] = delta_ms(t0, t1)
-
-        if not FLAGS.enable_client:
-            y_test_label = np.argmax(y_test, 1)
-
-            if FLAGS.batch_size < 60:
-                print("y_hat", np.round(y_hat, 2))
-
-            y_pred = np.argmax(y_hat, 1)
-            correct_prediction = np.equal(y_pred, y_test_label)
-            error_count = np.size(correct_prediction) - np.sum(correct_prediction)
-            test_accuracy = np.mean(correct_prediction)
-
-            print("Error count", error_count, "of", FLAGS.batch_size, "elements.")
-            print("Accuracy: %g " % test_accuracy)
-            cur_times['test_accuracy'] = test_accuracy
-            print(cur_times)
-            all_times.append(cur_times)
+        print(cur_times)
+        all_times.append(cur_times)
 
     # Output the benchmarking results
     df = pd.DataFrame(all_times)
@@ -182,22 +198,4 @@ def test_network(FLAGS):
 
 
 if __name__ == "__main__":
-    FLAGS, unparsed = server_argument_parser().parse_known_args([
-        "--batch_size=4000",
-        "--backend=HE_SEAL",
-        "--encrypt_server_data=True",
-        "--encryption_parameters=/home/he-transformer/configs/he_seal_ckks_config_N13_L8.json"
-    ])
-    print("FLAGS:" + str(FLAGS))
-
-    if unparsed:
-        print("Unparsed flags:", unparsed)
-        exit(1)
-    if FLAGS.encrypt_server_data and FLAGS.enable_client:
-        raise Exception(
-            "encrypt_server_data flag only valid when client is not enabled. Note: the client can specify whether or not to encrypt the data using 'encrypt' or 'plain' in the configuration map"
-        )
-    if FLAGS.model_file == "":
-        FLAGS.model_file = "models/mlp.pb"
-
-    test_network(FLAGS)
+    main()
