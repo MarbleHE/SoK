@@ -160,40 +160,39 @@ vec mvp_from_diagonals(std::vector<vec> diagonals, vec v) {
 }
 
 vec mvp_from_diagonals_bsgs(std::vector<vec> diagonals, vec v) {
-  const size_t dim = diagonals.size();
-  if (dim==0 || diagonals[0].size()!=dim || v.size()!=dim || !perfect_square(dim)) {
+  const size_t n = diagonals.size();
+  if (n==0 || diagonals[0].size()!=n || v.size()!=n) {
     throw invalid_argument(
-        "Matrix must be square, Matrix and vector must have matching non-zero dimension, Dimension must be a square number!");
+        "Matrix must be square and Matrix and vector must have matching non-zero dimension");
   }
 
-  // Since dim is a power-of-two, this should be accurate even with the conversion to double and back
-  const size_t sqrt_dim = sqrt(dim);
+  const size_t n1 = find_factor(n);
+  const size_t n2 = n/n1;
 
   // Baby step-giant step algorithm based on "Techniques in privacy-preserving machine learning" by Hao Chen, Microsoft Research
   // Talk presented at the Microsoft Research Private AI Bootcamp on 2019-12-02.
   // Available at https://youtu.be/d2bIhv9ExTs (Recording) or https://github.com/WeiDaiWD/Private-AI-Bootcamp-Materials (Slides)
-  // Note that here, n1 = n2 = sqrt(n)
 
-  vec r(dim, 0);
+  vec r(n, 0);
 
-  // Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n2 rotations
-  vector<vec> rotated_vs(sqrt_dim, v);
-  for (size_t j = 0; j < sqrt_dim; ++j) {
+  // Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n1 rotations
+  vector<vec> rotated_vs(n1, v);
+  for (size_t j = 0; j < n1; ++j) {
     rotate(rotated_vs[j].begin(), rotated_vs[j].begin() + j, rotated_vs[j].end());
   }
 
-  for (size_t k = 0; k < sqrt_dim; ++k) {
-    vec inner_sum(dim, 0);
-    for (size_t j = 0; j < sqrt_dim; ++j) {
-      // Take the current_diagonal and rotate it by -k*sqrt_dim to match the not-yet-enough-rotated vector v
-      vec current_diagonal = diagonals[(k*sqrt_dim + j)%dim];
-      rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k*sqrt_dim,
+  for (size_t k = 0; k < n2; ++k) {
+    vec inner_sum(n, 0);
+    for (size_t j = 0; j < n1; ++j) {
+      // Take the current_diagonal and rotate it by -k*n1 to match the not-yet-enough-rotated vector v
+      vec current_diagonal = diagonals[(k*n1 + j)%n];
+      rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k*n1,
              current_diagonal.end());
 
       // inner_sum += rot(current_diagonal) * current_rot_v
       inner_sum = add(inner_sum, mult(current_diagonal, rotated_vs[j]));
     }
-    rotate(inner_sum.begin(), inner_sum.begin() + (k*sqrt_dim), inner_sum.end());
+    rotate(inner_sum.begin(), inner_sum.begin() + (k*n1), inner_sum.end());
     r = add(r, inner_sum);
   }
   return r;
@@ -225,15 +224,13 @@ vec general_mvp_from_diagonals(std::vector<vec> diagonals, vec v) {
         "Matrix and vector must have matching non-zero dimension");
   }
 
-  const size_t n1 = find_factor(dim_n);
-  const size_t n2 = dim_n/n1;
-  std::cout << "Split " << dim_n << " into n1=" << n1 << " and n2=" << n2 << std::endl;
+  // Hybrid algorithm based on "GAZELLE: A Low Latency Framework for Secure Neural Network Inference" by Juvekar et al.
+  // Available at https://www.usenix.org/conference/usenixsecurity18/presentation/juvekar
+  // Actual Implementation based on the description in
+  // "DArL: Dynamic Parameter Adjustment for LWE-based Secure Inference" by Bian et al. 2019.
+  // Available at https://ieeexplore.ieee.org/document/8715110/ (paywall)
 
-  // Baby step-giant step algorithm based on "Techniques in privacy-preserving machine learning" by Hao Chen, Microsoft Research
-  // Talk presented at the Microsoft Research Private AI Bootcamp on 2019-12-02.
-  // Available at https://youtu.be/d2bIhv9ExTs (Recording) or https://github.com/WeiDaiWD/Private-AI-Bootcamp-Materials (Slides)
-
-  vec r(dim_n, 0);
+  vec t(dim_n, 0);
 
 //  // Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n1 rotations
 //  vector<vec> rotated_vs(n1, v);
@@ -255,7 +252,7 @@ vec general_mvp_from_diagonals(std::vector<vec> diagonals, vec v) {
 //    rotate(inner_sum.begin(), inner_sum.begin() + (k*n1), inner_sum.end());
 //    r = add(r, inner_sum);
 //  }
-  return r;
+  return t;
 }
 
 bool perfect_square(unsigned long long x) {

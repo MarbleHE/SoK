@@ -275,9 +275,9 @@ namespace MVPlaintextTests
 
 	TEST(PlaintextOperations, SquareMatrixVectorFromDiagonalsBSGS_mismatch)
 	{
-		// Non-square-number sizes should give errors
-		EXPECT_THROW(SquareMatrixVectorBSGS(15), invalid_argument);
-		EXPECT_THROW(SquareMatrixVectorBSGS(205), invalid_argument);
+		// Prime-number sizes should give errors
+		EXPECT_THROW(SquareMatrixVectorBSGS(17), invalid_argument);
+		EXPECT_THROW(SquareMatrixVectorBSGS(109), invalid_argument);
 
 		// Mismatching sizes should throw exception, even if some are square numbers
 		EXPECT_THROW(mvp_from_diagonals_bsgs(diagonals(random_square_matrix(16)), {}), invalid_argument);
@@ -290,10 +290,20 @@ namespace MVPlaintextTests
 		SquareMatrixVectorBSGS(16);
 	}
 
+    TEST(PlaintextOperations, SquareMatrixVectorFromDiagonalsBSGS_25)
+    {
+      SquareMatrixVectorBSGS(25);
+    }
+
 	TEST(PlaintextOperations, SquareMatrixVectorFromDiagonalsBSGS_49)
 	{
 		SquareMatrixVectorBSGS(49);
 	}
+
+    TEST(PlaintextOperations, SquareMatrixVectorFromDiagonalsBSGS_67)
+    {
+      SquareMatrixVectorBSGS(49);
+    }
 
 	TEST(PlaintextOperations, SquareMatrixVectorFromDiagonalsBSGS_256)
 	{
@@ -441,9 +451,9 @@ namespace MVPlaintextTests
       GeneralMatrixVector(256, 256);
     }
 
-    TEST(PlaintextOperations, MatrixVectorFromDiagonals_900_30)
+    TEST(PlaintextOperations, MatrixVectorFromDiagonals_30_900)
     {
-      GeneralMatrixVector(900, 30);
+      GeneralMatrixVector(30, 900);
     }
 
 }
