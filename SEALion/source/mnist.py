@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import sealion as sl
 import sealion.heras.datasets.mnist as mnist
+import os
 
 # Load MNIST dataset. These are just regular numpy arrays.
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
@@ -57,7 +58,8 @@ model.compile(loss='categorical_crossentropy',
               optimizer='adam',
               metrics=['accuracy'])
 
-for run in range(10):
+num_runs = os.getenv("NUM_RUNS") if os.getenv("NUM_RUNS") is not None else 10
+for run in range(num_runs):
     cur_times = times
 
     ############

@@ -73,7 +73,8 @@ def test_network(FLAGS):
     def delta_ms(t0, t1):
         return round(1000 * abs(t0 - t1))
 
-    for run in range(10):
+    num_runs = os.getenv("NUM_RUNS") if os.getenv("NUM_RUNS") is not None else 10
+    for run in range(num_runs):
         cur_times = times
 
         ####################
