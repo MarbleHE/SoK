@@ -11,6 +11,15 @@ typedef std::vector<double> vec;
 
 /// \name Plaintext Matrix-Vector Helpers
 ///@{
+
+/**
+ * \brief Generates a m x n matrix with random values from [-1/2,1/2]
+ * \param m First dimension of the matrix
+ * \param n Second dimension of the matrix
+ * \return A matrix of size m x n with values in [-1/2,1/2]
+ */
+matrix random_matrix(size_t m, size_t n);
+
 /**
  * \brief Generates a square matrix with random values from [-1/2,1/2]
  * \param dim Dimension of the matrix

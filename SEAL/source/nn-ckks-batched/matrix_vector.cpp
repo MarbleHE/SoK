@@ -6,6 +6,17 @@
 
 using namespace std;
 
+matrix random_matrix(size_t m, size_t n) {
+  matrix M(m);
+  for (size_t i = 0; i < M.size(); i++) {
+    M[i].resize(n);
+    for (size_t j = 0; j < n; j++) {
+      M[i][j] = (static_cast<double>(rand())/RAND_MAX) - 0.5;
+    }
+  }
+  return M;
+}
+
 matrix random_square_matrix(size_t dim) {
   matrix M(dim);
   for (size_t i = 0; i < M.size(); i++) {

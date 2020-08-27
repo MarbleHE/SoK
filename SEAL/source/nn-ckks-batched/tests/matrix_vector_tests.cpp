@@ -6,9 +6,25 @@ using namespace std;
 namespace MVPlaintextTests
 {
 	const size_t dim = 15;
-	TEST(Generation, RandomMatrix)
+	const size_t dim2 = 20;
+
+    TEST(Generation, RandomMatrix)
+    {
+      const auto t = random_matrix(dim, dim2);
+      ASSERT_EQ(t.size(), dim);
+      for (auto& x : t)
+      {
+        ASSERT_EQ(x.size(), dim2);
+        for (auto& y : x)
+        {
+          EXPECT_TRUE((-0.5 <= y) && (y <= 0.5));
+        }
+      }
+    }
+
+	TEST(Generation, RandomSquareMatrix)
 	{
-		const auto t = random_square_matrix(15);
+		const auto t = random_square_matrix(dim);
 		ASSERT_EQ(t.size(), dim);
 		for (auto& x : t)
 		{
@@ -44,7 +60,7 @@ namespace MVPlaintextTests
 		}
 	}
 
-	TEST(PlaintextOperations, MatrixVectorProduct)
+	TEST(PlaintextOperations, SquareMatrixVectorProduct)
 	{
 		const auto m = random_square_matrix(dim);
 		const auto v = random_vector(dim);
@@ -70,6 +86,29 @@ namespace MVPlaintextTests
 		EXPECT_THROW(mvp(m, {}), invalid_argument);
 		EXPECT_THROW(mvp({}, v), invalid_argument);
 	}
+
+    TEST(PlaintextOperations, MatrixVectorProduct)
+    {
+      const auto m = random_matrix(dim,dim2);
+      const auto v = random_vector(dim2);
+
+      // Standard multiplication
+      const auto r = mvp(m, v);
+      ASSERT_EQ(r.size(), dim);
+      for (size_t i = 0; i < dim; ++i)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < dim2; ++j)
+        {
+          sum += v[j] * m[i][j];
+        }
+        EXPECT_EQ(r[i], sum);
+      }
+
+      // Mismatching sizes should throw exception
+      EXPECT_THROW(mvp(m, {}), invalid_argument);
+      EXPECT_THROW(mvp({}, v), invalid_argument);
+    }
 
 	TEST(PlaintextOperations, MatrixAdd)
 	{
@@ -296,9 +335,9 @@ namespace MVPlaintextTests
 		EXPECT_THROW(rnn_with_relu(x, {}, W_x, W_h, b), invalid_argument);
 		EXPECT_THROW(rnn_with_relu(x, h, {}, W_h, b), invalid_argument);
 		EXPECT_THROW(rnn_with_relu(x, h, W_x, {}, b), invalid_argument);
-		EXPECT_THROW(rnn_with_relu(x, h, W_x, W_h, {}), invalid_argument);			
+		EXPECT_THROW(rnn_with_relu(x, h, W_x, W_h, {}), invalid_argument);
 	}
-	
+
 	TEST(PlaintextOperations, RNN_with_Squaring)
 	{
 		const auto W_h = random_square_matrix(dim);
@@ -355,6 +394,7 @@ namespace MVPlaintextTests
 	    auto n2 = n/n1;
         EXPECT_EQ(n1 * n2, n);
 	  }
-
 	}
+
+
 }
