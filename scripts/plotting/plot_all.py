@@ -40,14 +40,16 @@ def plot_all_cardio():
 
     # sort the data (and labels) according to the following order
     tool__plot_position = [
-        'Cingulata-UNOPT',
-        'Cingulata',
-        'Cingulata-MultiStart',
-        'Cingulata-MultiStart-OPT-PARAMS',
+        'Lobster-Baseline',
+        'Lobster-Baseline-OPT',
+        'MultiStart',
+        'MultiStart-OPT-PARAMS',
         'Lobster',
         'Lobster-OPT-PARAMS',
-        'TFHE',
+        'Cingulata-Baseline',
+        'Cingulata-OPT',
         'SEAL-BFV',
+        'TFHE',
         'SEAL-BFV-Batched',
         'SEAL-CKKS-Batched',
     ]
