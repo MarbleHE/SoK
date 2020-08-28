@@ -8,14 +8,29 @@ namespace MVCryptoTests {
 
 	/**
 	 * \brief Helper function to test plaintext-matrix-encrypted-vector products.
-	 * \param dimension Length of vector and dimension of matrix
+	 * \param n Length of vector and second dimension of matrix
 	 * \param bsgs Whether or not to use the baby-step giant-step algorithm
+	 * \param m Second dimension of matrix. If m != 0, we use general MVP
+	 * \throws std::invalid_argument if both bsgs and m != 0
 	 */
-	void MatrixVectorProductTest(size_t dimension, bool bsgs = false)
+	void MatrixVectorProductTest(size_t n, bool bsgs = false, size_t m = 0)
 	{
-		const auto m = random_square_matrix(dimension);
-		const auto v = random_vector(dimension);
-		const auto expected = mvp(m, v);
+        if (bsgs && m) {
+          throw std::invalid_argument("Cannot enable BSGS for general setting");
+        }
+        matrix M;
+        bool general = false;
+        if (m) {
+          M = random_matrix(m,n);
+          general = true;
+        } else {
+          M = random_square_matrix(n);
+          m = n;
+        }
+		const auto v = random_vector(n);
+		const auto expected = mvp(M, v);
+
+
 
 		// Setup SEAL Parameters
 		EncryptionParameters params(scheme_type::CKKS);
@@ -39,22 +54,22 @@ namespace MVCryptoTests {
 		Evaluator evaluator(context);
 
 		// Encode matrix
-		vector<Plaintext> ptxt_diagonals(dimension);
-		for (size_t i = 0; i < dimension; ++i)
+		vector<Plaintext> ptxt_diagonals(m);
+		for (size_t i = 0; i < m; ++i)
 		{
-			encoder.encode(diag(m, i), scale, ptxt_diagonals[i]);
+			encoder.encode(diag(M, i), scale, ptxt_diagonals[i]);
 		}
 
 		// Decode and compare
-		for (size_t i = 0; i < dimension; ++i)
+		for (size_t i = 0; i < m; ++i)
 		{
 			vec t;
 			encoder.decode(ptxt_diagonals[i], t);
-			t.resize(dimension);
-			for (size_t j = 0; j < dimension; ++j)
+			t.resize(n);
+			for (size_t j = 0; j < n; ++j)
 			{
 				// Test if value is within 0.1% of the actual value or 10 sig figs
-				EXPECT_NEAR(t[j], diag(m, i)[j], max(0.00000001, 0.001 * diag(m, i)[j]));
+				EXPECT_NEAR(t[j], diag(M, i)[j], max(0.00000001, 0.001 * diag(M, i)[j]));
 			}
 		}
 
@@ -62,7 +77,7 @@ namespace MVCryptoTests {
 		Plaintext ptxt_v;
 
 		// Do we need to duplicate elements in the diagonals vectors during encoding to ensure meaningful rotations?
-		if ((params.poly_modulus_degree() / 2) != dimension) {
+		if ((params.poly_modulus_degree() / 2) != n) {
 			encoder.encode(duplicate(v), pow(2.0, 40), ptxt_v);
 		}
 		else
@@ -77,13 +92,16 @@ namespace MVCryptoTests {
 
 		// Compute MVP
 		Ciphertext ctxt_r;
-		if (bsgs)
+		if (general) {
+            ptxt_general_matrix_enc_vector_product(galois_keys,evaluator,encoder,m,n,diagonals(M),ctxt_v,ctxt_r);
+		}
+		else if (bsgs)
 		{
-			ptxt_matrix_enc_vector_product_bsgs(galois_keys, evaluator, encoder, dimension, diagonals(m), ctxt_v, ctxt_r);
+			ptxt_matrix_enc_vector_product_bsgs(galois_keys, evaluator, encoder, n, diagonals(M), ctxt_v, ctxt_r);
 		}
 		else
 		{
-			ptxt_matrix_enc_vector_product(galois_keys, evaluator, dimension, ptxt_diagonals, ctxt_v, ctxt_r);
+			ptxt_matrix_enc_vector_product(galois_keys, evaluator, n, ptxt_diagonals, ctxt_v, ctxt_r);
 		}
 
 
@@ -92,9 +110,9 @@ namespace MVCryptoTests {
 		decryptor.decrypt(ctxt_r, ptxt_r);
 		vec r;
 		encoder.decode(ptxt_r, r);
-		r.resize(dimension);
+		r.resize(n);
 
-		for (size_t i = 0; i < dimension; ++i)
+		for (size_t i = 0; i < n; ++i)
 		{
 			// Test if value is within 0.1% of the actual value or 5 sig figs
 			EXPECT_NEAR(r[i], expected[i], max(0.0001, 0.001 * expected[i]));
@@ -149,6 +167,26 @@ namespace MVCryptoTests {
 		// Since this is neither the number of slots, nor does it fit if duplicated, this should fail
 		EXPECT_THROW(MatrixVectorProductTest(5000, true), invalid_argument);
 	}
+
+
+    TEST(EncryptedGeneralMVP, MatrixVectorProductBSGS_4)
+    {
+      MatrixVectorProductTest(4, false, 4);
+    }
+    
+    TEST(EncryptedGeneralMVP, MatrixVectorProductBSGS_16)
+    {
+      MatrixVectorProductTest(16, false, 16);
+    }
+    
+    TEST(EncryptedGeneralMVP, MatrixVectorProductBSGS_49)
+    {
+      MatrixVectorProductTest(49, false, 49);
+    }
+    TEST(EncryptedGeneralMVP, MatrixVectorProductBSGS_256)
+    {
+      MatrixVectorProductTest(256, false, 256);
+    }
 
 
 	/**
