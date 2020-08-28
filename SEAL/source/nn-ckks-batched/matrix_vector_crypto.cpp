@@ -118,76 +118,63 @@ void ptxt_general_matrix_enc_vector_product(const seal::GaloisKeys &galois_keys,
   // "DArL: Dynamic Parameter Adjustment for LWE-based Secure Inference" by Bian et al. 2019.
   // Available at https://ieeexplore.ieee.org/document/8715110/ (paywall)
 
-  //TODO: Implement
-  enc_result= ctv;
+  //  vec t(n, 0);
+  Ciphertext ctxt_t;
 
-//  vec t(n, 0);
-//  for (size_t i = 0; i < m; ++i) {
-//    vec rotated_v = v;
-//    rotate(rotated_v.begin(), rotated_v.begin() + i, rotated_v.end());
-//    auto temp = mult(diagonals[i], rotated_v);
-//    t = add(t, temp);
-//  }
-//
-//  vec r = t;
-//  //TODO: if n/m isn't a power of two, we need to masking/padding here
-//  for (int i = 0; i < log2_n_div_m; ++i) {
-//    vec rotated_r = r;
-//    size_t offset = n/(2ULL << i);
-//    rotate(rotated_r.begin(), rotated_r.begin() + offset, rotated_r.end());
-//    r = add(r, rotated_r);
-//  }
-//
-//  r.resize(m);
-//
-//  return r;
+  for (size_t i = 0; i < m; ++i) {
 
-//  // Baby step-giant step algorithm based on "Techniques in privacy-preserving machine learning" by Hao Chen, Microsoft Research
-//  // Talk presented at the Microsoft Research Private AI Bootcamp on 2019-12-02.
-//  // Available at https://youtu.be/d2bIhv9ExTs (Recording) or https://github.com/WeiDaiWD/Private-AI-Bootcamp-Materials (Slides)
-//  // Note that here, n1 = n2 = sqrt(n)
-//
-//  // Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n2 rotations and some memory
-//  vector<Ciphertext> rotated_vs(sqrt_dim, ctv);
-//  for (size_t j = 0; j < sqrt_dim; ++j) {
-//    // TODO: Implement Halevi-Shoup "Hoisting", where you save the common parts of the rotations?
-//    // See Appendix of "GAZELLE: A Low Latency Framework for  Secure Neural Network Inference"
-//    evaluator.rotate_vector(ctv, j, galois_keys, rotated_vs[j]);
-//  }
-//
-//  for (size_t k = 0; k < sqrt_dim; ++k) {
-//    Ciphertext inner_sum;
-//    for (size_t j = 0; j < sqrt_dim; ++j) {
-//      // Take the current_diagonal and rotate it by -k*sqrt_dim to match the not-yet-enough-rotated vector v
-//      vec current_diagonal = diagonals[(k*sqrt_dim + j)%dim];
-//      rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k*sqrt_dim,
-//             current_diagonal.end());
-//      Plaintext ptxt_current_diagonal;
-//      current_diagonal = duplicating ? duplicate(current_diagonal) : current_diagonal;
-//      // Duplicate only if necessary
-//      encoder.encode(current_diagonal, rotated_vs[j].parms_id(), rotated_vs[j].scale(), ptxt_current_diagonal);
-//
-//      // inner_sum += rot(current_diagonal) * current_rot_v
-//      // multiply
-//      Ciphertext temp;
-//      evaluator.multiply_plain(rotated_vs[j], ptxt_current_diagonal, temp);
-//      // add
-//      if (j==0) {
-//        inner_sum = temp;
-//      } else {
-//        evaluator.add_inplace(inner_sum, temp);
-//      }
-//    }
-//
-//    // Apply "missing bit" of rotation
-//    evaluator.rotate_vector_inplace(inner_sum, k*sqrt_dim, galois_keys);
-//
-//    if (k==0) {
-//      enc_result = inner_sum;
-//    } else {
-//      evaluator.add_inplace(enc_result, inner_sum);
-//    }
-//  }
+    // rotated_v = rot(v,i)
+    Ciphertext ctxt_rotated_v;
+    evaluator.rotate_vector(ctv, i, galois_keys, ctxt_rotated_v);
+
+    // auto tmp = mult(diagonals[i], rotated_v);
+    vec current_diagonal = diagonals[i];
+    current_diagonal = duplicating ? duplicate(current_diagonal) : current_diagonal;    // Duplicate only if necessary
+    Plaintext ptxt_current_diagonal;
+    encoder.encode(current_diagonal, ctxt_rotated_v.parms_id(), ctxt_rotated_v.scale(), ptxt_current_diagonal);
+    Ciphertext ctxt_tmp;
+    evaluator.multiply_plain(ctxt_rotated_v, ptxt_current_diagonal, ctxt_tmp);
+
+    // t = add(t, tmp);
+    if (i==0) {
+      ctxt_t = ctxt_tmp;
+    } else {
+      evaluator.add_inplace(ctxt_t, ctxt_tmp);
+    }
+  }
+
+  // vec r = t;
+  // instead of r we use enc_result
+  if (log2_n_div_m==0) {
+    enc_result = ctxt_t; //ensure that enc_result is always assigned
+  } else {
+    //TODO: if n/m isn't a power of two, we need to masking/padding here
+    for (int i = 0; i < log2_n_div_m; ++i) {
+      // vec rotated_r = r;
+      Ciphertext ctxt_rotated_r;
+      if (i==0) {
+        ctxt_rotated_r = ctxt_t;
+      } else {
+        ctxt_rotated_r = enc_result;
+      }
+
+      // Calculate offset
+      size_t offset = n/(2ULL << i);
+
+      // rotated_r = rot(rotated_r, offset)
+      evaluator.rotate_vector_inplace(ctxt_rotated_r, offset, galois_keys);
+
+      // r = add(r, rotated_r);
+      if (i==0) {
+        enc_result = ctxt_rotated_r;
+      } else {
+        evaluator.add_inplace(enc_result, ctxt_rotated_r);
+      }
+    }
+  }
+
+  //  r.resize(m); <- has to be done by the client
+  // for efficiency we do not mask away the other entries
 }
 
 void ptxt_weights_enc_input_rnn(const seal::GaloisKeys &galois_keys,
