@@ -108,9 +108,6 @@ void ptxt_general_matrix_enc_vector_product(const seal::GaloisKeys &galois_keys,
     throw invalid_argument(
         "Matrix dimension m must divide n and the result must be power of two");
   }
-  /// Whether or not we need to duplicate elements in the diagonals vectors during encoding to ensure meaningful rotations
-  const bool duplicating = (ctv.poly_modulus_degree()/2)!=n;
-
 
   // Hybrid algorithm based on "GAZELLE: A Low Latency Framework for Secure Neural Network Inference" by Juvekar et al.
   // Available at https://www.usenix.org/conference/usenixsecurity18/presentation/juvekar
@@ -124,14 +121,12 @@ void ptxt_general_matrix_enc_vector_product(const seal::GaloisKeys &galois_keys,
   for (size_t i = 0; i < m; ++i) {
 
     // rotated_v = rot(v,i)
-    Ciphertext ctxt_rotated_v;
-    evaluator.rotate_vector(ctv, i, galois_keys, ctxt_rotated_v);
+    Ciphertext ctxt_rotated_v = ctv;
+    if ( i != 0)  evaluator.rotate_vector_inplace(ctxt_rotated_v, i, galois_keys);
 
     // auto tmp = mult(diagonals[i], rotated_v);
-    vec current_diagonal = diagonals[i];
-    current_diagonal = duplicating ? duplicate(current_diagonal) : current_diagonal;    // Duplicate only if necessary
     Plaintext ptxt_current_diagonal;
-    encoder.encode(current_diagonal, ctxt_rotated_v.parms_id(), ctxt_rotated_v.scale(), ptxt_current_diagonal);
+    encoder.encode(diagonals[i], ctxt_rotated_v.parms_id(), ctxt_rotated_v.scale(), ptxt_current_diagonal);
     Ciphertext ctxt_tmp;
     evaluator.multiply_plain(ctxt_rotated_v, ptxt_current_diagonal, ctxt_tmp);
 
@@ -144,37 +139,25 @@ void ptxt_general_matrix_enc_vector_product(const seal::GaloisKeys &galois_keys,
   }
 
   // vec r = t;
-  // instead of r we use enc_result
-  if (log2_n_div_m==0) {
-    enc_result = ctxt_t; //ensure that enc_result is always assigned
-  } else {
-    //TODO: if n/m isn't a power of two, we need to masking/padding here
-    for (int i = 0; i < log2_n_div_m; ++i) {
-      // vec rotated_r = r;
-      Ciphertext ctxt_rotated_r;
-      if (i==0) {
-        ctxt_rotated_r = ctxt_t;
-      } else {
-        ctxt_rotated_r = enc_result;
-      }
+  Ciphertext ctxt_r = std::move(ctxt_t);
 
-      // Calculate offset
-      size_t offset = n/(2ULL << i);
+  //TODO: if n/m isn't a power of two, we need to masking/padding here
+  for (int i = 0; i < log2_n_div_m; ++i) {
+    // vec rotated_r = r;
+    Ciphertext ctxt_rotated_r = ctxt_r;
 
-      // rotated_r = rot(rotated_r, offset)
-      evaluator.rotate_vector_inplace(ctxt_rotated_r, offset, galois_keys);
+    // Calculate offset
+    size_t offset = n/(2ULL << i);
 
-      // r = add(r, rotated_r);
-      if (i==0) {
-        enc_result = ctxt_rotated_r;
-      } else {
-        evaluator.add_inplace(enc_result, ctxt_rotated_r);
-      }
-    }
+    // rotated_r = rot(rotated_r, offset)
+    evaluator.rotate_vector_inplace(ctxt_rotated_r, offset, galois_keys);
+
+    // r = add(r, rotated_r);
+    evaluator.add_inplace(ctxt_r, ctxt_rotated_r);
   }
-
   //  r.resize(m); <- has to be done by the client
   // for efficiency we do not mask away the other entries
+  enc_result = std::move(ctxt_r);
 }
 
 void ptxt_weights_enc_input_rnn(const seal::GaloisKeys &galois_keys,

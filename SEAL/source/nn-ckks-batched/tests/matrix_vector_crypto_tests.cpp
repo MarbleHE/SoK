@@ -76,7 +76,7 @@ namespace MVCryptoTests {
 		// Encrypt vector
 		Plaintext ptxt_v;
 
-		// Do we need to duplicate elements in the diagonals vectors during encoding to ensure meaningful rotations?
+		// Do we need to duplicate elements in the vector during encoding to ensure meaningful rotations?
 		if ((params.poly_modulus_degree() / 2) != n) {
 			encoder.encode(duplicate(v), pow(2.0, 40), ptxt_v);
 		}
@@ -88,8 +88,6 @@ namespace MVCryptoTests {
 		encryptor.encrypt_symmetric(ptxt_v, ctxt_v);
 
 		// Decrypt and compare
-		// TODO: Decrypt and check vector comes out alright.
-
 		// Compute MVP
 		Ciphertext ctxt_r;
 		if (general) {
@@ -110,15 +108,13 @@ namespace MVCryptoTests {
 		decryptor.decrypt(ctxt_r, ptxt_r);
 		vec r;
 		encoder.decode(ptxt_r, r);
-		r.resize(n);
+		r.resize(m);
 
-		for (size_t i = 0; i < n; ++i)
+		for (size_t i = 0; i < m; ++i)
 		{
 			// Test if value is within 0.1% of the actual value or 5 sig figs
-			EXPECT_NEAR(r[i], expected[i], max(0.0001, 0.001 * expected[i]));
+			EXPECT_NEAR(r[i], expected[i], max(0.0001, abs(0.001 * expected[i])));
 		}
-
-		//TODO: The EXPECT_FLOAT_EQ assertions might occasionally fail since the noise is somewhat random and we get less than 32 bits of guaranteed precision from these parameters
 	}
 
 	TEST(EncryptedMVP, MatrixVectorProduct_15)
@@ -169,23 +165,40 @@ namespace MVCryptoTests {
 	}
 
 
-    TEST(EncryptedGeneralMVP, MatrixVectorProductBSGS_4)
+    TEST(EncryptedGeneralMVP, MatrixVectorProduct_4)
     {
       MatrixVectorProductTest(4, false, 4);
     }
     
-    TEST(EncryptedGeneralMVP, MatrixVectorProductBSGS_16)
+    TEST(EncryptedGeneralMVP, MatrixVectorProduct_16)
     {
       MatrixVectorProductTest(16, false, 16);
     }
     
-    TEST(EncryptedGeneralMVP, MatrixVectorProductBSGS_49)
+    TEST(EncryptedGeneralMVP, MatrixVectorProduct_49)
     {
       MatrixVectorProductTest(49, false, 49);
     }
-    TEST(EncryptedGeneralMVP, MatrixVectorProductBSGS_256)
+//    TEST(EncryptedGeneralMVP, MatrixVectorProduct_256)
+//    {
+//      MatrixVectorProductTest(256, false, 256);
+//    }
+
+    TEST(EncryptedGeneralMVP, MatrixVectorProduct_Simple)
     {
-      MatrixVectorProductTest(256, false, 256);
+      MatrixVectorProductTest(4, false, 2);
+      MatrixVectorProductTest(8, false, 4);
+      MatrixVectorProductTest(8, false, 2);
+    }
+
+    TEST(EncryptedGeneralMVP, MatrixVectorProduct_32_1024)
+    {
+      MatrixVectorProductTest(1024, false, 32);
+    }
+
+    TEST(EncryptedGeneralMVP, MatrixVectorProduct_16_32)
+    {
+      MatrixVectorProductTest(32, false, 16);
     }
 
 

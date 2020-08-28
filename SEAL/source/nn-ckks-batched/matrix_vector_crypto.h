@@ -45,7 +45,6 @@ void ptxt_matrix_enc_vector_product_bsgs(const seal::GaloisKeys& galois_keys, se
  *  Uses the hybrid algorithm based on "GAZELLE: A Low Latency Framework for Secure Neural Network Inference" by Juvekar et al.
  *  *ATTENTION*: Batching must be done in a way so that if the matrix has dimension m x n, rotating the vector left n times results in a correct cyclic rotation of the first n elements!
  *  This is usually done by simply duplicating the vector, e.g. using function duplicate(vec x), if the number of slots in the ciphertexts and the dimension of the vector are not the same
- *  Since this is also done internally for the diagonals, ** the number of slots in the ciphertext must be either >= 2*n or must be equal to n **
  * \param[in] galois_keys Rotation keys, should allow arbitrary rotations (reality is slightly more complicated due to baby-step--giant-step algorithm)
  * \param[in] evaluator Evaluation object from SEAL
  * \param[in] encoder Encoder object from SEAL
