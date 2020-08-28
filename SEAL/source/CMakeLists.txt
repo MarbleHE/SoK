@@ -50,6 +50,5 @@ target_link_libraries(nn_ckks_batched nn_ckks_batched_lib SEAL::seal)
 configure_file(nn-ckks-batched/run-nn-ckks-batched.sh.in tmp/run-nn-ckks-batched.sh)
 file (COPY ${CMAKE_BINARY_DIR}/tmp/run-nn-ckks-batched.sh DESTINATION ${CMAKE_BINARY_DIR} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 
-
 # NN batched CKKS tests
-add_subdirectory(nn-ckks-batched/tests)
+# add_subdirectory(nn-ckks-batched/tests)
