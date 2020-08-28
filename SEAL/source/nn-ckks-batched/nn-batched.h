@@ -80,6 +80,12 @@ class DenseLayer {
   /// Get Weights
   /// \return A bias vector of length units
   const vec &bias();
+
+  /// Get number of units
+  size_t units();
+
+  /// Get size of input
+  size_t input_size();
 };
 /// Create only the required power-of-two rotations
 /// This can save quite a bit, for example for poly_modulus_degree = 16384
