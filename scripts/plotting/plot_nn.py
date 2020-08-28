@@ -55,6 +55,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # Plot Bars
     for i in range(N):
         df = pandas_dataframes[i]
+        if len(df) == 0:
+            continue
         d1 = ms_to_sec(df['t_keygen'].mean())
         d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
         p1 = plt.bar(ind[i], d1, width, color='red')
@@ -66,6 +68,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         p3 = plt.bar(ind[i], d3, width, bottom=d1 + d2, color='green')
         d4 = ms_to_sec(df['t_decryption'].mean())
         d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
+
         total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
         p4 = plt.bar(ind[i], d4, width, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3, color='cyan')
         print(labels[i], ": ", d1+d2+d3+d4)
