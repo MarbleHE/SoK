@@ -26,7 +26,7 @@ env:
   # machine or the workflow had an error
   instance-termination-timeout: 150
   # the number of test runs to be executed for each tool
-  NUM_RUNS: 1
+  NUM_RUNS: 10
 
 jobs:
   # A job that creates a unique timestamp for each benchmark run. This is only executed once over all benchmarks so that
