@@ -90,6 +90,106 @@ void ptxt_matrix_enc_vector_product_bsgs(const GaloisKeys &galois_keys, Evaluato
   }
 }
 
+void ptxt_general_matrix_enc_vector_product(const seal::GaloisKeys &galois_keys, seal::Evaluator &evaluator,
+                                            seal::CKKSEncoder &encoder, size_t m, size_t n,
+                                            std::vector<vec> diagonals,
+                                            const seal::Ciphertext &ctv, seal::Ciphertext &enc_result) {
+  if (m==0 || m!=diagonals.size()) {
+    throw invalid_argument(
+        "Matrix must not be empty, and diagonals vector must have size m!");
+  }
+  if (n!=diagonals[0].size() || n==0) {
+    throw invalid_argument(
+        "Diagonals must have non-zero dimension that matches n");
+  }
+  size_t n_div_m = n/m;
+  size_t log2_n_div_m = ceil(log2(n_div_m));
+  if (m*n_div_m!=n || (2ULL << (log2_n_div_m - 1)!=n_div_m && n_div_m!=1)) {
+    throw invalid_argument(
+        "Matrix dimension m must divide n and the result must be power of two");
+  }
+  /// Whether or not we need to duplicate elements in the diagonals vectors during encoding to ensure meaningful rotations
+  const bool duplicating = (ctv.poly_modulus_degree()/2)!=n;
+
+
+  // Hybrid algorithm based on "GAZELLE: A Low Latency Framework for Secure Neural Network Inference" by Juvekar et al.
+  // Available at https://www.usenix.org/conference/usenixsecurity18/presentation/juvekar
+  // Actual Implementation based on the description in
+  // "DArL: Dynamic Parameter Adjustment for LWE-based Secure Inference" by Bian et al. 2019.
+  // Available at https://ieeexplore.ieee.org/document/8715110/ (paywall)
+
+  //TODO: Implement
+  enc_result= ctv;
+
+//  vec t(n, 0);
+//  for (size_t i = 0; i < m; ++i) {
+//    vec rotated_v = v;
+//    rotate(rotated_v.begin(), rotated_v.begin() + i, rotated_v.end());
+//    auto temp = mult(diagonals[i], rotated_v);
+//    t = add(t, temp);
+//  }
+//
+//  vec r = t;
+//  //TODO: if n/m isn't a power of two, we need to masking/padding here
+//  for (int i = 0; i < log2_n_div_m; ++i) {
+//    vec rotated_r = r;
+//    size_t offset = n/(2ULL << i);
+//    rotate(rotated_r.begin(), rotated_r.begin() + offset, rotated_r.end());
+//    r = add(r, rotated_r);
+//  }
+//
+//  r.resize(m);
+//
+//  return r;
+
+//  // Baby step-giant step algorithm based on "Techniques in privacy-preserving machine learning" by Hao Chen, Microsoft Research
+//  // Talk presented at the Microsoft Research Private AI Bootcamp on 2019-12-02.
+//  // Available at https://youtu.be/d2bIhv9ExTs (Recording) or https://github.com/WeiDaiWD/Private-AI-Bootcamp-Materials (Slides)
+//  // Note that here, n1 = n2 = sqrt(n)
+//
+//  // Precompute the inner rotations (space-runtime tradeoff of BSGS) at the cost of n2 rotations and some memory
+//  vector<Ciphertext> rotated_vs(sqrt_dim, ctv);
+//  for (size_t j = 0; j < sqrt_dim; ++j) {
+//    // TODO: Implement Halevi-Shoup "Hoisting", where you save the common parts of the rotations?
+//    // See Appendix of "GAZELLE: A Low Latency Framework for  Secure Neural Network Inference"
+//    evaluator.rotate_vector(ctv, j, galois_keys, rotated_vs[j]);
+//  }
+//
+//  for (size_t k = 0; k < sqrt_dim; ++k) {
+//    Ciphertext inner_sum;
+//    for (size_t j = 0; j < sqrt_dim; ++j) {
+//      // Take the current_diagonal and rotate it by -k*sqrt_dim to match the not-yet-enough-rotated vector v
+//      vec current_diagonal = diagonals[(k*sqrt_dim + j)%dim];
+//      rotate(current_diagonal.begin(), current_diagonal.begin() + current_diagonal.size() - k*sqrt_dim,
+//             current_diagonal.end());
+//      Plaintext ptxt_current_diagonal;
+//      current_diagonal = duplicating ? duplicate(current_diagonal) : current_diagonal;
+//      // Duplicate only if necessary
+//      encoder.encode(current_diagonal, rotated_vs[j].parms_id(), rotated_vs[j].scale(), ptxt_current_diagonal);
+//
+//      // inner_sum += rot(current_diagonal) * current_rot_v
+//      // multiply
+//      Ciphertext temp;
+//      evaluator.multiply_plain(rotated_vs[j], ptxt_current_diagonal, temp);
+//      // add
+//      if (j==0) {
+//        inner_sum = temp;
+//      } else {
+//        evaluator.add_inplace(inner_sum, temp);
+//      }
+//    }
+//
+//    // Apply "missing bit" of rotation
+//    evaluator.rotate_vector_inplace(inner_sum, k*sqrt_dim, galois_keys);
+//
+//    if (k==0) {
+//      enc_result = inner_sum;
+//    } else {
+//      evaluator.add_inplace(enc_result, inner_sum);
+//    }
+//  }
+}
+
 void ptxt_weights_enc_input_rnn(const seal::GaloisKeys &galois_keys,
                                 seal::Evaluator &evaluator,
                                 seal::CKKSEncoder &encoder,
