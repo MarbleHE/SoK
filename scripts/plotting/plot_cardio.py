@@ -35,7 +35,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # change size and DPI of resulting figure
     # change legend font size
     plt.rcParams["legend.fontsize"] = 8
-    plt.rcParams["text.usetex"] = True
+    # NOTE: Enabling this requires latex to be installed on the Github actions runner
+    # plt.rcParams["text.usetex"] = True
     plt.rcParams["font.family"] = 'serif'
 
     # Nice names for labels: maps folder name -> short name
@@ -44,17 +45,12 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # BASELINE_SIGN = '*'
     positions = {
         'Lobster-Baseline': (0, 0),
-
         'Lobster-Baseline-OPT': (1, 0),
         'MultiStart-OPT-PARAMS': (1, 1),
         'Lobster-OPT-PARAMS': (1, 2),
-
         'Cingulata-OPT': (2, 0),
-
         'SEAL-BFV': (3, 0),
-
         'TFHE': (4, 0),
-
         'SEAL-BFV-Batched': (5, 0)
     }
 
@@ -127,6 +123,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         max_y_value = d1 + d2 + d3 + d4 if (d1 + d2 + d3 + d4) > max_y_value else max_y_value
         p4 = plt.bar(x_pos, d4, bar_width * 0.9, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3,
                      color='cyan')
+        print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ', d1 + d2 + d3 + d4,
+              ')')
 
     max_y_rounded = (int(math.ceil(max_y_value / 10.0)) * 10) + 10
     plt.yticks(np.arange(0, max_y_rounded, step=10))
