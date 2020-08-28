@@ -24,6 +24,7 @@
 
 FROM ubuntu:18.04
 
+ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     python3-pip virtualenv python3-dev \
     git \
@@ -38,7 +39,7 @@ RUN apt-get update && apt-get install -y \
     doxygen graphviz \
     yapf3 python3-yapf \
     python python-dev python3 python3-dev \
-    libomp-dev libomp5 autoconf autogen pkg-config libgtk-3-dev
+    libomp-dev libomp5 autoconf autogen pkg-config libgtk-3-dev awscli
 
 RUN python3.6 -m pip install pip --upgrade && \ 
     pip3 install -U --user pip six 'numpy<1.19.0' wheel setuptools mock 'future>=0.17.1' && \ 
