@@ -11,4 +11,4 @@ COPY source /root/eval
 WORKDIR /root/eval
 
 # execute the benchmark and upload benchmark results to S3
-CMD ["/bin/bash", "-c", "source /home/he-transformer/build/external/venv-tf-py3/bin/activate; python3 mnist.py; aws s3 cp ngraph-he_nn.csv ${S3_URL}/${S3_FOLDER}/nGraph-HE/"]
+CMD ["/bin/bash", "-c", "source /home/he-transformer/build/external/venv-tf-py3/bin/activate; export OUTPUT_FILENAME=ngraph-he_nn.csv; python3 mnist.py; aws s3 cp ${OUTPUT_FILENAME} ${S3_URL}/${S3_FOLDER}/nGraph-HE/"]

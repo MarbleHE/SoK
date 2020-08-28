@@ -453,7 +453,8 @@ void Cardio::run_cardio() {
 
   // write ss_time into file
   std::ofstream myfile;
-  myfile.open("seal_bfv_cardio.csv", std::ios_base::app);
+  auto out_filename = std::getenv("OUTPUT_FILENAME");
+  myfile.open(out_filename, std::ios_base::app);
   myfile << ss_time.str() << std::endl;
   myfile.close();
 

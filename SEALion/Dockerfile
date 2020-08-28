@@ -22,4 +22,4 @@ COPY source /root/eval
 WORKDIR /root/eval
 
 # execute the benchmark and upload benchmark results to S3
-CMD ["sh", "-c", "python3 mnist.py; aws s3 cp sealion_nn.csv ${S3_URL}/${S3_FOLDER}/SEALion/"]
+CMD ["sh", "-c", "export OUTPUT_FILENAME=sealion_nn.csv; python3 mnist.py; aws s3 cp ${OUTPUT_FILENAME} ${S3_URL}/${S3_FOLDER}/SEALion/"]

@@ -250,7 +250,8 @@ void NNBatched::run_nn() {
 
   // write ss_time into file
   std::ofstream myfile;
-  myfile.open("seal_batched_ckks_nn.csv", std::ios::out | std::ios::app);
+  auto out_filename = std::getenv("OUTPUT_FILENAME");
+  myfile.open(out_filename, std::ios::out | std::ios::app);
   if (myfile.fail()) throw std::ios_base::failure(std::strerror(errno));
   // make sure write fails with exception if something is wrong
   myfile.exceptions(myfile.exceptions() | std::ios::failbit |

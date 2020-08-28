@@ -195,7 +195,7 @@ def main():
 
     # Output the benchmarking results
     df = pd.DataFrame(all_times)
-    df.to_csv('ngraph-he_nn.csv', index=False)
+    df.to_csv(os.environ['OUTPUT_FILENAME'], index=False)
 
 
 if __name__ == "__main__":

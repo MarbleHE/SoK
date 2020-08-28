@@ -118,4 +118,4 @@ for run in range(num_runs):
 
 # Output the benchmarking results
 df = pd.DataFrame(all_times)
-df.to_csv('sealion_nn.csv', index=False)
+df.to_csv(os.environ['OUTPUT_FILENAME'], index=False)

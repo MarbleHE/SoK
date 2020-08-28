@@ -5,3 +5,4 @@ __pycache__
 .vscode
 **/build/*
 *id_rsa*
+id_sealion
