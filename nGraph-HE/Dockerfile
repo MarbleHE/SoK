@@ -9,6 +9,7 @@ RUN ["/bin/bash", "-c", "source /home/he-transformer/build/external/venv-tf-py3/
 # copy eval program into container
 COPY source /root/eval
 WORKDIR /root/eval
+RUN chmod +x /root/eval/docker-entrypoint.sh
 
 # start eval program execution
 ENTRYPOINT ["/root/eval/docker-entrypoint.sh"]
