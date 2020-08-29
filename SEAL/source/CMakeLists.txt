@@ -11,12 +11,19 @@ set(CMAKE_BUILD_TYPE DEBUG)
 # set_target_properties(laplacian PROPERTIES LINKER_LANGUAGE CXX) 
 # target_link_libraries(laplacian SEAL::seal)
 
-# Cardio BFV
+# Cardio BFV with CinguParam parameters
 add_executable(cardio_bfv cardio-bfv/cardio.cpp common.h)
 set_target_properties(cardio_bfv PROPERTIES LINKER_LANGUAGE CXX) 
 target_link_libraries(cardio_bfv SEAL::seal)
 configure_file(cardio-bfv/run-cardio-bfv.sh.in tmp/run-cardio-bfv.sh)
 file (COPY ${CMAKE_BINARY_DIR}/tmp/run-cardio-bfv.sh DESTINATION ${CMAKE_BINARY_DIR} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+
+# Cardio BFV with optimal parameters
+add_executable(cardio_bfv_opt cardio-bfv-OPT-PARAMS/cardio.cpp common.h)
+set_target_properties(cardio_bfv_opt PROPERTIES LINKER_LANGUAGE CXX) 
+target_link_libraries(cardio_bfv_opt SEAL::seal)
+configure_file(cardio-bfv-OPT-PARAMS/run-cardio-bfv-opt.sh.in tmp/run-cardio-bfv-opt.sh)
+file (COPY ${CMAKE_BINARY_DIR}/tmp/run-cardio-bfv-opt.sh DESTINATION ${CMAKE_BINARY_DIR} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
 
 # Cardio batched BFV
 add_executable(cardio_bfv_batched cardio-bfv-batched/cardio-batched.cpp common.h)

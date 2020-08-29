@@ -506,7 +506,7 @@ void CardioBatched::run_cardio() {
   myfile << ss_time.str() << std::endl;
 
   // write FHE parameters into file
-  write_parameters_to_file(context, "fhe_parameters.txt");
+  write_parameters_to_file(context, "fhe_parameters_cardio.txt");
 }
 
 std::unique_ptr<seal::Ciphertext> CardioBatched::multvect(
