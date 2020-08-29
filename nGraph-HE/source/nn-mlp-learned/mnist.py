@@ -21,8 +21,9 @@ import copy
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, Activation
+from tensorflow.keras.layers import Layer, Input, Dense
 from tensorflow.keras.optimizers import SGD
 from tensorflow.keras.losses import categorical_crossentropy
 import ngraph_bridge
@@ -55,13 +56,24 @@ def delta_ms(t0, t1):
     return round(1000 * abs(t0 - t1))
 
 
+class PolyAct(Layer):
+    def __init__(self, **kwargs):
+        super(PolyAct, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        self.coeff = self.add_weight('coeff', shape=(2, 1), initializer="random_normal", trainable=True, )
+
+    def call(self, inputs):
+        return self.coeff[1] * K.square(inputs) + self.coeff[0] * inputs
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
+
+
 ####################
 # MODEL DEFINITION #
 ####################
 def mnist_mlp_model(input):
-    def square_activation(x):
-        return x * x
-
     # Using Keras model API with Flatten results in split ngraph at Flatten() or Reshape() op.
     # Use tf.reshape instead
     known_shape = input.get_shape()[1:]
@@ -70,7 +82,7 @@ def mnist_mlp_model(input):
     y = tf.reshape(input, [-1, size])
     # y = Flatten()(input)
     y = Dense(input_shape=[1, 784], units=30, use_bias=True)(y)
-    y = Activation(square_activation)(y)
+    y = PolyAct()(y)
     y = Dense(units=10, use_bias=True, name="output")(y)
     known_shape = y.get_shape()[1:]
     size = np.prod(known_shape)
@@ -195,7 +207,10 @@ def main():
 
     # Output the benchmarking results
     df = pd.DataFrame(all_times)
-    df.to_csv(os.environ['OUTPUT_FILENAME'], index=False)
+    output_filename = "nn-mlp-learned.csv"
+    if 'OUTPUT_FILENAME' in os.environ:
+        output_filename = os.environ['OUTPUT_FILENAME']
+    df.to_csv(output_filename, index=False)
 
 
 if __name__ == "__main__":
