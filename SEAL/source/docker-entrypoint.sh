@@ -19,7 +19,7 @@ upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters.txt
 # Cardio BFV with optimal parameters
 export OUTPUT_FILENAME=seal_bfv_cardio_optimal.csv
 ./run-cardio-bfv-opt.sh
-upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters.txt
+upload_files SEAL-BFV-OPT ${OUTPUT_FILENAME} fhe_parameters.txt
 
 # cardio BFV batched
 export OUTPUT_FILENAME=seal_batched_bfv_cardio.csv
