@@ -24,7 +24,7 @@ import tensorflow as tf
 from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Layer, Input, Dense
-from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import categorical_crossentropy
 import ngraph_bridge
 
@@ -110,7 +110,7 @@ def train_model():
     def loss(labels, logits):
         return categorical_crossentropy(labels, logits, from_logits=True)
 
-    optimizer = SGD(learning_rate=0.008, momentum=0.9)
+    optimizer = Adam()
     mlp_model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
 
     t0 = time.perf_counter()

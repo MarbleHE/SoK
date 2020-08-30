@@ -21,8 +21,9 @@ import copy
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from tensorflow.keras import backend as K
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Dense, Activation
+from tensorflow.keras.layers import Layer, Input, Dense, Conv2D, AveragePooling2D, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import categorical_crossentropy
 import ngraph_bridge
@@ -55,28 +56,43 @@ def delta_ms(t0, t1):
     return round(1000 * abs(t0 - t1))
 
 
+class PolyAct(Layer):
+    def __init__(self, **kwargs):
+        super(PolyAct, self).__init__(**kwargs)
+
+    def build(self, input_shape):
+        self.coeff = self.add_weight('coeff', shape=(2, 1), initializer="random_normal", trainable=True, )
+
+    def call(self, inputs):
+        return self.coeff[1] * K.square(inputs) + self.coeff[0] * inputs
+
+    def compute_output_shape(self, input_shape):
+        return input_shape
+
+
 ####################
 # MODEL DEFINITION #
 ####################
-def mnist_mlp_model(input):
-    def square_activation(x):
-        return x * x
+def mnist_lenet5_model(input):
+    y = Conv2D(filters=32, kernel_size=(5, 5), input_shape=(28, 28, 1), padding='same', use_bias=True)(input)
+    y = PolyAct()(y)
+    y = AveragePooling2D(pool_size=(2, 2), padding='same')(y)
 
-    # Using Keras model API with Flatten results in split ngraph at Flatten() or Reshape() op.
-    # Use tf.reshape instead
-    known_shape = input.get_shape()[1:]
-    size = np.prod(known_shape)
-    print('size', size)
-    y = tf.reshape(input, [-1, size])
-    # y = Flatten()(input)
-    y = Dense(input_shape=[1, 784], units=30, use_bias=True)(y)
-    y = Activation(square_activation)(y)
-    y = Dense(units=10, use_bias=True, name="output")(y)
-    known_shape = y.get_shape()[1:]
-    size = np.prod(known_shape)
-    print('size', size)
+    y = Conv2D(filters=64, kernel_size=(5, 5), padding='same', use_bias=True)(y)
+    y = PolyAct()(y)
+    y = AveragePooling2D(pool_size=(2, 2), padding='same')(y)
+
+    # y = Flatten()(y)
+    y = tf.reshape(y, [-1, np.prod(y.get_shape()[1:])])
+
+    y = Dense(units=512, use_bias=True)(y)
+    y = PolyAct()(y)
+
+    y = Dropout(rate=0.5)(y)
+
+    y = Dense(units=10, use_bias=True, name='output')(y)
+
     return y
-
 
 ####################
 # TRAINING         #
@@ -90,7 +106,7 @@ def train_model():
             28,
             1,
         ), name="input")
-    y = mnist_mlp_model(x)
+    y = mnist_lenet5_model(x)
 
     mlp_model = Model(inputs=x, outputs=y)
     print(mlp_model.summary())
@@ -194,7 +210,7 @@ def main():
 
     # Output the benchmarking results
     df = pd.DataFrame(all_times)
-    output_filename = "nn-mlp-squared.csv"
+    output_filename = "nn-mlp-learned.csv"
     if 'OUTPUT_FILENAME' in os.environ:
         output_filename = os.environ['OUTPUT_FILENAME']
     df.to_csv(output_filename, index=False)

@@ -23,7 +23,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Dense, Conv2D, Activation, AveragePooling2D, Flatten, Reshape
-from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.losses import categorical_crossentropy
 import ngraph_bridge
 
@@ -215,7 +215,7 @@ def train_model():
         return categorical_crossentropy(
             labels, logits, from_logits=True)
 
-    optimizer = SGD(learning_rate=0.008, momentum=0.9)
+    optimizer = Adam()
     cryptonets_model_var.compile(
         optimizer=optimizer, loss=loss, metrics=["accuracy"])
 
