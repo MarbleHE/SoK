@@ -99,8 +99,9 @@ jobs:
         run: echo -e "The Command ID is ${{ steps.ssm.outputs.command-id }}.\nRun 'aws ssm list-command-invocations --command-id ${{ steps.ssm.outputs.command-id }} --details' in AWS CLI to see task progress."
       - name: Block execution of workflow until benchmark finishes
         run: |
-          sleep 90
           CONTAINERS_RUNNING=1
+          COUNTER=1
+          sleep 90
           while [[ "${CONTAINERS_RUNNING}" == "1" ]];
           do
               sleep 60
