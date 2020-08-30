@@ -3,6 +3,7 @@ from typing import List
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+from brokenaxes import brokenaxes
 from matplotlib.ticker import FuncFormatter
 
 
@@ -38,7 +39,6 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
             }
     labels = [subs.get(item, item) for item in labels]
 
-
     positions = {
         'SEAL-CKKS\n(MLP)': 0,
         'SEALION\n(MLP)': 1,
@@ -47,50 +47,61 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'nGraph-HE\n(LeNet-5)': 4
     }
 
-    # Setup Axis, Title, etc
-    N = len(labels)
-    # plt.title('Runtime for NN Inference')
-    plt.ylabel('Time (s)')
-    ind = np.arange(N)  # the x locations for the groups
-    plt.xticks(ind, labels, fontsize=9)
-    plt.yticks(np.arange(0, 100, step=1))
-    # adds a thousand separator
-    fig.axes[0].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
-    width = 0.35  # the width of the bars: can also be len(x) sequence
-    # add a grid
-    ax = plt.gca()
-    ax.grid(which='major', axis='y', linestyle=':')
+    sorted_labels = ("SEAL-CKKS\n(MLP)",
+                     "SEALION\n(MLP)",
+                     "nGraph-HE\n(MLP)",
+                     "nGraph-HE\n(Cryptonets)",
+                     "nGraph-HE\n(LeNet-5)")
+
+    # Setup brokenaxes
+    bax = brokenaxes(ylims=((0, 20), (130, 140)))
+
+    # Setup Grids (0 is top, 1 is bottom part)
+    bax.axs[0].grid(which='major', axis='y', linestyle=':')
+    bax.axs[1].grid(which='major', axis='y', linestyle=':')
 
     def ms_to_sec(num):
-        return num/1_000
+        return num / 1_000
 
     # Plot Bars
-    for i in range(N):
+    width = 0.35
+    for i, label in enumerate(labels):
         df = pandas_dataframes[i]
         if len(df) == 0:
             continue
         if not labels[i] in positions:
             continue
         else:
-            x_pos = positions[labels[i]]
+            x_pos = positions[label]
             d1 = ms_to_sec(df['t_keygen'].mean())
             d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
-            p1 = plt.bar(x_pos, d1, width, color='red')
+            p1 = bax.bar(x_pos, d1, width, color='red')
             d2 = ms_to_sec(df['t_input_encryption'].mean())
             d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
-            p2 = plt.bar(x_pos, d2, width, bottom=d1, color='blue')
+            p2 = bax.bar(x_pos, d2, width, bottom=d1, color='blue')
             d3 = ms_to_sec(df['t_computation'].mean())
             d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
-            p3 = plt.bar(x_pos, d3, width, bottom=d1 + d2, color='green')
+            p3 = bax.bar(x_pos, d3, width, bottom=d1 + d2, color='green')
             d4 = ms_to_sec(df['t_decryption'].mean())
             d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
 
             total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
-            p4 = plt.bar(ind[i], d4, width, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3, color='cyan')
-            print(labels[i], ": ", d1+d2+d3+d4)
+            p4 = bax.bar(x_pos, d4, width, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3, color='cyan')
+            print(labels[i], ": ", d1 + d2 + d3 + d4)
+
+    # Setup axes
+    bax.set_ylabel('Time (s)')
+    bax.axs[1].tick_params(axis='x', which='major', labelsize=9)
+    bax.axs[0].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
+    bax.axs[1].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
+    bax.axs[0].set_xticks(np.arange(len(sorted_labels)))
+    bax.axs[1].set_xticks(np.arange(len(sorted_labels)))
+    bax.axs[1].set_xticklabels(sorted_labels)
 
     # Add Legend
-    plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Decryption', 'Computation', 'Encryption', 'Key Generation'))
+    plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Decryption', 'Computation', 'Encryption', 'Key Generation'),
+               loc='upper left')
+
 
     # Restore current figure
     plt.figure(previous_figure.number)
@@ -100,6 +111,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
 if __name__ == '__main__':
     print("Testing ploting with nn example")
-    data = [pd.read_csv('s3://sok-repository-eval-benchmarks/20200830_122328__231118016/nGraph-HE-MLP/ngraph-he-mlp-learned_nn.csv')]
-    labels = ['nGraph-HE-MLP']
-    plot(labels, data).savefig("nn_plot_test.pdf")
+    data = [pd.read_csv(
+        's3://sok-repository-eval-benchmarks/20200830_125813__231137930/nGraph-HE-LeNet5/ngraph-he-lenet5-learned_nn.csv')]
+    labels = ['nGraph-HE-LeNet5']
+    fig = plot(labels, data)
+    fig.savefig("nn_plot_test.pdf")
+    fig.show()  # has some alignment issues, but pdf is fine
