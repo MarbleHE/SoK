@@ -33,10 +33,10 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     subs = {'Cingulata-UNOPT': 'Cingulata\n(unopt.)',
             'SEAL-BFV-Batched': 'SEAL-BFV\n(batched)',
             'SEAL-CKKS-Batched': 'SEAL-CKKS\n(batched)',
-            'nGraph-HE-MLP-squared': 'nGraph-HE (MLP, x^2)',
-            'nGraph-HE-MLP-learned': 'nGraph-HE (MLP, ax^2+bx)',
-            'nGraph-HE-Cryptonets-squared': 'nGraph-HE (Cryptonets, x^2)',
-            'nGraph-HE-Cryptonets-learned': 'nGraph-HE (Cryptonets, ax^2+bx)'
+            'nGraph-HE-MLP-squared': 'nGraph-HE\n(MLP, x^2)',
+            'nGraph-HE-MLP-learned': 'nGraph-HE\n(MLP, ax^2+bx)',
+            'nGraph-HE-Cryptonets-squared': 'nGraph-HE\n(Cnets, x^2)',
+            'nGraph-HE-Cryptonets-learned': 'nGraph-HE\n(Cnets, ax^2+bx)'
             }
     labels = [subs.get(item, item) for item in labels]
 
