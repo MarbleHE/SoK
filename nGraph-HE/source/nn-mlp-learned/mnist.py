@@ -163,7 +163,10 @@ def test_network():
     with tf.compat.v1.Session(config=config) as sess:
         sess.run(tf.compat.v1.global_variables_initializer())
         start_time = time.time()
+        t0 = time.perf_counter()
         y_hat = y_output.eval(feed_dict={x_input: x_test})
+        t1 = time.perf_counter()
+        cur_times['t_computation'] = delta_ms(t0, t1)
         elasped_time = time.time() - start_time
         print("total time(s)", np.round(elasped_time, 3))
 
@@ -183,7 +186,7 @@ def test_network():
 
 
 def main():
-    num_runs = int(os.getenv("NUM_RUNS")) if os.getenv("NUM_RUNS") is not None else 10
+    num_runs = int(os.getenv("NUM_RUNS")) if os.getenv("NUM_RUNS") is not None else 1
     for run in range(num_runs):
         global cur_times
         cur_times = copy.copy(times)
@@ -196,12 +199,8 @@ def main():
         cur_times['t_input_encryption'] = 0  # TODO: FIND ENCRYPTION?
         cur_times['t_decryption'] = 0  # TODO: FIND DECRYPTION - seems to be buried pretty deep, too
 
-        t0 = time.perf_counter()
-
         test_network()
 
-        t1 = time.perf_counter()
-        cur_times['t_computation'] = delta_ms(t0, t1)
         print(cur_times)
         all_times.append(cur_times)
 
