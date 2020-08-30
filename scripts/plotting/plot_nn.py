@@ -30,18 +30,22 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     # Nice names for labels: maps folder name -> short name
     # and adds linebreaks where required
-    subs = {'Cingulata-UNOPT': 'Cingulata\n(unopt.)',
-            'SEAL-BFV-Batched': 'SEAL-BFV\n(batched)',
-            'SEAL-CKKS-Batched': 'SEAL-CKKS\n(batched)',
+    subs = {'SEAL-CKKS-Batched': 'SEAL-CKKS\n(MLP)',
+            'SEALion': 'SEALION\n(MLP)',
             'nGraph-HE-MLP': 'nGraph-HE\n(MLP)',
-            'nGraph-HE-MLP-squared': 'nGraph-HE\n(MLP, x^2)',
-            'nGraph-HE-MLP-learned': 'nGraph-HE\n(MLP, ax^2+bx)',
             'nGraph-HE-Cryptonets': 'nGraph-HE\n(Cryptonets)',
-            'nGraph-HE-Cryptonets-squared': 'nGraph-HE\n(Cnets, x^2)',
-            'nGraph-HE-Cryptonets-learned': 'nGraph-HE\n(Cnets, ax^2+bx)',
             'nGraph-HE-LeNet5': 'nGraph-HE\n(LeNet-5)'
             }
     labels = [subs.get(item, item) for item in labels]
+
+
+    positions = {
+        'SEAL-CKKS\n(MLP)': 0,
+        'SEALION\n(MLP)': 1,
+        'nGraph-HE\n(MLP)': 2,
+        'nGraph-HE\n(Cryptonets)': 3,
+        'nGraph-HE\n(LeNet-5)': 4
+    }
 
     # Setup Axis, Title, etc
     N = len(labels)
@@ -65,21 +69,25 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         df = pandas_dataframes[i]
         if len(df) == 0:
             continue
-        d1 = ms_to_sec(df['t_keygen'].mean())
-        d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
-        p1 = plt.bar(ind[i], d1, width, color='red')
-        d2 = ms_to_sec(df['t_input_encryption'].mean())
-        d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
-        p2 = plt.bar(ind[i], d2, width, bottom=d1, color='blue')
-        d3 = ms_to_sec(df['t_computation'].mean())
-        d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
-        p3 = plt.bar(ind[i], d3, width, bottom=d1 + d2, color='green')
-        d4 = ms_to_sec(df['t_decryption'].mean())
-        d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
+        if not labels[i] in positions:
+            continue
+        else:
+            x_pos = positions[labels[i]]
+            d1 = ms_to_sec(df['t_keygen'].mean())
+            d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
+            p1 = plt.bar(x_pos, d1, width, color='red')
+            d2 = ms_to_sec(df['t_input_encryption'].mean())
+            d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
+            p2 = plt.bar(x_pos, d2, width, bottom=d1, color='blue')
+            d3 = ms_to_sec(df['t_computation'].mean())
+            d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
+            p3 = plt.bar(x_pos, d3, width, bottom=d1 + d2, color='green')
+            d4 = ms_to_sec(df['t_decryption'].mean())
+            d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
 
-        total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
-        p4 = plt.bar(ind[i], d4, width, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3, color='cyan')
-        print(labels[i], ": ", d1+d2+d3+d4)
+            total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
+            p4 = plt.bar(ind[i], d4, width, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3, color='cyan')
+            print(labels[i], ": ", d1+d2+d3+d4)
 
     # Add Legend
     plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Decryption', 'Computation', 'Encryption', 'Key Generation'))
@@ -92,6 +100,6 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
 if __name__ == '__main__':
     print("Testing ploting with nn example")
-    data = [pd.read_csv('s3://sok-repository-eval-benchmarks/20200825_211505/SEALion/sealion_nn.csv')]
-    labels = ['SEALion']
-    plot(labels, data).show()
+    data = [pd.read_csv('s3://sok-repository-eval-benchmarks/20200830_122328__231118016/nGraph-HE-MLP/ngraph-he-mlp-learned_nn.csv')]
+    labels = ['nGraph-HE-MLP']
+    plot(labels, data).savefig("nn_plot_test.pdf")
