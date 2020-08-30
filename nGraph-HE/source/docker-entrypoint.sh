@@ -8,6 +8,10 @@ upload_files() {
     done
 }
 
+# Simple AX client-server-test
+source /home/he-transformer/build/external/venv-tf-py3/bin/activate
+python3 ax-example/ax.py & python3 ax-example/pyclient.py
+
 # MLP with x^2
 source /home/he-transformer/build/external/venv-tf-py3/bin/activate
 export OUTPUT_FILENAME=ngraph-he-mlp-squared_nn.csv
