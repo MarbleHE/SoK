@@ -285,7 +285,7 @@ def server_config(tensor_param_name):
     server_config.parameter_map["ngraph_backend"].s = "HE_SEAL".encode()
     server_config.parameter_map["device_id"].s = b""
     server_config.parameter_map[
-        "encryption_parameters"].s = "/home/he-transformer/configs/he_seal_ckks_config_N13_L7.json".encode()
+        "encryption_parameters"].s = "/home/he-transformer/configs/he_seal_ckks_config_N13_L8.json".encode()
     server_config.parameter_map["enable_client"].s = str(False).encode()
     server_config.parameter_map["enable_gc"].s = (str(False)).encode()
     server_config.parameter_map["mask_gc_inputs"].s = (str(False)).encode()
