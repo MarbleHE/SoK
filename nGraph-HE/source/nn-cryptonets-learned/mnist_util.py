@@ -292,7 +292,7 @@ def server_config(tensor_param_name):
     server_config.parameter_map["mask_gc_outputs"].s = (str(False)).encode()
     server_config.parameter_map["num_gc_threads"].s = (str(1)).encode()
 
-    server_config.parameter_map[tensor_param_name].s = b"encrypt"
+    # server_config.parameter_map[tensor_param_name].s = b"encrypt"
     server_config.parameter_map[tensor_param_name].s += b",packed"
 
     config = tf.compat.v1.ConfigProto()
