@@ -55,7 +55,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     # Setup brokenaxes
     # TODO: Make break depend on value of nGraph-HE LeNet-5 runtime?
-    bax = brokenaxes(ylims=((0, 20), (120, 130)))
+    bax = brokenaxes(ylims=((0, 10), (120, 130)))
 
     # Setup Grids (0 is top, 1 is bottom part)
     bax.axs[0].grid(which='major', axis='y', linestyle=':')
