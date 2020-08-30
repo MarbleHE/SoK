@@ -54,7 +54,12 @@ def plot_all_cardio():
         'SEAL-CKKS-Batched',
     ]
     labeled_data = dict(zip(labels, data))
-    res = {key: labeled_data[key] for key in tool__plot_position}
+    res = {}
+    for key in tool__plot_position:
+        if key not in labeled_data:
+            print(f"Key {key} not found in labels. Skipping it.")
+        else:
+            res[key] = labeled_data[key]
     labels = list(res.keys())
     data = list(res.values())
 
