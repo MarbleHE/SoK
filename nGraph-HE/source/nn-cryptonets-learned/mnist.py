@@ -62,6 +62,7 @@ def delta_ms(t0, t1):
 class PolyAct(Layer):
     def __init__(self, **kwargs):
         super(PolyAct, self).__init__(**kwargs)
+        self.coeff = []
 
     def build(self, input_shape):
         self.coeff = self.add_weight('coeff', shape=(2, 1), initializer="random_normal", trainable=True, )
@@ -69,8 +70,15 @@ class PolyAct(Layer):
     def call(self, inputs):
         return self.coeff[1] * K.square(inputs) + self.coeff[0] * inputs
 
+    def get_weights(self):
+        return self.coeff
+
+    def set_weights(self, weights):
+        self.coeff = weights
+
     def compute_output_shape(self, input_shape):
         return input_shape
+
 
 def cryptonets_model(input):
     y = Conv2D(
@@ -82,7 +90,7 @@ def cryptonets_model(input):
         input_shape=(28, 28, 1),
         name="conv2d_1",
     )(input)
-    y = PolyAct()(y)
+    y = PolyAct(name='act_1')(y)
 
     y = AveragePooling2D(pool_size=(3, 3), strides=(1, 1), padding="same")(y)
     y = Conv2D(
@@ -96,13 +104,13 @@ def cryptonets_model(input):
     y = AveragePooling2D(pool_size=(3, 3), strides=(1, 1), padding="same")(y)
     y = Flatten()(y)
     y = Dense(100, use_bias=True, name="fc_1")(y)
-    y = PolyAct()(y)
+    y = PolyAct(name='act_2')(y)
     y = Dense(10, use_bias=True, name="fc_2")(y)
 
     return y
 
 
-def cryptonets_model_squashed(input, conv1_weights, squashed_weights, fc2_weights):
+def cryptonets_model_squashed(input, conv1_weights, squashed_weights, fc2_weights, act1_weights, act2_weights):
     y = Conv2D(
         filters=5,
         kernel_size=(5, 5),
@@ -115,7 +123,9 @@ def cryptonets_model_squashed(input, conv1_weights, squashed_weights, fc2_weight
         trainable=False,
         name="convd1_1",
     )(input)
-    y = PolyAct()(y)
+    act_1 = PolyAct()
+    act_1.set_weights(act1_weights)
+    y = act_1(y)
 
     # Using Keras model API with Flatten results in split ngraph at Flatten() or Reshape() op.
     # Use tf.reshape instead
@@ -129,7 +139,9 @@ def cryptonets_model_squashed(input, conv1_weights, squashed_weights, fc2_weight
             squashed_weights[0]),
         bias_initializer=tf.compat.v1.constant_initializer(squashed_weights[1]),
     )(y)
-    y = PolyAct()(y)
+    act_2 = PolyAct()
+    act_2.set_weights(act2_weights)
+    y = act_2(y)
 
     y = Dense(
         10,
@@ -151,6 +163,8 @@ def squash_layers(cryptonets_model, sess):
     conv2_weights = layers[layer_names.index('conv2d_2')].get_weights()
     fc1_weights = layers[layer_names.index('fc_1')].get_weights()
     fc2_weights = layers[layer_names.index('fc_2')].get_weights()
+    act1_weights = layers[layer_names.index('act_1')].get_weights()
+    act2_weights = layers[layer_names.index('act_2')].get_weights()
 
     # Get squashed weight
     y = Input(shape=(14 * 14 * 5,), name="squashed_input")
@@ -199,7 +213,7 @@ def squash_layers(cryptonets_model, sess):
     assert np.max(np.abs(linear_out - network_out)) < 1e-3
 
     return (conv1_weights, (squashed_weights, squashed_bias), fc1_weights,
-            fc2_weights)
+            fc2_weights, act1_weights, act2_weights)
 
 
 ####################
@@ -244,7 +258,7 @@ def train_model():
     # Squash weights and save model
     weights = squash_layers(cryptonets_model_var,
                             tf.compat.v1.keras.backend.get_session())
-    (conv1_weights, squashed_weights, fc1_weights, fc2_weights) = weights[0:4]
+    (conv1_weights, squashed_weights, fc1_weights, fc2_weights, act1_weights, act2_weights) = weights[0:6]
 
     tf.reset_default_graph()
     sess = tf.compat.v1.Session()
@@ -255,8 +269,7 @@ def train_model():
             28,
             1,
         ), name="input")
-    y = cryptonets_model_squashed(x, conv1_weights, squashed_weights,
-                                  fc2_weights)
+    y = cryptonets_model_squashed(x, conv1_weights, squashed_weights, fc2_weights, act1_weights, act2_weights)
     sess.run(tf.compat.v1.global_variables_initializer())
     save_model(
         sess,
@@ -329,7 +342,6 @@ def main():
         cur_times['t_input_encryption'] = 0  # TODO: FIND ENCRYPTION?
         cur_times['t_decryption'] = 0  # TODO: FIND DECRYPTION - seems to be buried pretty deep, too
 
-
         test_network()
 
         print(cur_times)
@@ -337,7 +349,7 @@ def main():
 
     # Output the benchmarking results
     df = pd.DataFrame(all_times)
-    output_filename = "nn-cryptonets-learned.csv"
+    output_filename = "nn-lenet5-learned.csv"
     if 'OUTPUT_FILENAME' in os.environ:
         output_filename = os.environ['OUTPUT_FILENAME']
     df.to_csv(output_filename, index=False)
