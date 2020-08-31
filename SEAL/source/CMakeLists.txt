@@ -4,7 +4,7 @@ project(eval_benchmark)
 
 find_package(SEAL 3.5 CONFIG REQUIRED)
 
-set(CMAKE_BUILD_TYPE DEBUG)
+set(CMAKE_BUILD_TYPE RELEASE)
 
 # target_link_libraries(main PRIVATE SEAL::seal MSGSL::MSGSL)
 

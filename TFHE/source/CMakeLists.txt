@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 3.9...3.17)
 
+set(CMAKE_BUILD_TYPE RELEASE)
 
 project(eval_benchmark)
 
