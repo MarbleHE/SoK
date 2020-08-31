@@ -19,7 +19,6 @@
 #include <random>
 #include <vector>
 
-typedef std::vector<seal::Ciphertext> CiphertextVector;
 #define NUM_BITS 8
 
 typedef std::vector<seal::Ciphertext> CiphertextVector;
