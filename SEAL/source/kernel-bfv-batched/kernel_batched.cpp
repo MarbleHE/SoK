@@ -1,4 +1,4 @@
-#include "laplacian_sharpening_batched.h"
+#include "kernel_batched.h"
 
 #define NUM_CTXT_SLOTS 16384
 #define IMAGE_SIZE 32
