@@ -1,9 +1,11 @@
 import re
-from pathlib import PosixPath
+from pathlib import PurePosixPath
 from urllib.parse import urlparse
 
 import boto3
+import pandas as pd
 from botocore.exceptions import ClientError
+from typing import List
 
 BUCKET_NAME = 'sok-repository-eval-benchmarks'
 
@@ -56,3 +58,40 @@ def upload_file_to_s3_bucket(file_path: str, destination_path: str):
     except ClientError as e:
         import sys
         print(f"Could not upload {file_path} to {destination_path} in bucket {BUCKET_NAME}.", file=sys.stderr)
+
+
+def get_labels_data_from_s3(name_filter: str) -> (List[str], List[pd.DataFrame]):
+    labels, data = [], []
+    # get the folder with the most recent timestamp (e.g., 20200729_0949/)
+    root_folder = get_most_recent_folder_from_s3_bucket()
+    # get all subfolders - this corresponds to the benchmarked tools (e.g., Cingulata, SEAL)
+    tool_folders_path = get_folder_in_s3_path(root_folder)
+    for tp in tool_folders_path:
+        # get path to all CSV files that have 'nn' in its name
+        s3_urls = get_csv_files_in_s3_path(tp, name_filter, get_s3_url=True)
+        # throw an error if there is more than one CSV with 'cardio' in the folder as each benchmark run should exactly
+        # produce one CSV file per program
+        if len(s3_urls) == 0:
+            # just skip any existing folder without a CSV file (e.g., the plot/ folder)
+            continue
+        elif len(s3_urls) > 1:
+            raise ValueError(
+                f"Error: More than one CSV file for '{name_filter}'' found!\nCreate a separate folder for each tool "
+                f"configuration, e.g., SEAL-BFV, SEAL-CKKS.")
+        # remove the directory (timestamped folder) segment from the tool's path
+        tool_name = tp.replace(root_folder, "")
+        # remove the trailing '/' from the tool's name (as it is a directory)
+        if tool_name[-1] == '/':
+            tool_name = tool_name[:-1]
+        # use the tool's name as label for the plot
+        labels.append(tool_name)
+        # read the CSV data from S3
+        data.append(pd.read_csv(s3_urls[0]))
+
+    # call the plot
+    if len(labels) == 0:
+        import sys
+        sys.stderr.write(f"ERROR: Plotting {name_filter} failed because no data is available!")
+        return
+
+    return labels, data, root_folder
