@@ -35,3 +35,8 @@ upload_files SEAL-CKKS-Batched ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 export OUTPUT_FILENAME=seal_batched_ckks_nn.csv
 ./run-nn-ckks-batched.sh
 upload_files SEAL-CKKS-Batched ${OUTPUT_FILENAME} fhe_parameters_nn.txt
+
+# Chi Squared BFV
+export OUTPUT_FILENAME=seal_bfv_chi_squared.csv
+./run-chi-squared-bfv.sh
+upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
