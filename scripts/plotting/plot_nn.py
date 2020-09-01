@@ -19,15 +19,23 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     previous_figure = plt.gcf()
 
     # Set the current figure to fig
+    # figsize = (int(len(labels) * 0.95), 6)
+    figsize = (5.5, 4)
+    config_dpi = 120
     if fig is None:
-        fig = plt.figure()
+        fig = plt.figure(figsize=figsize, dpi=config_dpi)
+    else:
+        plt.rcParams["figure.figsize"] = figsize
+        plt.rcParams["figure.dpi"] = config_dpi
+
     plt.figure(fig.number)
 
     # change size and DPI of resulting figure
-    plt.rcParams["figure.figsize"] = (8, 6)
-    plt.rcParams["figure.dpi"] = 90
     # change legend font size
     plt.rcParams["legend.fontsize"] = 8
+    # NOTE: Enabling this requires latex to be installed on the Github actions runner
+    # plt.rcParams["text.usetex"] = True
+    plt.rcParams["font.family"] = 'serif'
 
     # Nice names for labels: maps folder name -> short name
     # and adds linebreaks where required
@@ -48,7 +56,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     }
 
     sorted_labels = ("SEAL-CKKS\n(MLP)",
-                     "SEALION\n(MLP)",
+                     "SEALion\n(MLP)",
                      "nGraph-HE\n(MLP)",
                      "nGraph-HE\n(Cryptonets)",
                      "nGraph-HE\n(LeNet-5)")
@@ -88,7 +96,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
             total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
             p4 = bax.bar(x_pos, d4, width, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3, color='cyan')
-            print(labels[i], ": ", d1 + d2 + d3 + d4)
+            print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ', d1 + d2 + d3 + d4,
+                  ')')
 
     # Setup axes
     bax.set_ylabel('Time (s)')
