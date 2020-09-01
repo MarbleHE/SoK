@@ -45,7 +45,7 @@ RUN git checkout eb028240000ee4d4cbc7b1a1aacfaf62ca1f6e5f
 # compile cingulata
 RUN mkdir -p /cingu/$build_dir \
  && cd /cingu/$build_dir \
- && cmake -DUSE_BFV=ON .. \
+ && cmake -DUSE_BFV=ON -j $(nproc) .. \
  && make
 
 CMD ["/bin/bash"]
