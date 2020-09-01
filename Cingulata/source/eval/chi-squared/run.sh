@@ -57,7 +57,9 @@ done
 # Write FHE parameters into file for S3 upload
 INPUT_FILE=fhe_params.xml
 OUTPUT_FILE=fhe_parameters_chi_squared.txt
-echo "== FHE parameters ====" >${OUTPUT_FILE}
+echo "== Execution parameters ====" >${OUTPUT_FILE}
+echo "No. of used threads: " $(nproc) >>${OUTPUT_FILE}
+echo "== FHE parameters ====" >>${OUTPUT_FILE}
 echo "n:" $(xmlstarlet sel -t -v '/fhe_params/extra/n' <${INPUT_FILE}) >>${OUTPUT_FILE}
 echo "q:" "$(xmlstarlet sel -t -v '/fhe_params/extra/q_bitsize_SEAL_BFV' <${INPUT_FILE})" "($(xmlstarlet sel -t -v '/fhe_params/ciphertext/coeff_modulo_log2' <${INPUT_FILE}) bit)" >>${OUTPUT_FILE}
 echo "T:" "$(xmlstarlet sel -t -v '/fhe_params/plaintext/coeff_modulo' <${INPUT_FILE})" >>${OUTPUT_FILE}
