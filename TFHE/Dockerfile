@@ -2,12 +2,15 @@ FROM marblehe/base_tfhe
 
 # copy eval program into container
 COPY source /root/eval
+RUN chmod +x /root/eval/docker-entrypoint.sh
 
 # build the benchmark
 WORKDIR /root/eval
-RUN mkdir build
-WORKDIR /root/eval/build
-RUN cmake .. && make
+RUN cd /root/eval && \
+    mkdir build && \
+    cd /root/eval/build && \
+    cmake .. && \
+    make
 
 # execute the benchmark and upload benchmark results to S3
-CMD ["sh", "-c", "./run.sh; aws s3 cp tfhe_cardio.csv ${S3_URL}/${S3_FOLDER}/TFHE/"]
+ENTRYPOINT ["/root/eval/docker-entrypoint.sh"]
