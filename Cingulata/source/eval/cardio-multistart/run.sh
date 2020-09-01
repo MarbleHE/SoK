@@ -2,7 +2,7 @@
 
 OPT_OUTPUT_FILENAME=cardio_multistart.csv
 OPTIMIZED_CIRCUIT=cardio_multistart.blif
-APPS_DIR=../../build_bfv/apps
+APPS_DIR=/cingu/build_bfv/apps
 
 get_timestamp_ms() {
   echo $(date +%s%3N)

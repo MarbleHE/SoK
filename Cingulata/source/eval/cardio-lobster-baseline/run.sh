@@ -6,7 +6,7 @@ UNOPT_OUTPUT_FILENAME=cardio_lobster_baseline_unoptimized.csv
 UNOPTIMIZED_CIRCUIT=bfv-cardio.blif
 OPTIMIZED_CIRCUIT=bfv-cardio-opt.blif
 
-APPS_DIR=../../build_bfv/apps
+APPS_DIR=/cingu/build_bfv/apps
 
 get_timestamp_ms() {
   echo $(date +%s%3N)

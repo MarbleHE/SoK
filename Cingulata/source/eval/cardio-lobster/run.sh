@@ -2,7 +2,7 @@
 
 OPT_OUTPUT_FILENAME=cingulata_cardio_lobster.csv
 OPTIMIZED_CIRCUIT=cardio_lobster.blif
-APPS_DIR=../../build_bfv/apps
+APPS_DIR=/cingu/build_bfv/apps
 
 get_timestamp_ms() {
   echo $(date +%s%3N)
