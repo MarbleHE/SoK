@@ -8,6 +8,11 @@ upload_file() {
     done  
 }
 
+echo "Running chi-squared..."
+cd /cingu/eval/chi-squared \
+    && ./run.sh \
+    && upload_file Cingulata cingulata_chi-squared_unoptimized.csv fhe_parameters_chi_squared.txt
+
 echo "Running cardio-cingulata..."
 cd /cingu/eval/cardio-cingulata \
     && ./run.sh \
