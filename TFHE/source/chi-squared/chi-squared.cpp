@@ -25,6 +25,10 @@ void cloud();
 void verify();
 
 int main() {
+  // TODO: Implement Chi-Squared test.
+  std::cerr << "Chi-Squared test is not implemented yet!" << std::endl;
+  return 1;
+
   client();
   cloud();
   verify();

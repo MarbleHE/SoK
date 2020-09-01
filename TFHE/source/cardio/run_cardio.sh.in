@@ -1,7 +1,6 @@
 #!/bin/bash
 
 RUN=1
-export OUTPUT_FILENAME=tfhe_cardio.csv
 
 echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OUTPUT_FILENAME
 
