@@ -67,12 +67,12 @@ int main() {
 
   CiInt beta_1{CiInt::u16};
   CiInt orange{CiInt::u16};
-  orange = ((n0<<2)+n1);
+  orange = ((n0<<1)+n1);
   beta_1 = (orange*orange)<<1;
 
   CiInt beta_2{CiInt::u16};
   CiInt green{CiInt::u16};
-  green = ((n2<<2)+n1);
+  green = ((n2<<1)+n1);
   beta_2 = orange*green;
 
   CiInt beta_3{CiInt::u16};

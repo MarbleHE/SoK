@@ -4,7 +4,7 @@ UNOPT_OUTPUT_FILENAME=cingulata_chi-squared_unoptimized.csv
 
 UNOPT_CIRCUIT=bfv-chi-squared.blif
 
-APPS_DIR=../../build_bfv/apps
+APPS_DIR=/cingu/build_bfv/apps
 
 get_timestamp_ms() {
   echo $(date +%s%3N)
@@ -12,7 +12,7 @@ get_timestamp_ms() {
 
 write_to_files() {
   for item in "$@"; do
-    echo -ne $item | tee -a $OPT_OUTPUT_FILENAME $UNOPT_OUTPUT_FILENAME >/dev/null
+    echo -ne $item | tee -a $UNOPT_OUTPUT_FILENAME >/dev/null
   done
 }
 
@@ -35,7 +35,7 @@ while (($RUN <= $NUM_RUNS)); do
 
   # encrypt the inputs
   echo "Input encryption"
-  NR_THREADS=1
+  NR_THREADS=$(nproc)
   $APPS_DIR/encrypt --threads $NR_THREADS $($APPS_DIR/helper --bit-cnt 8 --prefix "input/i:n0_" 2)
   $APPS_DIR/encrypt --threads $NR_THREADS $($APPS_DIR/helper --bit-cnt 8 --prefix "input/i:n1_" 7)
   $APPS_DIR/encrypt --threads $NR_THREADS $($APPS_DIR/helper --bit-cnt 8 --prefix "input/i:n2_" 9)
@@ -45,11 +45,11 @@ while (($RUN <= $NUM_RUNS)); do
   echo "FHE execution of unoptimized circuit"
   $APPS_DIR/dyn_omp $UNOPT_CIRCUIT --threads $NR_THREADS
   FHE_EXEC_UNOPT_T=$(get_timestamp_ms)
-  echo -n $((${FHE_EXEC_UNOPT_T} - ${END_INPUT_ENCRYPTION_T}))"," >>$OUTPUT_FILENAME
+  write_to_files $((${FHE_EXEC_UNOPT_T} - ${END_INPUT_ENCRYPTION_T}))","
 
   echo -ne "Decrypted result: "
   OUT_FILES=$(ls -v output/*)
-  $APPS_DIR/helper --from-bin --bit-cnt 16 $($APPS_DIR/decrypt $OUT_FILES)
+  $APPS_DIR/helper --from-bin --bit-cnt 16 $($APPS_DIR/decrypt --threads $NR_THREADS $OUT_FILES)
   DECRYPT_T=$(get_timestamp_ms)
   write_to_files $((${DECRYPT_T} - ${FHE_EXEC_UNOPT_T}))"\n"
 done
