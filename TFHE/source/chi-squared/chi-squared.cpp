@@ -464,10 +464,10 @@ void verify() {
   fclose(answer_data);
 
   //decrypt and rebuild the plaintext answer
-  uint8_t int_alpha = decrypt_array(alpha, 4*BIT_SIZE, key);
-  uint8_t int_beta1 = decrypt_array(beta1, 4*BIT_SIZE, key);
-  uint8_t int_beta2 = decrypt_array(beta2, 4*BIT_SIZE, key);
-  uint8_t int_beta3 = decrypt_array(beta3, 4*BIT_SIZE, key);
+  uint32_t int_alpha = decrypt_array(alpha, 4*BIT_SIZE, key);
+  uint32_t int_beta1 = decrypt_array(beta1, 4*BIT_SIZE, key);
+  uint32_t int_beta2 = decrypt_array(beta2, 4*BIT_SIZE, key);
+  uint32_t int_beta3 = decrypt_array(beta3, 4*BIT_SIZE, key);
 
   printf("And the results are:\nalpha: %d\nbeta1: %d\nbeta2: %d\nbeta3: %d\n",
          int_alpha,
