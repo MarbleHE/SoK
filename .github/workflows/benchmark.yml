@@ -52,7 +52,7 @@ jobs:
     strategy:
       matrix:
         # this must match the tool's directory name in the SoK repo
-        tool: [SEAL, Cingulata, SEALion, TFHE, nGraph-HE]
+        tool: [SEAL, Cingulata, SEALion, TFHE, nGraph-HE, E3]
     steps:
       # create a AWS EC2 instance and wait until it is ready to accept SSM commands
       - name: create a new AWS EC2 instance with Ubuntu 20.04 + Docker and wait until VM is ready
