@@ -52,7 +52,7 @@ esac
 
 TAG_NAME=eval_${toolname}
 
-cd ${toolname} || (echo "Could not find ${tooldir} directory! Needs to be executed from SoK root directory."; exit 1)
+cd ${tooldir} || (echo "Could not find ${tooldir} directory! Needs to be executed from SoK root directory."; exit 1)
 
 echo "Building eval image for ${tooldir}..."
 docker build -t ${TAG_NAME} . && \
