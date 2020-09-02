@@ -6,19 +6,6 @@ export E3=/e3
 export E3_SRC=/e3/src
 export MAKEFLAGS=-j$(nproc)
 
-write_circuit_config() {
-    cat >cgt.cfg <<EOL
-password = anyRandomStringToBeUsedForKeyGeneration
-@sizes = 8
-Type : circuit
-{
-    postfix = Ep
-    encryption = $1
-    sizes = 8
-}
-EOL
-}
-
 upload_files() {
     TARGET_DIR=$1
     shift
@@ -52,6 +39,7 @@ get_timestamp_ms() {
 
 # CARDIO
 export OUT_FILENAME=e3_tfhe_cardio.csv
+export CGT_FILENAME=cgt_tfhe.cfg
 
 cd $E3/src && \
     make cleanall && \
@@ -60,12 +48,11 @@ cd $E3/src && \
 cd $E3/eval/cardio
 echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OUT_FILENAME
 
-write_circuit_config tfhe
 cp $E3/src/e3int.h ./ 
 cp $E3/src/cgtshared.* ./
 
 START_KEYGEN_T=$( get_timestamp_ms )
-$E3/src/cgt.exe gen -r $E3/src
+$E3/src/cgt.exe gen -c ${CGT_FILENAME} -r $E3/src
 END_KEYGEN_T=$( get_timestamp_ms )
 echo -ne "$((${END_KEYGEN_T}-${START_KEYGEN_T}))," >> $OUT_FILENAME
 
@@ -78,7 +65,7 @@ END_COMPUTATION_T=$( get_timestamp_ms )
 echo -ne "$((${END_COMPUTATION_T}-${START_COMPUTATION_T}))," >> $OUT_FILENAME
 
 START_DECRYPTION_T=$( get_timestamp_ms )
-echo "Result:" $($E3/src/cgt.exe dec -c cgt.cfg -f output.tmp)
+echo "Result:" $($E3/src/cgt.exe dec -c ${CGT_FILENAME} -f output.tmp)
 END_DECRYPTION_T=$( get_timestamp_ms )
 echo "$((${END_DECRYPTION_T}-${START_DECRYPTION_T}))" >> $OUT_FILENAME
 
@@ -90,6 +77,7 @@ upload_files E3-TFHE ${OUTPUT_FILENAME}
 
 # CARDIO
 export OUT_FILENAME=e3_seal_cardio.csv
+export CGT_FILENAME=cgt_seal.cfg
 
 cd $E3/src && \
     make cleanall && \
@@ -98,12 +86,11 @@ cd $E3/src && \
 cd $E3/eval/cardio
 echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OUT_FILENAME
 
-write_circuit_config seal
 cp $E3/src/e3int.h ./
 cp $E3/src/cgtshared.* ./
 
 START_KEYGEN_T=$( get_timestamp_ms )
-$E3/src/cgt.exe gen -r $E3/src
+$E3/src/cgt.exe gen -c ${CGT_FILENAME} -r $E3/src
 END_KEYGEN_T=$( get_timestamp_ms )
 echo -ne "$((${END_KEYGEN_T}-${START_KEYGEN_T}))," >> $OUT_FILENAME
 
@@ -116,7 +103,7 @@ END_COMPUTATION_T=$( get_timestamp_ms )
 echo -ne "$((${END_COMPUTATION_T}-${START_COMPUTATION_T}))," >> $OUT_FILENAME
 
 START_DECRYPTION_T=$( get_timestamp_ms )
-echo "Result:" $($E3/src/cgt.exe dec -c cgt.cfg -f output.tmp)
+echo "Result:" $($E3/src/cgt.exe dec -c ${CGT_FILENAME} -f output.tmp)
 END_DECRYPTION_T=$( get_timestamp_ms )
 echo "$((${END_DECRYPTION_T}-${START_DECRYPTION_T}))" >> $OUT_FILENAME
 
