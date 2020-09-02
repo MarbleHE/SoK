@@ -48,7 +48,7 @@ const int BIT_SIZE = 8;
 TFheGateBootstrappingSecretKeySet *SECRET_KEY;
 
 int decrypt_array(const LweSample *array, int nb_size, const TFheGateBootstrappingSecretKeySet *key) {
-  uint8_t int_answer = 0;
+  uint32_t int_answer = 0;
   for (int i = 0; i < nb_size; i++) {
     int ai = bootsSymDecrypt(&array[i], key);
     int_answer |= (ai << i);
@@ -124,20 +124,6 @@ void client() {
 
 }
 
-// elementary full comparator gate that is used to compare the i-th bit:
-//   input: ai and bi the i-th bit of a and b
-//          lsb_carry: the result of the comparison on the lowest bits
-//   algo: if (a==b) return lsb_carry else return b
-void compare_bit(LweSample *result,
-                 const LweSample *a,
-                 const LweSample *b,
-                 const LweSample *lsb_carry,
-                 LweSample *tmp,
-                 const TFheGateBootstrappingCloudKeySet *bk) {
-  bootsXNOR(tmp, a, b, bk);
-  bootsMUX(result, tmp, lsb_carry, a, bk);
-}
-
 // A (very inefficiently formulated) full adder
 void full_adder(LweSample *s,
                 LweSample *c_out,
@@ -168,45 +154,74 @@ void ripple_carry_adder(LweSample *s,
                         const int nb_bits,
                         const TFheGateBootstrappingCloudKeySet *bk) {
   //run the elementary comparator gate n times
-  for (int i = 0; i < nb_bits; i++) {
-    full_adder(&s[i], c_out, &a[i], &b[i], c_out, bk);
-  }
-}
+  LweSample *c_in = new_gate_bootstrapping_ciphertext(bk->params);
+  bootsCONSTANT(c_in, 0, bk);
 
-// this function compares two multibit words, and puts (a<=b) into result
-void less(LweSample *result,
-          const LweSample *a,
-          const LweSample *b,
-          const int nb_bits,
-          const TFheGateBootstrappingCloudKeySet *bk) {
-  LweSample *tmp = new_gate_bootstrapping_ciphertext(bk->params);
-  LweSample *carry_in = new_gate_bootstrapping_ciphertext(bk->params);
-  //initialize the tmp to 0
-  bootsCONSTANT(tmp, 0, bk);
-  bootsCONSTANT(carry_in, 0, bk);
-  //run the elementary comparator gate n times
   for (int i = 0; i < nb_bits; i++) {
-    compare_bit(result, &a[i], &b[i], carry_in, tmp, bk);
-    bootsCOPY(carry_in, result, bk);
-  }
+//    int ptxt_cin = decrypt_array(c_in,1,SECRET_KEY);
+//    int ptxt_a = decrypt_array(&a[i],1,SECRET_KEY);
+//    int ptxt_b = decrypt_array(&b[i],1,SECRET_KEY);
+    full_adder(&s[i], c_out, &a[i], &b[i], c_in, bk);
+//    int ptxt_s = decrypt_array(&s[i],1,SECRET_KEY);
+//    int ptxt_cout = decrypt_array(c_out,1,SECRET_KEY);
+    bootsCOPY(c_in, c_out, bk);
 
-  delete_gate_bootstrapping_ciphertext(tmp);
-  delete_gate_bootstrapping_ciphertext(carry_in);
+  }
 }
 
 // Computes
 void simple_multiplier(LweSample *result,
                        const LweSample *a,
                        const LweSample *b,
-                       const int nb_bits,
+                       const int nb_bits, /* input length */
                        const TFheGateBootstrappingCloudKeySet *bk) {
-  //TODO: IMPLEMENT MULT
-
-  // Do nothing for now:
+  // Build a large array for all the intermediate results
+  LweSample *intermediates[nb_bits];
   for (int i = 0; i < nb_bits; ++i) {
-    bootsCOPY(&result[i], &a[i], bk);
+    intermediates[i] = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
+    for (int j = 0; j < 2*nb_bits; ++j) {
+      bootsCONSTANT(&intermediates[i][j], 0, bk);
+    }
   }
 
+  // shift copies of b and AND with a at the same time
+  for (int i = 0; i < nb_bits; ++i) {
+    // take b, shift it by i, i.e. save to ..[j+i] and AND each bit with a[i] and write into i-th intermediate result
+    for (int j = 0; j < nb_bits; ++j) {
+      bootsAND(&intermediates[i][j + i], &a[i], &b[j], bk);
+    }
+  }
+
+//  // DEBUG: output all the intermediates
+//  printf("Intermediates:\n");
+//  for(int i = 0; i < nb_bits; ++i) {
+//    int ptxt = decrypt_array(intermediates[i],2*nb_bits,SECRET_KEY);
+//    printf("%d: %d\n", i, ptxt);
+//  }
+
+
+  //TODO: Use 3-for-2 compressor to make this faster
+  // go through and all all the intermediates
+  LweSample *carry = new_gate_bootstrapping_ciphertext(bk->params);
+  LweSample *temp = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
+  for (int i = 0; i < nb_bits; ++i) {
+    bootsCONSTANT(carry, 0, bk);
+    for (int j = 0; j < 2*nb_bits; ++j) {
+      bootsCOPY(&temp[j], &result[j], bk);
+      bootsCONSTANT(&result[j], 0, bk);
+    }
+//    int result_ptxt_before = decrypt_array(temp, 2*nb_bits, SECRET_KEY);
+//    int intermediate_ptxt = decrypt_array(intermediates[i], 2*nb_bits, SECRET_KEY);
+    ripple_carry_adder(result, carry, temp, intermediates[i], 2*nb_bits, bk);
+//    int result_ptxt_after = decrypt_array(result, 2*nb_bits, SECRET_KEY);
+//    printf("Adding %d to %d resulted in %d\n", intermediate_ptxt, result_ptxt_before, result_ptxt_after);
+  }
+  delete_gate_bootstrapping_ciphertext(carry);
+  delete_gate_bootstrapping_ciphertext_array(2*nb_bits, temp);
+
+  for (int i = 0; i < nb_bits; ++i) {
+    delete_gate_bootstrapping_ciphertext_array(2*nb_bits, intermediates[i]);
+  }
 }
 
 void cloud() {
@@ -315,6 +330,9 @@ void cloud() {
   }
   simple_multiplier(n0_n2, n0, n2, BIT_SIZE, bk);
 
+  auto n02_n2_ptxt = decrypt_array(n0_n2, 4*BIT_SIZE, SECRET_KEY);
+  printf("n0*n2: %d\n", n02_n2_ptxt);
+
   // shift result by 2
   LweSample *four_n0_n2 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
   for (int i = 0; i < 4*BIT_SIZE; ++i) {
@@ -323,8 +341,10 @@ void cloud() {
   for (int i = 0; i < 2*BIT_SIZE; ++i) {
     bootsCOPY(&four_n0_n2[i + 2], &n0_n2[i], bk);
   }
-
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n0_n2);
+
+  auto four_n02_n2_ptxt = decrypt_array(four_n0_n2, 4*BIT_SIZE, SECRET_KEY);
+  printf("4*n0*n2: %d\n", four_n02_n2_ptxt);
 
   // square n1
   LweSample *n1_squared = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
@@ -333,7 +353,8 @@ void cloud() {
   }
   simple_multiplier(n1_squared, n1, n1, BIT_SIZE, bk);
 
-
+  auto n1_squared_ptxt = decrypt_array(n1_squared, 4*BIT_SIZE, SECRET_KEY);
+  printf("n1^2: %d\n", n1_squared_ptxt);
 
   // Alpha:
   // first add (yes, original formula is minus, but runtime is pretty much the same and it's already implemented)
