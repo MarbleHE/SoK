@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <assert.h>
 
 typedef std::chrono::milliseconds ms;
 typedef std::chrono::high_resolution_clock Time;
@@ -26,25 +27,19 @@ void cloud();
 void verify();
 
 int main() {
-  // TODO: Implement Chi-Squared test.
-  std::cerr << "Chi-Squared test is not implemented yet!" << std::endl;
-  return 1;
-
   client();
   cloud();
   verify();
 
   // write ss_time into file
   std::ofstream myfile;
-  auto out_filename = std::getenv("OUTPUT_FILENAME");
+  const char *out_filename = std::getenv("OUTPUT_FILENAME");
+  if (!out_filename) out_filename = "tfhe_chi-squared.csv";
   myfile.open(out_filename, std::ios_base::app);
   myfile << ss_time.str() << std::endl;
   myfile.close();
   return 0;
 }
-
-/// Number of conditions to generate
-const int NUM_COND = 10;
 
 /// Number of bits in numerical parameters
 const int BIT_SIZE = 8;
@@ -87,66 +82,40 @@ void client() {
   log_time(ss_time, t0, t1, false);
 
   auto t2 = Time::now();
-  //generate and encrypt the random flags,lhs and rhs
-  LweSample *flags[NUM_COND];
-  LweSample *lhs[NUM_COND];
-  LweSample *rhs[NUM_COND];
-  for (int i = 0; i < NUM_COND; ++i) {
-    uint8_t flag_ptxt = 1;
-    uint8_t lhs_ptxt = 65;
-    uint8_t rhs_ptxt = 55;
-    flags[i] = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
-    lhs[i] = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
-    rhs[i] = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
-    for (int j = 0; j < BIT_SIZE; j++) {
-      bootsSymEncrypt(&flags[i][j], (flag_ptxt >> j) & 1, key);
-      bootsSymEncrypt(&lhs[i][j], (lhs_ptxt >> j) & 1, key);
-      bootsSymEncrypt(&rhs[i][j], (rhs_ptxt >> j) & 1, key);
-    }
+  //generate and encrypt the three input values
+  LweSample *n0 = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
+  LweSample *n1 = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
+  LweSample *n2 = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
+  uint8_t n0_ptxt = 10;
+  uint8_t n1_ptxt = 20;
+  uint8_t n2_ptxt = 30;
+  for (int i = 0; i < BIT_SIZE; i++) {
+    bootsSymEncrypt(&n0[i], (n0_ptxt >> i) & 1, key);
+    bootsSymEncrypt(&n1[i], (n1_ptxt >> i) & 1, key);
+    bootsSymEncrypt(&n2[i], (n2_ptxt >> i) & 1, key);
+
   }
 
-  printf("Hi there! Today we will calculate some cardio risk conditions!\n");
-
-//  // DEBUG: DECRYPT ALL THE CIPHERTEXTS
-//  printf("FLAGS:\n");
-//  for (int i = 0; i < NUM_COND; ++i) {
-//    int f = decrypt_array(flags[i], BIT_SIZE, SECRET_KEY);
-//    printf("%d\n", f);
-//  }
-//  printf("LHS:\n");
-//  for (int i = 0; i < NUM_COND; ++i) {
-//    int f = decrypt_array(lhs[i], BIT_SIZE, SECRET_KEY);
-//    printf("%d\n", f);
-//  }
-//  printf("RHS:\n");
-//  for (int i = 0; i < NUM_COND; ++i) {
-//    int f = decrypt_array(rhs[i], BIT_SIZE, SECRET_KEY);
-//    printf("%d\n", f);
-//  }
+  printf("Hi there! Today we will calculate a chi-squared test !\n");
 
   //export the ciphertexts to a file (for the cloud)
   FILE *cloud_data = fopen("cloud.data", "wb");
-  for (int i = 0; i < NUM_COND; ++i) {
-    for (int j = 0; j < BIT_SIZE; j++)
-      export_gate_bootstrapping_ciphertext_toFile(cloud_data, &flags[i][j], params);
-  }
-  for (int i = 0; i < NUM_COND; ++i) {
-    for (int j = 0; j < BIT_SIZE; j++)
-      export_gate_bootstrapping_ciphertext_toFile(cloud_data, &lhs[i][j], params);
-  }
-  for (int i = 0; i < NUM_COND; ++i) {
-    for (int j = 0; j < BIT_SIZE; j++)
-      export_gate_bootstrapping_ciphertext_toFile(cloud_data, &rhs[i][j], params);
-  }
+
+  for (int i = 0; i < BIT_SIZE; i++)
+    export_gate_bootstrapping_ciphertext_toFile(cloud_data, &n0[i], params);
+
+  for (int i = 0; i < BIT_SIZE; i++)
+    export_gate_bootstrapping_ciphertext_toFile(cloud_data, &n1[i], params);
+
+  for (int i = 0; i < BIT_SIZE; i++)
+    export_gate_bootstrapping_ciphertext_toFile(cloud_data, &n2[i], params);
 
   fclose(cloud_data);
 
   //clean up all pointers
-  for (int i = 0; i < NUM_COND; ++i) {
-    delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, flags[i]);
-    delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, lhs[i]);
-    delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, rhs[i]);
-  }
+  delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, n0);
+  delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, n1);
+  delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, n2);
   //delete_gate_bootstrapping_secret_keyset(key);
   //delete_gate_bootstrapping_parameters(params);
 
@@ -225,6 +194,21 @@ void less(LweSample *result,
   delete_gate_bootstrapping_ciphertext(carry_in);
 }
 
+// Computes
+void simple_multiplier(LweSample *result,
+                       const LweSample *a,
+                       const LweSample *b,
+                       const int nb_bits,
+                       const TFheGateBootstrappingCloudKeySet *bk) {
+  //TODO: IMPLEMENT MULT
+
+  // Do nothing for now:
+  for (int i = 0; i < nb_bits; ++i) {
+    bootsCOPY(&result[i], &a[i], bk);
+  }
+
+}
+
 void cloud() {
   auto t4 = Time::now();
 
@@ -237,102 +221,183 @@ void cloud() {
   const TFheGateBootstrappingParameterSet *params = bk->params;
 
   //create the ciphertexts
-  LweSample *flags[NUM_COND];
-  LweSample *lhs[NUM_COND];
-  LweSample *rhs[NUM_COND];
-  for (int i = 0; i < NUM_COND; ++i) {
-    flags[i] = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
-    lhs[i] = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
-    rhs[i] = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
-  }
+  LweSample *n0 = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
+  LweSample *n1 = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
+  LweSample *n2 = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
+
 
   //reads the ciphertexts from the cloud file
   FILE *cloud_data = fopen("cloud.data", "rb");
-  for (auto &flag : flags)
-    for (int j = 0; j < BIT_SIZE; j++)
-      import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &flag[j], params);
-  for (auto &lh : lhs)
-    for (int j = 0; j < BIT_SIZE; j++)
-      import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &lh[j], params);
-  for (auto &rh : rhs)
-    for (int j = 0; j < BIT_SIZE; j++)
-      import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &rh[j], params);
-  fclose(cloud_data);
 
-//  // DEBUG: DECRYPT ALL THE CIPHERTEXTS
-//  printf("FLAGS:\n");
-//  for (int i = 0; i < NUM_COND; ++i) {
-//    int f = decrypt_array(flags[i], BIT_SIZE, SECRET_KEY);
-//    printf("%d\n", f);
-//  }
-//  printf("LHS:\n");
-//  for (int i = 0; i < NUM_COND; ++i) {
-//    int f = decrypt_array(lhs[i], BIT_SIZE, SECRET_KEY);
-//    printf("%d\n", f);
-//  }
-//  printf("RHS:\n");
-//  for (int i = 0; i < NUM_COND; ++i) {
-//    int f = decrypt_array(rhs[i], BIT_SIZE, SECRET_KEY);
-//    printf("%d\n", f);
-//  }
+  for (int j = 0; j < BIT_SIZE; j++)
+    import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &n0[j], params);
 
-  // Calculate each condition
-  LweSample *cond_results[NUM_COND];
-  for (int i = 0; i < NUM_COND; ++i) {
-    cond_results[i] = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
-    // Set cond_result to zero
-    for (int j = 0; j < BIT_SIZE; ++j) {
-      bootsCONSTANT(&cond_results[i][j], 0, bk);
-    }
-    LweSample *tmp = new_gate_bootstrapping_ciphertext(params);
-    bootsCONSTANT(tmp, 0, bk);
-    // Compute lhs < rhs
-    less(tmp, lhs[i], rhs[i], BIT_SIZE, bk);
-//    int less_ptxt = bootsSymDecrypt(tmp,SECRET_KEY);
-//    printf("Comparison result is %d\n", less_ptxt);
+  for (int j = 0; j < BIT_SIZE; j++)
+    import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &n1[j], params);
 
-    bootsAND(&cond_results[i][0], tmp, &flags[i][0], bk);
+  for (int j = 0; j < BIT_SIZE; j++)
+    import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &n2[j], params);
 
-//    int and_ptxt = decrypt_array(cond_results[i], BIT_SIZE, SECRET_KEY);
-//    printf("And result is %d\n", and_ptxt);
-    // clean up tmp
-    delete_gate_bootstrapping_ciphertext(tmp);
+  // DEBUG: DECRYPT ALL THE CIPHERTEXTS
+  int n0_ptxt = decrypt_array(n0, BIT_SIZE, SECRET_KEY);
+  printf("n0: %d\n", n0_ptxt);
+  int n1_ptxt = decrypt_array(n1, BIT_SIZE, SECRET_KEY);
+  printf("n1: %d\n", n1_ptxt);
+  int n2_ptxt = decrypt_array(n2, BIT_SIZE, SECRET_KEY);
+  printf("n2: %d\n", n2_ptxt);
+
+  /// alpha = (4(n0*n2) - n1*n1)^2
+  LweSample *alpha = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&alpha[i], 0, bk);
+  }
+  /// beta1 = 2*(2n0 + n1)^2
+  LweSample *beta1 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&beta1[i], 0, bk);
+  }
+  /// beta2 = (2n0+n1) * (2n2 + n1)
+  LweSample *beta2 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&beta2[i], 0, bk);
+  }
+  /// beta3 = 2*(2n2 + n1)^2
+  LweSample *beta3 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&beta3[i], 0, bk);
   }
 
 
-//  // DEBUG: DECRYPT ALL THE CONDITIONS
-//  printf("COND_RESULTS:\n");
-//  for (int i = 0; i < NUM_COND; ++i) {
-//    int f = decrypt_array(cond_results[i], BIT_SIZE, SECRET_KEY);
-//    printf("%d\n", f);
-//  }
-
-  // Add all conditions up to the score
-  LweSample *result = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
-  LweSample *carry = new_gate_bootstrapping_ciphertext(params);
-  // initialize the sum to 0
+  /// term1 = (2n0 + n1) // 2*10 + 20 = 40
+  LweSample *term1 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&term1[i], 0, bk);
+  }
+  // start by copying n0, but right-shifting it (multiplies by two)
+  LweSample *n0_twice = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&n0_twice[i], 0, bk);
+  }
   for (int i = 0; i < BIT_SIZE; ++i) {
-    bootsCONSTANT(&result[i], 0, bk);
+    bootsCOPY(&n0_twice[i + 1], &n0[i], bk);
   }
-  for (auto &cond_result : cond_results) {
-    //initialize the carry to 0
-    bootsCONSTANT(carry, 0, bk);
-    ripple_carry_adder(result, carry, cond_result, result, BIT_SIZE, bk);
-  }
-  delete_gate_bootstrapping_ciphertext(carry);
+  // Now add n1
+  ripple_carry_adder(term1, &term1[BIT_SIZE + 1], n0_twice, n1, BIT_SIZE, bk);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n0_twice);
 
-  //export the resulting ciphertext to a file (for the cloud)
+  /// term2 = (2n2 + n1) // 2*30 + 20 = 80
+  LweSample *term2 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&term2[i], 0, bk);
+  }
+  // start by copying n2, but right-shifting it (multiplies by two)
+  LweSample *n2_twice = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&n2_twice[i], 0, bk);
+  }
+  for (int i = 0; i < BIT_SIZE; ++i) {
+    bootsCOPY(&n2_twice[i + 1], &n2[i], bk);
+  }
+  // Now add n1
+  ripple_carry_adder(term2, &term2[BIT_SIZE + 1], n2_twice, n1, BIT_SIZE, bk);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n2_twice);
+
+  // DEBUG: VERIFY TERM RESULTS
+  auto term1_ptxt = decrypt_array(term1, 4*BIT_SIZE, SECRET_KEY);
+  printf("term1: %d\n", term1_ptxt);
+  auto term2_ptxt = decrypt_array(term2, 4*BIT_SIZE, SECRET_KEY);
+  printf("term2: %d\n", term2_ptxt);
+
+  // Multiply n0 and n2
+  LweSample *n0_n2 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&n0_n2[i], 0, bk);
+  }
+  simple_multiplier(n0_n2, n0, n2, BIT_SIZE, bk);
+
+  // shift result by 2
+  LweSample *four_n0_n2 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&four_n0_n2[i], 0, bk);
+  }
+  for (int i = 0; i < 2*BIT_SIZE; ++i) {
+    bootsCOPY(&four_n0_n2[i + 2], &n0_n2[i], bk);
+  }
+
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n0_n2);
+
+  // square n1
+  LweSample *n1_squared = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&n1_squared[i], 0, bk);
+  }
+  simple_multiplier(n1_squared, n1, n1, BIT_SIZE, bk);
+
+
+
+  // Alpha:
+  // first add (yes, original formula is minus, but runtime is pretty much the same and it's already implemented)
+  LweSample *sqrt_alpha = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&sqrt_alpha[i], 0, bk);
+  }
+  ripple_carry_adder(sqrt_alpha, &sqrt_alpha[2*BIT_SIZE + 1], four_n0_n2, n1_squared, 2*BIT_SIZE, bk);
+
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, four_n0_n2);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n1_squared);
+
+  // now square
+  simple_multiplier(alpha, sqrt_alpha, sqrt_alpha, 2*BIT_SIZE, bk);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, sqrt_alpha);
+
+
+  // Square term 1
+  LweSample *term1_squared = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&term1_squared[i], 0, bk);
+  }
+  simple_multiplier(term1_squared, term1, term1, BIT_SIZE, bk);
+
+  // Square term 2
+  LweSample *term2_squared = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  for (int i = 0; i < 4*BIT_SIZE; ++i) {
+    bootsCONSTANT(&term2_squared[i], 0, bk);
+  }
+  simple_multiplier(term2_squared, term2, term2, BIT_SIZE, bk);
+
+
+  // beta 1 is  2*(term1)^2 so we shift by one
+  for (int i = 0; i < 2*BIT_SIZE; ++i) {
+    bootsCOPY(&beta1[i + 1], &term1_squared[i], bk);
+  }
+
+  // beta 2 is term1 * term2
+  simple_multiplier(beta2, term1, term2, BIT_SIZE, bk);
+
+
+  // beta 3 is  2*(term2)^2 so we shift by one
+  for (int i = 0; i < 2*BIT_SIZE; ++i) {
+    bootsCOPY(&beta3[i + 1], &term2_squared[i], bk);
+  }
+
+
+  //export the resulting ciphertexts to a file (for the cloud)
   FILE *answer_data = fopen("answer.data", "wb");
-  for (int i = 0; i < BIT_SIZE; i++) export_gate_bootstrapping_ciphertext_toFile(answer_data, &result[i], params);
+  for (int i = 0; i < BIT_SIZE; i++) export_gate_bootstrapping_ciphertext_toFile(answer_data, &alpha[i], params);
+  for (int i = 0; i < BIT_SIZE; i++) export_gate_bootstrapping_ciphertext_toFile(answer_data, &beta1[i], params);
+  for (int i = 0; i < BIT_SIZE; i++) export_gate_bootstrapping_ciphertext_toFile(answer_data, &beta2[i], params);
+  for (int i = 0; i < BIT_SIZE; i++) export_gate_bootstrapping_ciphertext_toFile(answer_data, &beta3[i], params);
   fclose(answer_data);
 
   //clean up all pointers
-  delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, result);
-  for (int i = 0; i < NUM_COND; ++i) {
-    delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, flags[i]);
-    delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, lhs[i]);
-    delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, rhs[i]);
-  }
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, term1);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, term2);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, term1_squared);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, term2_squared);
+  delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, n0);
+  delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, n1);
+  delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, n2);
+
   delete_gate_bootstrapping_cloud_keyset(bk);
 
   auto t5 = Time::now();
@@ -351,23 +416,42 @@ void verify() {
   //if necessary, the params are inside the key
   const TFheGateBootstrappingParameterSet *params = key->params;
 
-  //create the ciphertext for the result
-  LweSample *answer = new_gate_bootstrapping_ciphertext_array(BIT_SIZE, params);
+  //create the ciphertext for the results
+  LweSample *alpha = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  LweSample *beta1 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  LweSample *beta2 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
+  LweSample *beta3 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
 
   //import the  ciphertexts from the answer file
   FILE *answer_data = fopen("answer.data", "rb");
   for (int i = 0; i < BIT_SIZE; i++)
-    import_gate_bootstrapping_ciphertext_fromFile(answer_data, &answer[i], params);
+    import_gate_bootstrapping_ciphertext_fromFile(answer_data, &alpha[i], params);
+  for (int i = 0; i < BIT_SIZE; i++)
+    import_gate_bootstrapping_ciphertext_fromFile(answer_data, &beta1[i], params);
+  for (int i = 0; i < BIT_SIZE; i++)
+    import_gate_bootstrapping_ciphertext_fromFile(answer_data, &beta2[i], params);
+  for (int i = 0; i < BIT_SIZE; i++)
+    import_gate_bootstrapping_ciphertext_fromFile(answer_data, &beta3[i], params);
   fclose(answer_data);
 
   //decrypt and rebuild the plaintext answer
-  uint8_t int_answer = decrypt_array(answer, BIT_SIZE, key);
+  uint8_t int_alpha = decrypt_array(alpha, 4*BIT_SIZE, key);
+  uint8_t int_beta1 = decrypt_array(beta1, 4*BIT_SIZE, key);
+  uint8_t int_beta2 = decrypt_array(beta2, 4*BIT_SIZE, key);
+  uint8_t int_beta3 = decrypt_array(beta3, 4*BIT_SIZE, key);
 
-  printf("And the result is: %d\n", int_answer);
+  printf("And the results are:\nalpha: %d\nbeta1: %d\nbeta2: %d\nbeta3: %d\n",
+         int_alpha,
+         int_beta1,
+         int_beta2,
+         int_beta3);
   printf("I hope you remember what was the question!\n");
 
   //clean up all pointers
-  delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, answer);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, alpha);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, beta1);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, beta2);
+  delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, beta3);
   delete_gate_bootstrapping_secret_keyset(key);
 
   auto t7 = Time::now();
