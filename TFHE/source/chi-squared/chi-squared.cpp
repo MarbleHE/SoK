@@ -201,7 +201,7 @@ void simple_multiplier(LweSample *result,
 
 
   //TODO: Use 3-for-2 compressor to make this faster
-  // go through and all all the intermediates
+  // go through and add all the intermediates
   LweSample *carry = new_gate_bootstrapping_ciphertext(bk->params);
   LweSample *temp = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
   for (int i = 0; i < nb_bits; ++i) {
@@ -367,6 +367,9 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, four_n0_n2);
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n1_squared);
 
+  auto sqrt_alpha_ptxt = decrypt_array(sqrt_alpha, 4*BIT_SIZE, SECRET_KEY);
+  printf("sqrt_alpha: %d\n", sqrt_alpha_ptxt);
+
   // now square
   simple_multiplier(alpha, sqrt_alpha, sqrt_alpha, 2*BIT_SIZE, bk);
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, sqrt_alpha);
@@ -379,6 +382,9 @@ void cloud() {
   }
   simple_multiplier(term1_squared, term1, term1, BIT_SIZE, bk);
 
+  auto term1_squared_ptxt = decrypt_array(term1_squared, 4*BIT_SIZE, SECRET_KEY);
+  printf("sqrt_alpha: %d\n", term1_squared_ptxt);
+
   // Square term 2
   LweSample *term2_squared = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
   for (int i = 0; i < 4*BIT_SIZE; ++i) {
@@ -386,6 +392,8 @@ void cloud() {
   }
   simple_multiplier(term2_squared, term2, term2, BIT_SIZE, bk);
 
+  auto term2_squared_ptxt = decrypt_array(term2_squared, 4*BIT_SIZE, SECRET_KEY);
+  printf("sqrt_alpha: %d\n", term2_squared_ptxt);
 
   // beta 1 is  2*(term1)^2 so we shift by one
   for (int i = 0; i < 2*BIT_SIZE; ++i) {
