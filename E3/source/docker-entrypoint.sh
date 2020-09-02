@@ -19,6 +19,14 @@ Type : circuit
 EOL
 }
 
+upload_files() {
+    TARGET_DIR=$1
+    shift
+    for item in "$@"; do
+        aws s3 cp $item ${S3_URL}/${S3_FOLDER}/${TARGET_DIR}/
+    done  
+}
+
 get_timestamp_ms() {
   echo $(date +%s%3N)
 }
@@ -74,6 +82,8 @@ echo "Result:" $($E3/src/cgt.exe dec -c cgt.cfg -f output.tmp)
 END_DECRYPTION_T=$( get_timestamp_ms )
 echo "$((${END_DECRYPTION_T}-${START_DECRYPTION_T}))" >> $OUT_FILENAME
 
+upload_files E3-TFHE ${OUTPUT_FILENAME}
+
 ###############
 # SEAL Programs
 ###############
@@ -109,3 +119,5 @@ START_DECRYPTION_T=$( get_timestamp_ms )
 echo "Result:" $($E3/src/cgt.exe dec -c cgt.cfg -f output.tmp)
 END_DECRYPTION_T=$( get_timestamp_ms )
 echo "$((${END_DECRYPTION_T}-${START_DECRYPTION_T}))" >> $OUT_FILENAME
+
+upload_files E3-TFHE ${OUTPUT_FILENAME}
