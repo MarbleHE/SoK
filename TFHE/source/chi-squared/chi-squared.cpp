@@ -196,7 +196,7 @@ void simple_multiplier(LweSample *result,
 //  printf("Intermediates:\n");
 //  for(int i = 0; i < nb_bits; ++i) {
 //    int ptxt = decrypt_array(intermediates[i],2*nb_bits,SECRET_KEY);
-//    printf("%d: %d\n", i, ptxt);
+//    printf("%u: %u\n", i, ptxt);
 //  }
 
 
@@ -214,7 +214,7 @@ void simple_multiplier(LweSample *result,
 //    int intermediate_ptxt = decrypt_array(intermediates[i], 2*nb_bits, SECRET_KEY);
     ripple_carry_adder(result, carry, temp, intermediates[i], 2*nb_bits, bk);
 //    int result_ptxt_after = decrypt_array(result, 2*nb_bits, SECRET_KEY);
-//    printf("Adding %d to %d resulted in %d\n", intermediate_ptxt, result_ptxt_before, result_ptxt_after);
+//    printf("Adding %u to %u resulted in %u\n", intermediate_ptxt, result_ptxt_before, result_ptxt_after);
   }
   delete_gate_bootstrapping_ciphertext(carry);
   delete_gate_bootstrapping_ciphertext_array(2*nb_bits, temp);
@@ -253,13 +253,13 @@ void cloud() {
   for (int j = 0; j < BIT_SIZE; j++)
     import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &n2[j], params);
 
-  // DEBUG: DECRYPT ALL THE CIPHERTEXTS
-  int n0_ptxt = decrypt_array(n0, BIT_SIZE, SECRET_KEY);
-  printf("n0: %d\n", n0_ptxt);
-  int n1_ptxt = decrypt_array(n1, BIT_SIZE, SECRET_KEY);
-  printf("n1: %d\n", n1_ptxt);
-  int n2_ptxt = decrypt_array(n2, BIT_SIZE, SECRET_KEY);
-  printf("n2: %d\n", n2_ptxt);
+//  // DEBUG: DECRYPT ALL THE CIPHERTEXTS
+//  int n0_ptxt = decrypt_array(n0, BIT_SIZE, SECRET_KEY);
+//  printf("n0: %u\n", n0_ptxt);
+//  int n1_ptxt = decrypt_array(n1, BIT_SIZE, SECRET_KEY);
+//  printf("n1: %u\n", n1_ptxt);
+//  int n2_ptxt = decrypt_array(n2, BIT_SIZE, SECRET_KEY);
+//  printf("n2: %u\n", n2_ptxt);
 
   /// alpha = (4(n0*n2) - n1*n1)^2
   LweSample *alpha = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
@@ -317,11 +317,11 @@ void cloud() {
   ripple_carry_adder(term2, &term2[BIT_SIZE + 1], n2_twice, n1, BIT_SIZE, bk);
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n2_twice);
 
-  // DEBUG: VERIFY TERM RESULTS
-  auto term1_ptxt = decrypt_array(term1, 4*BIT_SIZE, SECRET_KEY);
-  printf("term1: %d\n", term1_ptxt);
-  auto term2_ptxt = decrypt_array(term2, 4*BIT_SIZE, SECRET_KEY);
-  printf("term2: %d\n", term2_ptxt);
+//  // DEBUG: VERIFY TERM RESULTS
+//  auto term1_ptxt = decrypt_array(term1, 4*BIT_SIZE, SECRET_KEY);
+//  printf("term1: %u\n", term1_ptxt);
+//  auto term2_ptxt = decrypt_array(term2, 4*BIT_SIZE, SECRET_KEY);
+//  printf("term2: %u\n", term2_ptxt);
 
   // Multiply n0 and n2
   LweSample *n0_n2 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
@@ -330,8 +330,8 @@ void cloud() {
   }
   simple_multiplier(n0_n2, n0, n2, BIT_SIZE, bk);
 
-  auto n02_n2_ptxt = decrypt_array(n0_n2, 4*BIT_SIZE, SECRET_KEY);
-  printf("n0*n2: %d\n", n02_n2_ptxt);
+//  auto n02_n2_ptxt = decrypt_array(n0_n2, 4*BIT_SIZE, SECRET_KEY);
+//  printf("n0*n2: %u\n", n02_n2_ptxt);
 
   // shift result by 2
   LweSample *four_n0_n2 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
@@ -343,8 +343,8 @@ void cloud() {
   }
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n0_n2);
 
-  auto four_n02_n2_ptxt = decrypt_array(four_n0_n2, 4*BIT_SIZE, SECRET_KEY);
-  printf("4*n0*n2: %d\n", four_n02_n2_ptxt);
+//  auto four_n02_n2_ptxt = decrypt_array(four_n0_n2, 4*BIT_SIZE, SECRET_KEY);
+//  printf("4*n0*n2: %u\n", four_n02_n2_ptxt);
 
   // square n1
   LweSample *n1_squared = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
@@ -353,8 +353,8 @@ void cloud() {
   }
   simple_multiplier(n1_squared, n1, n1, BIT_SIZE, bk);
 
-  auto n1_squared_ptxt = decrypt_array(n1_squared, 4*BIT_SIZE, SECRET_KEY);
-  printf("n1^2: %d\n", n1_squared_ptxt);
+//  auto n1_squared_ptxt = decrypt_array(n1_squared, 4*BIT_SIZE, SECRET_KEY);
+//  printf("n1^2: %u\n", n1_squared_ptxt);
 
   // Alpha:
   // first add (yes, original formula is minus, but runtime is pretty much the same and it's already implemented)
@@ -367,8 +367,8 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, four_n0_n2);
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n1_squared);
 
-  auto sqrt_alpha_ptxt = decrypt_array(sqrt_alpha, 4*BIT_SIZE, SECRET_KEY);
-  printf("sqrt_alpha: %d\n", sqrt_alpha_ptxt);
+//  auto sqrt_alpha_ptxt = decrypt_array(sqrt_alpha, 4*BIT_SIZE, SECRET_KEY);
+//  printf("sqrt_alpha: %u\n", sqrt_alpha_ptxt);
 
   // now square
   simple_multiplier(alpha, sqrt_alpha, sqrt_alpha, 2*BIT_SIZE, bk);
@@ -382,8 +382,8 @@ void cloud() {
   }
   simple_multiplier(term1_squared, term1, term1, BIT_SIZE, bk);
 
-  auto term1_squared_ptxt = decrypt_array(term1_squared, 4*BIT_SIZE, SECRET_KEY);
-  printf("sqrt_alpha: %d\n", term1_squared_ptxt);
+//  auto term1_squared_ptxt = decrypt_array(term1_squared, 4*BIT_SIZE, SECRET_KEY);
+//  printf("term1_squared: %u\n", term1_squared_ptxt);
 
   // Square term 2
   LweSample *term2_squared = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
@@ -392,8 +392,8 @@ void cloud() {
   }
   simple_multiplier(term2_squared, term2, term2, BIT_SIZE, bk);
 
-  auto term2_squared_ptxt = decrypt_array(term2_squared, 4*BIT_SIZE, SECRET_KEY);
-  printf("sqrt_alpha: %d\n", term2_squared_ptxt);
+//  auto term2_squared_ptxt = decrypt_array(term2_squared, 4*BIT_SIZE, SECRET_KEY);
+//  printf("term2_squared: %u\n", term2_squared_ptxt);
 
   // beta 1 is  2*(term1)^2 so we shift by one
   for (int i = 0; i < 2*BIT_SIZE; ++i) {
@@ -469,7 +469,7 @@ void verify() {
   uint32_t int_beta2 = decrypt_array(beta2, 4*BIT_SIZE, key);
   uint32_t int_beta3 = decrypt_array(beta3, 4*BIT_SIZE, key);
 
-  printf("And the results are:\nalpha: %d\nbeta1: %d\nbeta2: %d\nbeta3: %d\n",
+  printf("And the results are:\nalpha: %u\nbeta1: %u\nbeta2: %u\nbeta3: %u\n",
          int_alpha,
          int_beta1,
          int_beta2,
