@@ -61,7 +61,7 @@ int main() {
   n1.read("n1");
   n2.read("n2");
 
-  CiInt alpha{CiInt::u16};
+  CiInt alpha{CiInt::u32};
   alpha = ((n0<<2)*n2)-(n1*n1);
   alpha = alpha * alpha;
 
