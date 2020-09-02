@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sstream>
 #include <fstream>
+#include <iostream>
 
 typedef std::chrono::milliseconds ms;
 typedef std::chrono::high_resolution_clock Time;
