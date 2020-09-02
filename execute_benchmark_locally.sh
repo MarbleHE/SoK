@@ -41,6 +41,9 @@ case "$toolname" in
   ngraph)
     tooldir=nGraph-HE
     ;;
+  e3)
+    tooldir=E3
+    ;;
   *) 
     echo "Given toolname '${toolname}' not found!"
     exit 1;
