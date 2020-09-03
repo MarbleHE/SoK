@@ -17,17 +17,16 @@ get_timestamp_ms() {
   echo $(date +%s%3N)
 }
 
-# TODO: Remove this prior deploying to repo
-function jumpto {
-    label=$1
-    cmd=$(sed -n "/$label:/{:a;n;p;ba};" $0 | grep -v ':$')
-    eval "$cmd"
-    exit
-}
 # Usage: Define label below as "batched:"
+# function jumpto {
+#     label=$1
+#     cmd=$(sed -n "/$label:/{:a;n;p;ba};" $0 | grep -v ':$')
+#     eval "$cmd"
+#     exit
+# }
 # Uncomment following two lines:
-myLabel=${1:-"myLabel"}
-jumpto $myLabel
+# myLabel=${1:-"myLabel"}
+# jumpto $myLabel
 
 # The workflow for building used here is described in section "manual building"
 # at https://github.com/momalab/e3/tree/master/doc#manual-build-using-cgtexe.
@@ -91,11 +90,6 @@ done
 
 upload_files E3-TFHE ${OUT_FILENAME}
 
-myLabel:
-cd $E3/src && \
-   make cleanall && \
-   make TFHE=1
-
 echo "============================================================"
 echo "==== Running chi-squared-tfhe =============================="
 echo "============================================================"
@@ -133,8 +127,6 @@ do
 done
 
 upload_files E3-TFHE ${OUT_FILENAME}
-
-exit 0;
 
 
 ###############
@@ -221,3 +213,41 @@ do
 done
 
 upload_files E3-SEAL-Batched ${OUT_FILENAME}
+
+echo "============================================================"
+echo "==== Running chi-squared-seal =============================="
+echo "============================================================"
+
+export OUT_FILENAME=e3_seal_chi_squared.csv
+export CGT_FILENAME=cgt_seal.cfg
+
+cd $E3/eval/chi-squared-seal
+echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OUT_FILENAME
+
+RUN=1
+while (( $RUN <= $NUM_RUNS ))
+do
+    RUN=$(( $RUN + 1))
+    cp $E3/src/e3int.h ./
+    cp $E3/src/cgtshared.* ./
+
+    START_KEYGEN_T=$( get_timestamp_ms )
+    $E3/src/cgt.exe gen -c ${CGT_FILENAME} -r $E3/src
+    END_KEYGEN_T=$( get_timestamp_ms )
+    echo -ne "$((${END_KEYGEN_T}-${START_KEYGEN_T}))," >> $OUT_FILENAME
+
+    g++ -std=c++17 -I${E3}/3p/seal_unx/include main.cpp secint.cpp cgtshared.cpp -o bob.exe ${E3}/3p/seal_unx/native/libseal.a
+    echo -ne "0," >> $OUT_FILENAME
+
+    START_COMPUTATION_T=$( get_timestamp_ms )
+    ./bob.exe > output.tmp
+    END_COMPUTATION_T=$( get_timestamp_ms )
+    echo -ne "$((${END_COMPUTATION_T}-${START_COMPUTATION_T}))," >> $OUT_FILENAME
+
+    START_DECRYPTION_T=$( get_timestamp_ms )
+    echo "Result:" $($E3/src/cgt.exe dec -c ${CGT_FILENAME} -f output.tmp)
+    END_DECRYPTION_T=$( get_timestamp_ms )
+    echo "$((${END_DECRYPTION_T}-${START_DECRYPTION_T}))" >> $OUT_FILENAME
+done
+
+upload_files E3-SEAL ${OUT_FILENAME}
