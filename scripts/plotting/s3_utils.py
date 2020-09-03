@@ -60,10 +60,11 @@ def upload_file_to_s3_bucket(file_path: str, destination_path: str):
         print(f"Could not upload {file_path} to {destination_path} in bucket {BUCKET_NAME}.", file=sys.stderr)
 
 
-def get_labels_data_from_s3(name_filter: str) -> (List[str], List[pd.DataFrame]):
+def get_labels_data_from_s3(name_filter: str, root_folder: str = None) -> (List[str], List[pd.DataFrame]):
     labels, data = [], []
     # get the folder with the most recent timestamp (e.g., 20200729_0949/)
-    root_folder = get_most_recent_folder_from_s3_bucket()
+    if root_folder is None:
+        root_folder = get_most_recent_folder_from_s3_bucket()
     # get all subfolders - this corresponds to the benchmarked tools (e.g., Cingulata, SEAL)
     tool_folders_path = get_folder_in_s3_path(root_folder)
     for tp in tool_folders_path:

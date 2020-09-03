@@ -14,7 +14,7 @@ output_filetypes = ['pdf', 'png']
 def save_plot_in_s3(fig: plt.Figure, filename: str, root_folder: str):
     for fn, ext in zip(filename, output_filetypes):
         full_filename = f"{filename}.{ext}"
-        fig.savefig(full_filename, format=ext)
+        fig.savefig(full_filename, format=ext, bbox_inches='tight', pad_inches=0)
         dst_path_s3 = str(PurePosixPath(urlparse(root_folder).path) / 'plot' / full_filename)
         upload_file_to_s3_bucket(full_filename, dst_path_s3)
 
@@ -33,8 +33,11 @@ def plot_all_cardio():
         'Cingulata-Baseline',
         'Cingulata-OPT',
         'SEAL-BFV',
+        'E3-SEAL',
         'TFHE',
+        'E3-TFHE',
         'SEAL-BFV-Batched',
+        'E3-SEAL-Batched',
         'SEAL-CKKS-Batched',
     ]
 
@@ -76,8 +79,8 @@ def plot_all_chi_squared():
 
 
 def plot_all():
-    plot_all_cardio()
-    plot_all_nn()
+    # plot_all_cardio()
+    # plot_all_nn()
     plot_all_chi_squared()
 
 

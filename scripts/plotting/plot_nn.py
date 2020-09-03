@@ -20,8 +20,15 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     # Set the current figure to fig
     # figsize = (int(len(labels) * 0.95), 6)
-    figsize = (5.5, 4)
-    config_dpi = 120
+
+    inches_per_pt = 1.0 / 72.27 * 2  # Convert pt to inches
+    golden_mean = ((np.math.sqrt(5) - 1.0) / 2.0) * .8  # Aesthetic ratio
+    fig_width = 252 * inches_per_pt  # width in inches
+    fig_height = (fig_width * golden_mean)  # height in inches
+    figsize = [fig_width * 0.67, fig_height / 1.22]
+
+    # figsize = (5.5, 4)
+    config_dpi = 100
     if fig is None:
         fig = plt.figure(figsize=figsize, dpi=config_dpi)
     else:
@@ -63,7 +70,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     # Setup brokenaxes
     # TODO: Make break depend on value of nGraph-HE LeNet-5 runtime?
-    bax = brokenaxes(ylims=((0, 10), (120, 130)))
+    # hspace controls how much space is in between the broken axes
+    bax = brokenaxes(ylims=((0, 10), (120, 130)), hspace=.3, left=0.15, despine=False)
 
     # Setup Grids (0 is top, 1 is bottom part)
     bax.axs[0].grid(which='major', axis='y', linestyle=':')
@@ -96,7 +104,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
             total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
             p4 = bax.bar(x_pos, d4, width, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3, color='cyan')
-            print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ', d1 + d2 + d3 + d4,
+            print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ',
+                  d1 + d2 + d3 + d4,
                   ')')
 
     # Setup axes
@@ -111,7 +120,6 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # Add Legend
     plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Decryption', 'Computation', 'Encryption', 'Key Generation'),
                loc='upper left')
-
 
     # Restore current figure
     plt.figure(previous_figure.number)

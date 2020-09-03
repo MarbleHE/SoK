@@ -22,8 +22,14 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     # Set the current figure to fig
     # figsize = (int(len(labels) * 0.95), 6)
-    figsize = (5, 4)
-    config_dpi = 120
+    inches_per_pt = 1.0 / 72.27 * 2  # Convert pt to inches
+    golden_mean = ((np.math.sqrt(5) - 1.0) / 2.0) * .8  # Aesthetic ratio
+    fig_width = 252 * inches_per_pt  # width in inches
+    fig_height = (fig_width * golden_mean)  # height in inches
+    figsize = [fig_width * 0.67, fig_height / 1.22]
+
+    config_dpi = 100
+    # figsize = (252/config_dpi, 100/config_dpi)
     if fig is None:
         fig = plt.figure(figsize=figsize, dpi=config_dpi)
     else:
@@ -45,13 +51,21 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # BASELINE_SIGN = '*'
     positions = {
         'Lobster-Baseline': (0, 0),
+
         'Lobster-Baseline-OPT': (1, 0),
         'MultiStart-OPT-PARAMS': (1, 1),
         'Lobster-OPT-PARAMS': (1, 2),
+
         'Cingulata-OPT': (2, 0),
+
         'SEAL-BFV': (3, 0),
+        'E3-SEAL': (3, 1),
+
         'TFHE': (4, 0),
-        'SEAL-BFV-Batched': (5, 0)
+        'E3-TFHE': (4, 1),
+
+        'SEAL-BFV-Batched': (5, 0),
+        'E3-SEAL-Batched': (5, 1)
     }
 
     # plt.title('Runtime for Cardio')
@@ -61,7 +75,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     spacer = 0.02
 
     group_labels = [
-        'Baseline', 'Depth Optim.', 'Cingulata', 'SEAL', 'TFHE', 'SEAL\n(batched)'
+        'Baseline', 'Depth\nOptim.', 'Cingu.', 'SEAL', 'TFHE', 'SEAL\n(batched)'
     ]
 
     # reserved_indices = {}
@@ -127,7 +141,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
               ')')
 
     max_y_rounded = (int(math.ceil(max_y_value / 10.0)) * 10) + 10
-    plt.yticks(np.arange(0, max_y_rounded, step=10))
+    plt.yticks(np.arange(0, max_y_rounded, step=20))
 
     # Add Legend
     plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Decryption', 'Computation', 'Encryption', 'Key Generation'))

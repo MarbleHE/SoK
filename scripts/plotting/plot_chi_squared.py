@@ -8,6 +8,13 @@ import itertools
 import operator
 from operator import add
 
+def human_format(num):
+    num = float('{:.3g}'.format(num))
+    magnitude = 0
+    while abs(num) >= 1000:
+        magnitude += 1
+        num /= 1000.0
+    return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
 
 def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> plt.Figure:
     """
@@ -22,8 +29,13 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     # Set the current figure to fig
     # figsize = (int(len(labels) * 0.95), 6)
-    figsize = (5, 4)
-    config_dpi = 120
+    inches_per_pt = 1.0 / 72.27 * 2  # Convert pt to inches
+    golden_mean = ((np.math.sqrt(5) - 1.0) / 2.0) * .8  # Aesthetic ratio
+    fig_width = 252 * inches_per_pt  # width in inches
+    fig_height = (fig_width * golden_mean)  # height in inches
+    figsize = [fig_width * 0.67, fig_height / 1.22]
+
+    config_dpi = 100
     if fig is None:
         fig = plt.figure(figsize=figsize, dpi=config_dpi)
     else:
@@ -40,18 +52,29 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.rcParams["font.family"] = 'serif'
 
     positions = {
-        'SEAL-BFV': (0, 0)
+        'SEAL-BFV': (0, 0),
+        'E3-SEAL': (0, 1),
+
+        'TFHE': (1, 0),
+        'E3-TFHE': (1, 1),
+
+        'Cingulata': (2, 0),
+
     }
 
     # plt.title('Runtime for Cardio')
     plt.ylabel('Time (s)')
 
-    bar_width = 0.03
-    spacer = 0.02
+    bar_width = 0.004
+    spacer = 0.01
 
     group_labels = [
-        'SEAL-BFV'
+        'SEAL\n(native/E3)',
+        'TFHE\n(native/E3)',
+        'Cingulata'
     ]
+
+    # ['E3-SEAL', 'E3-TFHE', 'SEAL-BFV-Batched', 'SEAL-BFV', 'TFHE']
 
     def get_x_ticks_positions():
         group_widths = []
@@ -73,9 +96,12 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     def get_x_position(group_pos: tuple) -> int:
         return x_start[group_pos[0]] + (group_pos[1] * bar_width) + (bar_width / 2)
 
+    plt.yscale('log')
+
     plt.xticks(x_center, group_labels, fontsize=9)  # rotation='35',)
     # adds a thousand separator
-    fig.axes[0].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
+    # fig.axes[0].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
+    fig.axes[0].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: human_format(x)))
     # add a grid
     ax = plt.gca()
     ax.grid(which='major', axis='y', linestyle=':')
@@ -93,24 +119,24 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         df = pandas_dataframes[i]
         d1 = ms_to_sec(df['t_keygen'].mean())
         d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
-        p1 = plt.bar(x_pos, d1, bar_width * 0.9, color='red')
+        p1 = plt.bar(x_pos, d1, bar_width*0.9, color='red')
         d2 = ms_to_sec(df['t_input_encryption'].mean())
         d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
-        p2 = plt.bar(x_pos, d2, bar_width * 0.9, bottom=d1, color='blue')
+        p2 = plt.bar(x_pos, d2, bar_width*0.9, bottom=d1, color='blue')
         d3 = ms_to_sec(df['t_computation'].mean())
         d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
-        p3 = plt.bar(x_pos, d3, bar_width * 0.9, bottom=d1 + d2, color='green')
+        p3 = plt.bar(x_pos, d3, bar_width*0.9, bottom=d1 + d2, color='green')
         d4 = ms_to_sec(df['t_decryption'].mean())
         d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
         total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
         max_y_value = d1 + d2 + d3 + d4 if (d1 + d2 + d3 + d4) > max_y_value else max_y_value
-        p4 = plt.bar(x_pos, d4, bar_width * 0.9, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3,
+        p4 = plt.bar(x_pos, d4, bar_width*0.9, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3,
                      color='cyan')
         print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ', d1 + d2 + d3 + d4,
               ')')
 
     max_y_rounded = (int(math.ceil(max_y_value / 10.0)) * 10) + 10
-    plt.yticks(np.arange(0, max_y_rounded, step=10))
+    # plt.yticks(np.arange(0, max_y_rounded, step=10))
 
     # Add Legend
     plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Decryption', 'Computation', 'Encryption', 'Key Generation'))
@@ -119,4 +145,3 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.figure(previous_figure.number)
 
     return fig
-
