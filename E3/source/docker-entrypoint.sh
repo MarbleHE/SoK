@@ -117,4 +117,4 @@ do
     echo "$((${END_DECRYPTION_T}-${START_DECRYPTION_T}))" >> $OUT_FILENAME
 done
 
-upload_files E3-TFHE ${OUT_FILENAME}
+upload_files E3-SEAL ${OUT_FILENAME}

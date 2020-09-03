@@ -1,20 +1,25 @@
 #include <iostream>
-
-#include "../../src/e3key.h"
-#include "../../tutorials/bench/spec/circuits.inc"
 #include "e3int.h"
+#include "../../src/e3key.h"
 
-using SecureInt = TypeUint<8>;
+using namespace std;
+
+#ifndef SZ
+#define SZ 8
+#endif
+
+using SecureInt  = TypeUint<SZ>;
 using SecureBool = TypeBool;
+using SecureMint = TypeMint;
 
-template <class T>
-inline std::string de(T x) {
-  return e3::decrypt<T>(x);
-}
 
-int main() {
+int main()
+{
+  // = INPUTS ===
   // flags
-  SecureInt man = _0_Ep;
+  SecureMint man = _0_Ea;
+  SecureMint not_man = _1_Ea;
+
   SecureInt antecedent = _1_Ep;
   SecureInt smoking = _1_Ep;
   SecureInt diabetic = _1_Ep;
@@ -25,48 +30,65 @@ int main() {
   SecureInt hdl_cholesterol = _50_Ep;
   SecureInt height = _80_Ep;
   SecureInt weight = _80_Ep;
+  SecureInt weight_plus_ninety = _170_Ep;
   SecureInt phy_activity = _45_Ep;
   SecureInt drinking_habits = _4_Ep;
 
-  SecureInt result = _0_Ep;
-  SecureInt one = _1_Ep;
-  SecureInt zero = _0_Ep;
+  // = //END INPUTS ===
 
-  // +1  if man and age > 50 years
+  SecureMint one = _1_Ea;
+  SecureInt bool_false = _0_Ep;
+  SecureInt bool_true = _1_Ep;
+
+  // // +1  if man and age > 50 years
   SecureInt age_threshold = _50_Ep;
-  result += (man == one && age > age_threshold) * one;
+  SecureMint result0 = (age > age_threshold) * man;
 
   // +1  if cardiology disease in family history
-  result += (antecedent)*one;
+  SecureMint result1 = (antecedent == bool_true)*one;
 
   // +1  if smoking
-  result += (smoking)*one;
+  SecureMint result2 = (smoking == bool_true)*one;
 
   // +1  if diabetic
-  result += (diabetic)*one;
+  SecureMint result3 = (diabetic == bool_true)*one;
 
   // +1  if high blood pressure
-  result += (high_blood_pressure)*one;
+  SecureMint result4 = (high_blood_pressure == bool_true)*one;
 
-  // +1  if HDL cholesterol less than 40
+  // // +1  if HDL cholesterol less than 40
   SecureInt hdl_threshold = _40_Ep;
-  result += (hdl_cholesterol < hdl_threshold) * one;
+  SecureMint result5 = (hdl_cholesterol < hdl_threshold) * one;
 
-  // +1  if weight > height-90
-  SecureInt height_minus_operand = _90_Ep;
-  result += (height < weight + height_minus_operand) * one;
+  // // +1  if weight > height-90 <=> height < weight+90
+  SecureMint result6 = (height < weight_plus_ninety) * one;
 
-  // +1  if daily physical activity less than 30 minutes
+  // // +1  if daily physical activity less than 30 minutes
   SecureInt phy_activity_threshold = _30_Ep;
-  result += (phy_activity < phy_activity_threshold) * one;
+  SecureMint result7 = (phy_activity < phy_activity_threshold) * one;
 
-  // +1  if man and alcohol consumption more than 3 glasses/day
+  // // +1  if man and alcohol consumption more than 3 glasses/day
   SecureInt dh_threshold_man = _3_Ep;
-  result += (man == one && drinking_habits > dh_threshold_man) * one;
-
-  // +1  if woman and alcohol consumption more than 2 glasses/day
+  SecureMint result8 = (drinking_habits > dh_threshold_man) * man;
+  
+  // // // +1  if woman and alcohol consumption more than 2 glasses/day
   SecureInt dh_threshold_woman = _2_Ep;
-  result += (man == zero && drinking_habits > dh_threshold_woman) * one;
+  SecureMint result9 = (drinking_habits > dh_threshold_woman) * not_man;
 
-  std::cout << e3::decrypt(result) << '\n';
+  SecureMint resultA = result0 + result1;
+  SecureMint resultB = result2 + result3;
+  SecureMint resultC = result4 + result5;
+  SecureMint resultD = result6 + result7;
+  SecureMint resultE = result8 + result9;
+
+  SecureMint resultAlpha = resultA + resultB;
+  SecureMint resultBeta = resultC + resultD;
+  SecureMint resultGamma = resultE;
+
+  SecureMint resultI = resultAlpha + resultGamma;
+  SecureMint resultII = resultBeta;
+
+  SecureMint resultFinal = resultI + resultII;
+
+  std::cout << e3::decrypt(resultFinal) << '\n';
 }
