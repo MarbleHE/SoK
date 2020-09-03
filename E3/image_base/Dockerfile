@@ -7,18 +7,13 @@ RUN apt-get update; \
  
 ###### build E3
 RUN git clone https://github.com/momalab/e3.git && \
-    cd e3 && git checkout 4ecbe107a07101b7ed6f6362e9dde8aa91c17578 && \
+    cd e3 && git checkout 2565748327aec282baa613c38fa4e191c0acab66 && \
     cd src 
 #&& make -j $(nproc)
 
 ###### build target libraries
 WORKDIR /e3/3p
-RUN export MAKEFLAGS=-j`nproc` && \
-    ./seal_unx.sh && \
-    ./fhew_unx.sh && \
-    ./heli_unx.sh && \
-    ./mpir_unx.sh && \
-    ./tfhe_unx.sh
+RUN export MAKEFLAGS=-j`nproc` && make SEAL && make TFHE
 
 # The tutorial described in
 #   https://github.com/momalab/e3/blob/master/tutorials/basic/README.md
