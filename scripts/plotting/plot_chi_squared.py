@@ -8,6 +8,7 @@ import itertools
 import operator
 from operator import add
 
+
 def human_format(num):
     num = float('{:.3g}'.format(num))
     magnitude = 0
@@ -15,6 +16,7 @@ def human_format(num):
         magnitude += 1
         num /= 1000.0
     return '{}{}'.format('{:f}'.format(num).rstrip('0').rstrip('.'), ['', 'K', 'M', 'B', 'T'][magnitude])
+
 
 def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> plt.Figure:
     """
@@ -54,12 +56,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     positions = {
         'SEAL-BFV': (0, 0),
         'E3-SEAL': (0, 1),
-
         'TFHE': (1, 0),
         'E3-TFHE': (1, 1),
-
         'Cingulata': (2, 0),
-
     }
 
     # plt.title('Runtime for Cardio')
@@ -119,18 +118,18 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         df = pandas_dataframes[i]
         d1 = ms_to_sec(df['t_keygen'].mean())
         d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
-        p1 = plt.bar(x_pos, d1, bar_width*0.9, color='red')
+        p1 = plt.bar(x_pos, d1, bar_width * 0.9, color='red')
         d2 = ms_to_sec(df['t_input_encryption'].mean())
         d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
-        p2 = plt.bar(x_pos, d2, bar_width*0.9, bottom=d1, color='blue')
+        p2 = plt.bar(x_pos, d2, bar_width * 0.9, bottom=d1, color='blue')
         d3 = ms_to_sec(df['t_computation'].mean())
         d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
-        p3 = plt.bar(x_pos, d3, bar_width*0.9, bottom=d1 + d2, color='green')
+        p3 = plt.bar(x_pos, d3, bar_width * 0.9, bottom=d1 + d2, color='green')
         d4 = ms_to_sec(df['t_decryption'].mean())
         d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
         total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
         max_y_value = d1 + d2 + d3 + d4 if (d1 + d2 + d3 + d4) > max_y_value else max_y_value
-        p4 = plt.bar(x_pos, d4, bar_width*0.9, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3,
+        p4 = plt.bar(x_pos, d4, bar_width * 0.9, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3,
                      color='cyan')
         print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ', d1 + d2 + d3 + d4,
               ')')

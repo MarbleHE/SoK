@@ -75,7 +75,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     spacer = 0.02
 
     group_labels = [
-        'Baseline', 'Depth\nOptim.', 'Cingu.', 'SEAL', 'TFHE', 'SEAL\n(batched)'
+        'Baseline', 'Depth\nOptim.', 'Cingu.', 'SEAL\n(nat./E3)', 'TFHE\n(nat./E3)', 'SEAL\n(batched)'
     ]
 
     # reserved_indices = {}

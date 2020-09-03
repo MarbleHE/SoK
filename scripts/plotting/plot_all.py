@@ -79,8 +79,8 @@ def plot_all_chi_squared():
 
 
 def plot_all():
-    # plot_all_cardio()
-    # plot_all_nn()
+    plot_all_cardio()
+    plot_all_nn()
     plot_all_chi_squared()
 
 
