@@ -1,6 +1,6 @@
 #!/bin/bash
 
-UNOPT_OUTPUT_FILENAME=cingulata_chi-squared_unoptimized.csv
+UNOPT_OUTPUT_FILENAME=cingulata_chi_squared_unoptimized.csv
 
 UNOPT_CIRCUIT=bfv-chi-squared.blif
 
