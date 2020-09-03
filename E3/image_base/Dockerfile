@@ -11,7 +11,7 @@ RUN git clone https://github.com/momalab/e3.git && \
     cd src 
 #&& make -j $(nproc)
 
-###### build target libraries
+###### download and build target libraries
 WORKDIR /e3/3p
 RUN export MAKEFLAGS=-j`nproc` && make SEAL && make TFHE
 
