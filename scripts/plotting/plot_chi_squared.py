@@ -34,7 +34,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     inches_per_pt = 1.0 / 72.27 * 2  # Convert pt to inches
     golden_mean = ((np.math.sqrt(5) - 1.0) / 2.0) * .8  # Aesthetic ratio
     fig_width = 252 * inches_per_pt  # width in inches
-    fig_height = (fig_width * golden_mean)  # height in inches
+    # fig_height = (fig_width * golden_mean)  # height in inches
+    fig_height = 2.5
     figsize = [fig_width * 0.67, fig_height / 1.22]
 
     config_dpi = 100
@@ -50,7 +51,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # change legend font size
     plt.rcParams["legend.fontsize"] = 8
     # NOTE: Enabling this requires latex to be installed on the Github actions runner
-    # plt.rcParams["text.usetex"] = True
+    plt.rcParams["text.usetex"] = True
     plt.rcParams["font.family"] = 'serif'
 
     positions = {
@@ -61,15 +62,15 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'Cingulata': (2, 0),
     }
 
-    # plt.title('Runtime for Cardio')
-    plt.ylabel('Time (s)')
+    # plt.title('Runtime for Chi-Squared Test Benchmark', fontsize=10)
+    plt.ylabel('Time [s]', labelpad=0)
 
-    bar_width = 0.004
+    bar_width = 0.002
     spacer = 0.01
-
+# {\fontsize{30pt}{3em}\selectfont{}{Mean WRFv3.5 LHF\r}{\fontsize{18pt}{3em}\selectfont{}(September 16 - October 30, 2012)}
     group_labels = [
-        'SEAL\n(native/E3)',
-        'TFHE\n(native/E3)',
+        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
+        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
         'Cingulata'
     ]
 
@@ -108,6 +109,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     def ms_to_sec(num):
         return num / 1_000
 
+    colors = ['0.1', '0.35', '0.5', '0.85']
+    hatches = ['', '.', '///', '']
+
     # Plot Bars
     max_y_value = 0
     for i in range(len(labels)):
@@ -118,24 +122,26 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         df = pandas_dataframes[i]
         d1 = ms_to_sec(df['t_keygen'].mean())
         d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
-        p1 = plt.bar(x_pos, d1, bar_width * 0.9, color='red')
+        p1 = plt.bar(x_pos, d1, bar_width * 0.9, color=colors[0], hatch=hatches[0])
         d2 = ms_to_sec(df['t_input_encryption'].mean())
         d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
-        p2 = plt.bar(x_pos, d2, bar_width * 0.9, bottom=d1, color='blue')
+        p2 = plt.bar(x_pos, d2, bar_width * 0.9, bottom=d1, color=colors[1], hatch=hatches[1])
         d3 = ms_to_sec(df['t_computation'].mean())
         d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
-        p3 = plt.bar(x_pos, d3, bar_width * 0.9, bottom=d1 + d2, color='green')
+        p3 = plt.bar(x_pos, d3, bar_width * 0.9, bottom=d1 + d2, color=colors[2], hatch=hatches[2])
         d4 = ms_to_sec(df['t_decryption'].mean())
         d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
         total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
         max_y_value = d1 + d2 + d3 + d4 if (d1 + d2 + d3 + d4) > max_y_value else max_y_value
-        p4 = plt.bar(x_pos, d4, bar_width * 0.9, yerr=total_err, ecolor='black', capsize=5, bottom=d1 + d2 + d3,
-                     color='cyan')
+        p4 = plt.bar(x_pos, d4, bar_width * 0.9, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3,
+                     color=colors[3], hatch=hatches[3])
         print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ', d1 + d2 + d3 + d4,
               ')')
 
     max_y_rounded = (int(math.ceil(max_y_value / 10.0)) * 10) + 10
     # plt.yticks(np.arange(0, max_y_rounded, step=10))
+
+    plt.yticks(fontsize=8)
 
     # Add Legend
     plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Decryption', 'Computation', 'Encryption', 'Key Generation'))

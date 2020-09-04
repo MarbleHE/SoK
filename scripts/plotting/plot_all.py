@@ -1,3 +1,5 @@
+from multiprocessing import Process
+
 import plot_cardio
 import plot_chi_squared
 import plot_nn
@@ -11,10 +13,13 @@ BUCKET_NAME = 'sok-repository-eval-benchmarks'
 output_filetypes = ['pdf', 'png']
 
 
-def save_plot_in_s3(fig: plt.Figure, filename: str, root_folder: str):
+def save_plot_in_s3(fig: plt.Figure, filename: str, root_folder: str, use_tight_layout: bool = True):
     for fn, ext in zip(filename, output_filetypes):
         full_filename = f"{filename}.{ext}"
-        fig.savefig(full_filename, format=ext, bbox_inches='tight', pad_inches=0)
+        if use_tight_layout:
+            fig.savefig(full_filename, format=ext, bbox_inches='tight', pad_inches=0)
+        else:
+            fig.savefig(full_filename, format=ext)
         dst_path_s3 = str(PurePosixPath(urlparse(root_folder).path) / 'plot' / full_filename)
         upload_file_to_s3_bucket(full_filename, dst_path_s3)
 
@@ -65,7 +70,7 @@ def plot_all_nn():
     fig.show()
 
     # save plot in S3
-    save_plot_in_s3(fig, 'plot_nn', root_folder)
+    save_plot_in_s3(fig, 'plot_nn', root_folder, use_tight_layout=True)
 
 
 def plot_all_chi_squared():
@@ -77,11 +82,20 @@ def plot_all_chi_squared():
     # save plot in S3
     save_plot_in_s3(fig, 'plot_chi_squared', root_folder)
 
+def runInParallel(*fns):
+    proc = []
+    for fn in fns:
+        p = Process(target=fn)
+        p.start()
+        proc.append(p)
+    for p in proc:
+        p.join()
 
 def plot_all():
-    plot_all_cardio()
-    plot_all_nn()
-    plot_all_chi_squared()
+    runInParallel(plot_all_cardio, plot_all_nn, plot_all_chi_squared)
+    # plot_all_cardio()
+    # plot_all_nn()
+    # plot_all_chi_squared()
 
 
 if __name__ == "__main__":
