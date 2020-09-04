@@ -92,9 +92,9 @@ def runInParallel(*fns):
         p.join()
 
 def plot_all():
-    runInParallel(plot_all_cardio, plot_all_nn, plot_all_chi_squared)
+    # runInParallel(plot_all_cardio, plot_all_nn, plot_all_chi_squared)
     # plot_all_cardio()
-    # plot_all_nn()
+    plot_all_nn()
     # plot_all_chi_squared()
 
 

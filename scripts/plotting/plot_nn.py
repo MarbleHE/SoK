@@ -25,7 +25,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     golden_mean = ((np.math.sqrt(5) - 1.0) / 2.0) * .8  # Aesthetic ratio
     fig_width = 252 * inches_per_pt  # width in inches
     # fig_height = (fig_width * golden_mean)  # height in inches
-    fig_height = 2.5
+    fig_height = 2.15
     figsize = [fig_width * 0.67, fig_height / 1.22]
 
     # figsize = (5.5, 4)
@@ -124,7 +124,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     bax.axs[0].set_xticks(np.arange(len(sorted_labels)))
     bax.axs[1].set_xticks(np.arange(len(sorted_labels)))
     bax.axs[1].set_xticklabels(sorted_labels)
-    bax.set_ylabel('Time [s]', labelpad=29)
+    bax.set_ylabel('Time [s]', labelpad=18)
 
     # plt.title('Runtime for Neural Network Benchmark', fontsize=10)
 
