@@ -107,9 +107,11 @@ void Evaluation::encryptedLaplacianSharpeningAlgorithmBatched(VecInt2D img) {
 }
 
 int main(int argc, char *argv[]) {
+  std::cout << "Starting benchmark 'kernel-bfv-batched'..." << std::endl;
   std::cout << "image_size,time_ms" << std::endl;
 
-  std::vector<int> image_sizes = { 8, 16, 32, 64, 96, 128 };
+  // std::vector<int> image_sizes = { 8, 16, 32, 64, 96, 128 };
+  std::vector<int> image_sizes = {8};
 
   for (auto img_size : image_sizes) {
     std::vector<int> vec(img_size);
@@ -117,11 +119,13 @@ int main(int argc, char *argv[]) {
     std::vector<std::vector<int>> img(img_size, vec);
     decltype(std::chrono::high_resolution_clock::now()) t_start;
     decltype(std::chrono::high_resolution_clock::now()) t_end;
-    decltype(std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start)) duration_ms;
+    decltype(std::chrono::duration_cast<std::chrono::microseconds>(
+        t_end - t_start)) duration_ms;
     t_start = std::chrono::high_resolution_clock::now();
     Evaluation::encryptedLaplacianSharpeningAlgorithmBatched(img);
     t_end = std::chrono::high_resolution_clock::now();
-    duration_ms = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start);
+    duration_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start);
     std::cout << img_size << "," << duration_ms.count() << std::endl;
   }
 }
