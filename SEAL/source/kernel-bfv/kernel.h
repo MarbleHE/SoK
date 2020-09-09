@@ -3,16 +3,9 @@
 #endif
 
 #include <seal/seal.h>
-
-#include <algorithm>
 #include <chrono>
-#include <cmath>
-#include <complex>
-#include <functional>
 #include <iostream>
-#include <memory>
-#include <numeric>
-#include <random>
+#include <cassert>
 #include <vector>
 
 typedef std::vector<std::vector<int>> VecInt2D;
@@ -24,11 +17,17 @@ typedef long long Duration;
 
 class Evaluation {
  private:
+  // e.g., image_size=8 corresponds to a 8x8 pixels image
+  int image_size;
+
+  const VecInt2D weight_matrix = {{1, 1, 1}, {1, -8, 1}, {1, 1, 1}};
+
+  std::shared_ptr<seal::SEALContext> context;
+
   std::unique_ptr<seal::SecretKey> secret_key;
   std::unique_ptr<seal::PublicKey> public_key;
   std::unique_ptr<seal::GaloisKeys> galois_keys;
   std::unique_ptr<seal::RelinKeys> relin_keys;
-  std::shared_ptr<seal::SEALContext> context;
 
   std::unique_ptr<seal::BatchEncoder> encoder;
   std::unique_ptr<seal::Encryptor> encryptor;
@@ -39,9 +38,12 @@ class Evaluation {
 
   std::vector<int64_t> decode(seal::Plaintext &ptxt);
 
+ public:
+  int main(int argc, char *argv[]);
 
-  public:
-    void apply_kernel(VecInt2D & img);
+  Evaluation(int image_size);
 
-    int main(int argc, char *argv[]);
-  };
+  std::vector<int64_t> apply_kernel(VecInt2D &img);
+
+  void check_results(VecInt2D img, std::vector<int64_t> computed_values);
+};

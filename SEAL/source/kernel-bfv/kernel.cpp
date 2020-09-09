@@ -1,5 +1,41 @@
 #include "kernel.h"
 
+#include "../common.h"
+
+Evaluation::Evaluation(int image_size) : image_size(image_size) {};
+
+void Evaluation::check_results(VecInt2D img,
+                               std::vector<int64_t> computed_values) {
+  // run the original algorithm derived from Ramparts' paper
+  VecInt2D expected_values = img;
+  for (int x = 1; x < img.size() - 1; x++) {
+    for (int y = 1; y < img.at(x).size() - 1; y++) {
+      int value = 0;
+      for (int j = -1; j < 2; ++j) {
+        for (int i = -1; i < 2; ++i) {
+          value += weight_matrix.at(i + 1).at(j + 1) * img.at(x + i).at(y + j);
+        }
+      }
+      // original: img2[x][y] = img[x][y] - (value / 2);
+      // modified variant as we cannot divide in FHE:
+      expected_values[x][y] = (2 * img[x][y]) - value;
+    }
+  }
+
+  // compare FHE computation result with original algorithm's result
+  for (size_t x = 0; x < img.size(); x++) {
+    for (size_t y = 0; y < img.at(x).size(); y++) {
+      auto exp = expected_values[x][y];
+      auto cmp = computed_values[y + x * img.size()];
+      if (cmp != exp) {
+        std::cerr << "MISMATCH: Expected (" << exp 
+                  << ") vs computed value (" << cmp
+                  << ")." << std::endl;
+      }
+    }
+  }
+}
+
 std::vector<int64_t> Evaluation::decrypt_and_decode(seal::Ciphertext &ctxt) {
   seal::Plaintext decrypted;
   decryptor->decrypt(ctxt, decrypted);
@@ -20,7 +56,7 @@ void print_all(std::vector<int64_t> &vector) {
   std::cout << "===================================" << std::endl;
 }
 
-void Evaluation::apply_kernel(VecInt2D &img) {
+std::vector<int64_t> Evaluation::apply_kernel(VecInt2D &img) {
   seal::EncryptionParameters parms =
       seal::EncryptionParameters(seal::scheme_type::BFV);
   parms.set_poly_modulus_degree(DEFAULT_NUM_SLOTS);  // number of slots
@@ -32,14 +68,14 @@ void Evaluation::apply_kernel(VecInt2D &img) {
       seal::PlainModulus::Batching(parms.poly_modulus_degree(), 20));
   context = seal::SEALContext::Create(parms);
 
+  write_parameters_to_file(context, "params.txt");
+
   /// Create keys
-  seal::KeyGenerator keyGenerator(context);
-  secret_key = std::make_unique<seal::SecretKey>(keyGenerator.secret_key());
-  public_key = std::make_unique<seal::PublicKey>(keyGenerator.public_key());
-  galois_keys =
-      std::make_unique<seal::GaloisKeys>(keyGenerator.galois_keys_local());
-  relin_keys =
-      std::make_unique<seal::RelinKeys>(keyGenerator.relin_keys_local());
+  seal::KeyGenerator keygen(context);
+  secret_key = std::make_unique<seal::SecretKey>(keygen.secret_key());
+  public_key = std::make_unique<seal::PublicKey>(keygen.public_key());
+  galois_keys = std::make_unique<seal::GaloisKeys>(keygen.galois_keys_local());
+  relin_keys = std::make_unique<seal::RelinKeys>(keygen.relin_keys_local());
 
   // Create helper objects
   encoder = std::make_unique<seal::BatchEncoder>(context);
@@ -48,125 +84,81 @@ void Evaluation::apply_kernel(VecInt2D &img) {
   decryptor = std::make_unique<seal::Decryptor>(context, *secret_key);
   evaluator = std::make_unique<seal::Evaluator>(context);
 
-  // Encrypt input
+  // Encrypt input image
   std::vector<int64_t> img_as_vec;
-  img_as_vec.reserve(img.size() * img.size());
+  img_as_vec.reserve(image_size * image_size);
   for (auto row : img) {
     for (auto elem : row) {
       img_as_vec.push_back(elem);
     }
   }
-
   seal::Plaintext img_ptxt;
   encoder->encode(img_as_vec, img_ptxt);
   seal::Ciphertext img_ctxt;
   encryptor->encrypt_symmetric(img_ptxt, img_ctxt);
 
-  // Naive way: very similar to plain C++
-  VecInt2D weightMatrix = {{1, 1, 1}, {1, -8, 1}, {1, 1, 1}};
-  // Can be default constructed because this is overriden in each loop
-  // seal::Ciphertext output_img;
-  seal::Ciphertext img2_ctxt = img_ctxt;
+  // Mask away (in a single mult) everything except borders because later we
+  // need to overwrite these masked-away values using additions
+  std::vector<int64_t> data(image_size * image_size, 0);
+  for (size_t i = 0; i < image_size * image_size; i++) {
+    int x = i % image_size;
+    int y = i / image_size;
+    data[i] = (y == 0)                  // top border
+              || (y == image_size - 1)  // bottom border
+              || (x == 0 || x == 7);    // lhs and rhs borders
+  }
+  seal::Plaintext mask;
+  encoder->encode(data, mask);
+  seal::Ciphertext img2_ctxt;
+  evaluator->multiply_plain(img_ctxt, mask, img2_ctxt);
 
-  for (int x = 1; x < img.size() - 1; ++x) {
+  for (int x = 1; x < image_size - 1; ++x) {
     for (int y = 1; y < img.at(x).size() - 1; ++y) {
-      std::cout << "== x: " << x << ", y: " << y << std::endl;
-      seal::Ciphertext value(context);
+      seal::Ciphertext value;
+      seal::Plaintext value_ptxt;
+      std::vector<int64_t> zero(image_size * image_size, 0);
+      encoder->encode(zero, value_ptxt);
+      encryptor->encrypt(value_ptxt, value);
+
       for (int j = -1; j < 2; ++j) {
         for (int i = -1; i < 2; ++i) {
-          std::cout << "x+i: " << x + i << ", y+j: " << y + j
-                    << ", i+1: " << i + 1 << ", j+1: " << j + 1 << std::endl
-                    << "(y+j) + (x+i)*img.size(): "
-                    << (y + j) + (x + i) * img.size() << std::endl;
-
-          // set w at index where input is to the value of weightMatrix
+          // set weight at index where input is
           seal::Plaintext w;
-          std::vector<int64_t> data(img.size() * img.size(), 0);
-          data[(y + j) + (x + i) * img.size()] =
-              weightMatrix.at(i + 1).at(j + 1);
+          std::vector<int64_t> data(image_size * image_size, 0);
+          data.at((y + j) + (x + i) * image_size) =
+              weight_matrix.at(i + 1).at(j + 1);
           encoder->encode(data, w);
-
-          // encoder->encode(std::vector<int64_t>
-          //      (encoder->slot_count(), weightMatrix.at(i + 1).at(j + 1)), w);
-          // int target_x = (x + i);
-          // int target_y = (y + j);
-          // int steps = target_x * img.size() + target_y;
-          // if (steps >= DEFAULT_NUM_SLOTS / 2) {
-          //   steps = DEFAULT_NUM_SLOTS / 2 - steps;
-          // }
-
-          // evaluator.rotate_rows(img_ctxt, steps, *galois_keys, temp);
 
           // temp = img_ctxt * w
           seal::Ciphertext temp;
           evaluator->multiply_plain(img_ctxt, w, temp);
-          evaluator->relinearize_inplace(temp, *relin_keys);
 
-          // rotate ciphertext temp so that the respective index (i+1, j+1) is
-          // at index 0 afterward
-          evaluator->rotate_rows_inplace(temp, ((j + 1) + (i + 1) * img.size()),
-                                         *galois_keys);
+          // rotate ciphertext temp so that the value is at index (x,y)
+          evaluator->rotate_rows_inplace(temp, (j+i*image_size),*galois_keys);
 
           // value = value + temp
           evaluator->add_inplace(value, temp);
         }
       }
 
-      // temp = img_ctxt * 2
+      // temp = img_ctxt[x][y] * 2
       seal::Plaintext two;
-      // encoder->encode(std::vector<int64_t>(encoder->slot_count(), 2), two);
-      std::vector<int64_t> two_data(img.size() * img.size(), 0);
-      two_data[y + x * img.size()] = 2;
+      std::vector<int64_t> two_data(image_size * image_size, 0);
+      two_data.at(y + x * image_size) = 2;
       encoder->encode(two_data, two);
       seal::Ciphertext temp;
       evaluator->multiply_plain(img_ctxt, two, temp);
-      evaluator->relinearize_inplace(temp, *relin_keys);
-
-      // rotate 'value' so that it is at position (x,y) afterwards (UNCHECKED)
-      evaluator->rotate_rows_inplace(value, -(y + x * img.size()),
-                                     *galois_keys);
 
       // temp = temp - value
       evaluator->sub_inplace(temp, value);
 
-      // Use masking to merge img2 and the new computed value for pixel (x,y)
-      // img2_ctxt = "all 1, except (x,y)" * img2_ctxt + temp
-      // (1) masked_img2 = img2_ctxt * mask
-      seal::Plaintext mask;
-      std::vector<int64_t> data(img.size() * img.size(), 1);
-      data[y + x * img.size()] = 0;
-      encoder->encode(data, mask);
-      seal::Ciphertext masked_img2;
-      evaluator->multiply_plain(img2_ctxt, mask, masked_img2);
-      evaluator->relinearize_inplace(masked_img2, *relin_keys);
-
-      // (2) img2_ctxt = masked_img2 + temp
-      evaluator->add(masked_img2, temp, img2_ctxt);
-
-      // if (x == 2 && y == 1) {
-      //   std::cout << "masked_img2 :::" << std::endl;
-      //   auto vals = decrypt_and_decode(masked_img2);
-      //   print_all(vals);
-
-      //   std::cout << "img2_ctxt :::" << std::endl;
-      //   auto vals2 = decrypt_and_decode(img2_ctxt);
-      //   print_all(vals2);
-      //   return;
-      // }
+      // img2_ctxt = img2_ctxt + temp
+      evaluator->add_inplace(img2_ctxt, temp);
     }
   }
 
-  // decrypt ciphertext
-  seal::Plaintext decrypted;
-  decryptor->decrypt(img2_ctxt, decrypted);
-  std::vector<int64_t> values;
-  encoder->decode(decrypted, values);
-  int row_length = img.size();
-  for (size_t i = 0; i < values.size() && i < PRINT_LIMIT; i++) {
-    int x = i % row_length;
-    int y = i / row_length;
-    std::cout << "(" << x << "," << y << "): " << values[i] << std::endl;
-  }
+  // return decrypted+decoded ciphertext
+  return decrypt_and_decode(img2_ctxt);
 }
 
 int main(int argc, char *argv[]) {
@@ -182,10 +174,13 @@ int main(int argc, char *argv[]) {
     std::vector<std::vector<int>> img(img_size, vec);
     Timepoint t_start = std::chrono::high_resolution_clock::now();
 
-    Evaluation().apply_kernel(img);
+    Evaluation eval(img.size());
+    auto fhe_result = eval.apply_kernel(img);
+    eval.check_results(img, fhe_result);
+
     Timepoint t_end = std::chrono::high_resolution_clock::now();
     Duration duration_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start)
+        std::chrono::duration_cast<std::chrono::milliseconds>(t_end-t_start)
             .count();
     std::cout << img_size << "," << duration_ms << std::endl;
   }
