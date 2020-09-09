@@ -28,40 +28,40 @@ function run_benchmark() {
 }
 
 
-# Cardio BFV (with Cingulata parameters)
-# export OUTPUT_FILENAME=seal_bfv_cardio_optimal.csv
-# run_benchmark cardio_bfv
-# upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters.txt
+Cardio BFV (with Cingulata parameters)
+export OUTPUT_FILENAME=seal_bfv_cardio_optimal.csv
+run_benchmark cardio_bfv
+upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters.txt
 
-# # Cardio BFV (with optimal parameters)
-# export OUTPUT_FILENAME=seal_bfv_cardio_optimal.csv
-# run_benchmark cardio_bfv
-# upload_files SEAL-BFV-OPT ${OUTPUT_FILENAME} fhe_parameters.txt
+# Cardio BFV (with optimal parameters)
+export OUTPUT_FILENAME=seal_bfv_cardio_optimal.csv
+run_benchmark cardio_bfv
+upload_files SEAL-BFV-OPT ${OUTPUT_FILENAME} fhe_parameters.txt
 
-# # Cardio BFV batched
-# export OUTPUT_FILENAME=seal_batched_bfv_cardio.csv
-# run_benchmark cardio_bfv_batched
-# upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters.txt
+# Cardio BFV batched
+export OUTPUT_FILENAME=seal_batched_bfv_cardio.csv
+run_benchmark cardio_bfv_batched
+upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters.txt
 
-# # Cardio CKKS batched
-# export OUTPUT_FILENAME=seal_batched_ckks_cardio.csv
-# run_benchmark cardio_ckks_batched
-# upload_files SEAL-CKKS-Batched ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
+# Cardio CKKS batched
+export OUTPUT_FILENAME=seal_batched_ckks_cardio.csv
+run_benchmark cardio_ckks_batched
+upload_files SEAL-CKKS-Batched ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
-# # NN CKKS batched
-# export OUTPUT_FILENAME=seal_batched_ckks_nn.csv
-# run_benchmark nn_ckks_batched
-# upload_files SEAL-CKKS-Batched ${OUTPUT_FILENAME} fhe_parameters_nn.txt
+# NN CKKS batched
+export OUTPUT_FILENAME=seal_batched_ckks_nn.csv
+run_benchmark nn_ckks_batched
+upload_files SEAL-CKKS-Batched ${OUTPUT_FILENAME} fhe_parameters_nn.txt
 
-# # Chi-Squared BFV
-# export OUTPUT_FILENAME=seal_bfv_chi_squared.csv
-# run_benchmark chi_squared
-# upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
+# Chi-Squared BFV
+export OUTPUT_FILENAME=seal_bfv_chi_squared.csv
+run_benchmark chi_squared
+upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
 
-# Chi-Squared BFV Batched
-# export OUTPUT_FILENAME=seal_bfv_batched_chi_squared.csv
-# run_benchmark chi_squared_batched
-# upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
+Chi-Squared BFV Batched
+export OUTPUT_FILENAME=seal_bfv_batched_chi_squared.csv
+run_benchmark chi_squared_batched
+upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
 
 # Kernel BFV
 export OUTPUT_FILENAME=seal_bfv_kernel.csv
