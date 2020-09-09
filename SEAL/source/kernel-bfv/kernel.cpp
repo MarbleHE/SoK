@@ -2,7 +2,25 @@
 
 #include "../common.h"
 
-Evaluation::Evaluation(int image_size) : image_size(image_size) {};
+namespace {
+void log_time(std::stringstream &ss,
+              std::chrono::time_point<std::chrono::high_resolution_clock> start,
+              std::chrono::time_point<std::chrono::high_resolution_clock> end,
+              bool last = false) {
+  ss << std::chrono::duration_cast<ms>(end - start).count();
+  if (!last) ss << ",";
+}
+}  // namespace
+
+Evaluation::Evaluation(int image_size) : image_size(image_size){};
+
+Duration Evaluation::compute_duration(Timepoint start, Timepoint end) {
+  if (end < start) {
+    std::cerr << "ERROR: Timepoint 'end' cannot be smaller than 'start'!"
+              << std::endl;
+  }
+  return std::chrono::duration_cast<ms>(end - start).count();
+}
 
 void Evaluation::check_results(VecInt2D img,
                                std::vector<int64_t> computed_values) {
@@ -28,9 +46,8 @@ void Evaluation::check_results(VecInt2D img,
       auto exp = expected_values[x][y];
       auto cmp = computed_values[y + x * img.size()];
       if (cmp != exp) {
-        std::cerr << "MISMATCH: Expected (" << exp 
-                  << ") vs computed value (" << cmp
-                  << ")." << std::endl;
+        std::cerr << "MISMATCH: Expected (" << exp << ") vs computed value ("
+                  << cmp << ")." << std::endl;
       }
     }
   }
@@ -57,6 +74,10 @@ void print_all(std::vector<int64_t> &vector) {
 }
 
 std::vector<int64_t> Evaluation::apply_kernel(VecInt2D &img) {
+  std::stringstream ss_time;
+
+  Timepoint t_start_keygen = Time::now();
+
   seal::EncryptionParameters parms =
       seal::EncryptionParameters(seal::scheme_type::BFV);
   parms.set_poly_modulus_degree(DEFAULT_NUM_SLOTS);  // number of slots
@@ -67,8 +88,6 @@ std::vector<int64_t> Evaluation::apply_kernel(VecInt2D &img) {
   parms.set_plain_modulus(
       seal::PlainModulus::Batching(parms.poly_modulus_degree(), 20));
   context = seal::SEALContext::Create(parms);
-
-  write_parameters_to_file(context, "params.txt");
 
   /// Create keys
   seal::KeyGenerator keygen(context);
@@ -84,6 +103,10 @@ std::vector<int64_t> Evaluation::apply_kernel(VecInt2D &img) {
   decryptor = std::make_unique<seal::Decryptor>(context, *secret_key);
   evaluator = std::make_unique<seal::Evaluator>(context);
 
+  Timepoint t_end_keygen = Time::now();
+  log_time(ss_time, t_start_keygen, t_end_keygen, false);
+
+  Timepoint t_start_input_encryption = Time::now();
   // Encrypt input image
   std::vector<int64_t> img_as_vec;
   img_as_vec.reserve(image_size * image_size);
@@ -96,6 +119,11 @@ std::vector<int64_t> Evaluation::apply_kernel(VecInt2D &img) {
   encoder->encode(img_as_vec, img_ptxt);
   seal::Ciphertext img_ctxt;
   encryptor->encrypt_symmetric(img_ptxt, img_ctxt);
+
+  Timepoint t_end_input_encryption = Time::now();
+  log_time(ss_time, t_start_input_encryption, t_end_input_encryption, false);
+
+  Timepoint t_start_computation = Time::now();
 
   // Mask away (in a single mult) everything except borders because later we
   // need to overwrite these masked-away values using additions
@@ -134,7 +162,8 @@ std::vector<int64_t> Evaluation::apply_kernel(VecInt2D &img) {
           evaluator->multiply_plain(img_ctxt, w, temp);
 
           // rotate ciphertext temp so that the value is at index (x,y)
-          evaluator->rotate_rows_inplace(temp, (j+i*image_size),*galois_keys);
+          evaluator->rotate_rows_inplace(temp, (j + i * image_size),
+                                         *galois_keys);
 
           // value = value + temp
           evaluator->add_inplace(value, temp);
@@ -157,31 +186,45 @@ std::vector<int64_t> Evaluation::apply_kernel(VecInt2D &img) {
     }
   }
 
+  Timepoint t_end_computation = Time::now();
+  log_time(ss_time, t_start_computation, t_end_computation, false);
+
+  Timepoint t_start_decryption = Time::now();
+  auto final_result = decrypt_and_decode(img2_ctxt);
+  Timepoint t_end_decryption = Time::now();
+  log_time(ss_time, t_start_decryption, t_end_decryption, true);
+
+  // write ss_time into file
+  std::ofstream myfile;
+  auto out_filename = std::getenv("OUTPUT_FILENAME");
+  myfile.open(out_filename, std::ios_base::app);
+  myfile << ss_time.str() << std::endl;
+  myfile.close();
+
+  // write FHE parameters into file
+  write_parameters_to_file(context, "fhe_parameters.txt");
+
   // return decrypted+decoded ciphertext
-  return decrypt_and_decode(img2_ctxt);
+  return final_result;
 }
 
 int main(int argc, char *argv[]) {
   std::cout << "Starting benchmark 'kernel-bfv'..." << std::endl;
-  std::cout << "image_size,time_ms" << std::endl;
 
   // std::vector<int> image_sizes = {8, 16, 32, 64, 96, 128};
   std::vector<int> image_sizes = {8};
 
   for (auto img_size : image_sizes) {
+    // generate input
     std::vector<int> vec(img_size);
     std::iota(vec.begin(), vec.end(), 0);
     std::vector<std::vector<int>> img(img_size, vec);
-    Timepoint t_start = std::chrono::high_resolution_clock::now();
-
+    
+    // perform FHE computation
     Evaluation eval(img.size());
     auto fhe_result = eval.apply_kernel(img);
-    eval.check_results(img, fhe_result);
 
-    Timepoint t_end = std::chrono::high_resolution_clock::now();
-    Duration duration_ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(t_end-t_start)
-            .count();
-    std::cout << img_size << "," << duration_ms << std::endl;
+    // check correctness of results
+    eval.check_results(img, fhe_result);
   }
 }

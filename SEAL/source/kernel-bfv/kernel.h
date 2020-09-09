@@ -3,14 +3,18 @@
 #endif
 
 #include <seal/seal.h>
+
+#include <cassert>
 #include <chrono>
 #include <iostream>
-#include <cassert>
 #include <vector>
 
 typedef std::vector<std::vector<int>> VecInt2D;
+
+typedef std::chrono::high_resolution_clock Time;
 typedef decltype(std::chrono::high_resolution_clock::now()) Timepoint;
 typedef long long Duration;
+typedef std::chrono::milliseconds ms;
 
 #define DEFAULT_NUM_SLOTS 16'384
 #define PRINT_LIMIT 70
@@ -37,6 +41,8 @@ class Evaluation {
   std::vector<int64_t> decrypt_and_decode(seal::Ciphertext &ctxt);
 
   std::vector<int64_t> decode(seal::Plaintext &ptxt);
+
+  Duration compute_duration(Timepoint start, Timepoint end);
 
  public:
   int main(int argc, char *argv[]);
