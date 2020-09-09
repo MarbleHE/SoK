@@ -3,8 +3,6 @@
 #endif
 
 #include <seal/seal.h>
-
-#include <cassert>
 #include <chrono>
 #include <iostream>
 #include <vector>
