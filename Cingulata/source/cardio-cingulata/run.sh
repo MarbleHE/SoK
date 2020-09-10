@@ -29,13 +29,13 @@ do
   rm -rf input output
   mkdir -p input output
 
-  START_T=$( get_timestamp_ms )
+  START_KEYGEN_T=$( get_timestamp_ms )
 
   # Generate keys
   # echo "FHE key generation"
   $APPS_DIR/generate_keys
   END_KEYGEN_T=$( get_timestamp_ms )
-  write_to_files $((${END_KEYGEN_T}-${START_T}))","
+  write_to_files $((${END_KEYGEN_T}-${START_KEYGEN_T}))","
 
   # echo "Input formatting & encryption"
   NR_THREADS=1
