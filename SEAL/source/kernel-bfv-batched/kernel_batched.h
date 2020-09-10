@@ -17,10 +17,14 @@ typedef long long Duration;
 typedef std::chrono::milliseconds ms;
 
 #define DEFAULT_NUM_SLOTS 16'384
+#define PRINT_LIMIT 70
 
 class Evaluation {
  private:
-  const VecInt2D weight_matrix = {{1, 1, 1}, {1, -8, 1}, {1, 1, 1}};
+  // e.g., image_size=8 corresponds to a 8x8 pixels image
+  int image_size;
+
+  const std::vector<int> weight_matrix = {1, 1, 1, 1, -8, 1, 1, 1, 1};
 
   std::shared_ptr<seal::SEALContext> context;
 
@@ -34,7 +38,18 @@ class Evaluation {
   std::unique_ptr<seal::Decryptor> decryptor;
   std::unique_ptr<seal::Evaluator> evaluator;
 
+  std::vector<int64_t> decrypt_and_decode(seal::Ciphertext &ctxt);
+
+  std::vector<int64_t> decode(seal::Plaintext &ptxt);
+
+  std::vector<int64_t> generate_border_mask(bool invert);
+
  public:
-  void run_kernel(VecInt2D img);
+  Evaluation(int image_size);
+
+  std::vector<int64_t> run_kernel(VecInt2D img);
+
+  void check_results(VecInt2D img, std::vector<int64_t> computed_values);
+
   int main(int argc, char *argv[]);
 };
