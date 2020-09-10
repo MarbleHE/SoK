@@ -27,14 +27,8 @@ function run_benchmark() {
     done
 }
 
-
-Cardio BFV (with Cingulata parameters)
-export OUTPUT_FILENAME=seal_bfv_cardio_optimal.csv
-run_benchmark cardio_bfv
-upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
-
-# Cardio BFV (with optimal parameters)
-export OUTPUT_FILENAME=seal_bfv_cardio_optimal.csv
+# Cardio BFV (using modified Cingulata parameters)
+export OUTPUT_FILENAME=seal_bfv_cardio_cingu_params.csv
 run_benchmark cardio_bfv
 upload_files SEAL-BFV-OPT ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
