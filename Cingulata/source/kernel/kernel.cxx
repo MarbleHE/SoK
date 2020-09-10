@@ -7,8 +7,13 @@
 #define blif_name "bfv-kernel.blif"
 
 #include <vector>
+// === NOTE =======
+// This file is not used during the benchmarking run but serves for
+// documentation purposes to see how the bfv-kernel.blif circuit was
+// originally created.
+// ================
 
-/* local includes */
+// local includes
 #include <bit_exec/tracker.hxx>
 #include <ci_context.hxx>
 #include <ci_fncs.hxx>
@@ -16,16 +21,12 @@
 #include <int_op_gen/mult_depth.hxx>
 #include <integer.hxx>
 
-/* namespaces */
+// namespaces
 using namespace std;
 using namespace cingulata;
 
-// NOTE: This must correspond to IMAGE_SIZE in run.sh
-const static int image_size = 8;
-
 int main() {
-  /* Set context to bit tracker and multiplicative depth-minimized integer
-   * operations */
+  // Set context (bit tracker) and mult. depth-minimized integer operations
   CiContext::set_config(make_shared<BitTracker>(),
                         make_shared<IntOpGenDepth>());
 
@@ -33,6 +34,7 @@ int main() {
   SlicedInteger<int8_t> out[image_size][image_size];
   SlicedInteger<int8_t> weight[3][3] = {{1, 1, 1}, {1, -8, 1}, {1, 1, 1}};
 
+  // read input data from input/ directory
   for (int i = 0; i < image_size; i++) {
     for (int j = 0; j < image_size; j++) {
       std::cin >> img[i][j];
@@ -40,6 +42,7 @@ int main() {
     }
   }
 
+  // perform computation (kernel)
   for (int x = 1; x < image_size - 1; x++) {
     for (int y = 1; y < image_size - 1; y++) {
       SlicedInteger<int8_t> value = 0;
@@ -52,12 +55,13 @@ int main() {
     }
   }
 
+  // print result
   for (int i = 0; i < image_size; ++i) {
     for (int j = 0; j < image_size; j++) {
       std::cout << out[i][j];
     }
   }
 
-  /* Export to file the "tracked" circuit */
+  // export to file "bfv-kernel.blif"
   CiContext::get_bit_exec_t<BitTracker>()->export_blif(blif_name, "kernel");
 }
