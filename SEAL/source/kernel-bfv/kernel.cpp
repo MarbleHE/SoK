@@ -65,7 +65,7 @@ std::vector<int64_t> Evaluation::decode(seal::Plaintext &ptxt) {
   return values;
 }
 
-void print_all(std::vector<int64_t> &vector) {
+void Evaluation::print_all(std::vector<int64_t> &vector) {
   std::cout << "=== print_all called ==============" << std::endl;
   for (size_t i = 0; (i < vector.size() && i < PRINT_LIMIT); i++) {
     std::cout << i << ": " << vector[i] << std::endl;

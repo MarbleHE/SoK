@@ -3,12 +3,12 @@
 #endif
 
 #include <seal/seal.h>
+
 #include <chrono>
 #include <iostream>
 #include <vector>
 
 typedef std::vector<std::vector<int>> VecInt2D;
-
 typedef std::chrono::high_resolution_clock Time;
 typedef decltype(std::chrono::high_resolution_clock::now()) Timepoint;
 typedef long long Duration;
@@ -41,6 +41,8 @@ class Evaluation {
   std::vector<int64_t> decode(seal::Plaintext &ptxt);
 
   Duration compute_duration(Timepoint start, Timepoint end);
+
+  void print_all(std::vector<int64_t> &vector);
 
  public:
   int main(int argc, char *argv[]);
