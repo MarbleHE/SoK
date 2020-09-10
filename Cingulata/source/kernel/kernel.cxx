@@ -20,6 +20,9 @@
 using namespace std;
 using namespace cingulata;
 
+// NOTE: This must correspond to IMAGE_SIZE in run.sh
+const static int image_size = 8;
+
 int main() {
   /* Set context to bit tracker and multiplicative depth-minimized integer
    * operations */

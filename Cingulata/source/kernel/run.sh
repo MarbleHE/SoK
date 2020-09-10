@@ -1,7 +1,7 @@
 #!/bin/bash
 
 APPS_DIR=/cingu/build_bfv/apps
-IMAGE_SIZE=@IMAGE_SIZE@
+IMAGE_SIZE=8
 
 CIRCUIT=bfv-kernel.blif
 OUTPUT_FILENAME=cingulata_kernel.csv
