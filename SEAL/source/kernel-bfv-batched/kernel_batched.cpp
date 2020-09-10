@@ -1,5 +1,15 @@
 #include "kernel_batched.h"
 
+namespace {
+void log_time(std::stringstream &ss,
+              std::chrono::time_point<std::chrono::high_resolution_clock> start,
+              std::chrono::time_point<std::chrono::high_resolution_clock> end,
+              bool last = false) {
+  ss << std::chrono::duration_cast<ms>(end - start).count();
+  if (!last) ss << ",";
+}
+}  // namespace
+
 Evaluation::Evaluation(int image_size) : image_size(image_size){};
 
 void Evaluation::check_results(VecInt2D img,
@@ -12,7 +22,8 @@ void Evaluation::check_results(VecInt2D img,
       for (int j = -1; j < 2; ++j) {
         for (int i = -1; i < 2; ++i) {
           value += weight_matrix.at((i + 1) * std::log2(weight_matrix.size()) +
-                                    (j + 1)) * img.at(x + i).at(y + j);
+                                    (j + 1)) *
+                   img.at(x + i).at(y + j);
         }
       }
       // original: img2[x][y] = img[x][y] - (value / 2);
@@ -69,6 +80,9 @@ std::vector<int64_t> Evaluation::generate_border_mask(bool invert) {
 }
 
 std::vector<int64_t> Evaluation::run_kernel(VecInt2D img) {
+  std::stringstream ss_time;
+  Timepoint t_start_keygen = Time::now();
+
   seal::EncryptionParameters parms(seal::scheme_type::BFV);
   parms.set_poly_modulus_degree(DEFAULT_NUM_SLOTS);  // = no. of ctxt slots
   // Let SEAL select a "suitable" coefficient modulus (not necessarily maximal)
@@ -93,7 +107,11 @@ std::vector<int64_t> Evaluation::run_kernel(VecInt2D img) {
   decryptor = std::make_unique<seal::Decryptor>(context, *secret_key);
   evaluator = std::make_unique<seal::Evaluator>(context);
 
+  Timepoint t_end_keygen = Time::now();
+  log_time(ss_time, t_start_keygen, t_end_keygen, false);
+
   // Encrypt input image
+  Timepoint t_start_input_encryption = Time::now();
   std::vector<int64_t> img_as_vec(image_size * image_size, 0);
   for (size_t i = 0; i < img.size(); i++) {
     for (size_t j = 0; j < img[i].size(); j++) {
@@ -104,6 +122,11 @@ std::vector<int64_t> Evaluation::run_kernel(VecInt2D img) {
   encoder->encode(img_as_vec, img_ptxt);
   seal::Ciphertext img_ctxt;
   encryptor->encrypt_symmetric(img_ptxt, img_ctxt);  // symm is more efficient
+
+  Timepoint t_end_input_encryption = Time::now();
+  log_time(ss_time, t_start_input_encryption, t_end_input_encryption, false);
+
+  Timepoint t_start_computation = Time::now();
 
   // Create rotated copies of the image and multiplicate by weights
   std::vector<int> rotations = {-0,
@@ -140,7 +163,6 @@ std::vector<int64_t> Evaluation::run_kernel(VecInt2D img) {
   encoder->encode(full_two, two);
   seal::Ciphertext two_times_img_ctxt;
   evaluator->multiply_plain(img_ctxt, two, two_times_img_ctxt);
-
   // (2) [2*img_ctxt] - value
   evaluator->sub_inplace(two_times_img_ctxt, res_ctxt);
 
@@ -157,8 +179,26 @@ std::vector<int64_t> Evaluation::run_kernel(VecInt2D img) {
   // Merge the input image (border-only) with the computed kernel (border = 0)
   evaluator->add_inplace(img_ctxt, two_times_img_ctxt);
 
-  auto vals = decrypt_and_decode(img_ctxt);
-  return vals;
+  Timepoint t_end_computation = Time::now();
+  log_time(ss_time, t_start_computation, t_end_computation, false);
+
+  Timepoint t_start_decryption = Time::now();
+  auto final_result = decrypt_and_decode(img_ctxt);
+  Timepoint t_end_decryption = Time::now();
+  log_time(ss_time, t_start_decryption, t_end_decryption, true);
+
+  // write ss_time into file
+  std::ofstream myfile;
+  auto out_filename = std::getenv("OUTPUT_FILENAME");
+  myfile.open(out_filename, std::ios_base::app);
+  myfile << ss_time.str() << std::endl;
+  myfile.close();
+
+  // write FHE parameters into file
+  write_parameters_to_file(context, "fhe_parameters_kernel.txt");
+
+  // return decrypted+decoded ciphertext
+  return final_result;
 }
 
 int main(int argc, char *argv[]) {

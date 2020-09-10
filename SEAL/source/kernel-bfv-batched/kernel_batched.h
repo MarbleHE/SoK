@@ -2,11 +2,12 @@
 #define LAPLACIAN_SHARPENING_BATCHED_H_
 #endif
 
-#include <seal/seal.h>
-
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <seal/seal.h>
+
+#include "../common.h"
 
 typedef std::vector<std::vector<int>> VecInt2D;
 
