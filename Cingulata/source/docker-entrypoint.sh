@@ -44,3 +44,8 @@ echo "Running cardio-multistart-optimal-params..."
 cd /cingu/eval/cardio-multistart-optimal-params \
     && ./run.sh \
     && upload_file MultiStart-OPT-PARAMS cingulata_cardio_multistart_optimal.csv fhe_parameters.txt
+
+echo "Running kernel..."
+cd /cingu/eval/kernel \
+    && ./run.sh \
+    && upload_file Cingulata cingulata_kernel.csv fhe_parameters_kernel.txt
