@@ -40,11 +40,11 @@ int main() {
     }
   }
 
-  for (int x = 0; x < image_size - 2; x++) {
-    for (int y = 0; y < image_size - 2; y++) {
+  for (int x = 1; x < image_size - 1; x++) {
+    for (int y = 1; y < image_size - 1; y++) {
       SlicedInteger<int8_t> value = 0;
-      for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
+      for (int i = -1; i < 2; i++) {
+        for (int j = -1; j < 2; j++) {
           value += weight[i + 1][j + 1] * img[x + i][y + i];
         }
       }
