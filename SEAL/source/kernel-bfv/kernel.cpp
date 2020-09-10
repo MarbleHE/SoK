@@ -1,7 +1,5 @@
 #include "kernel.h"
 
-#include "../common.h"
-
 namespace {
 void log_time(std::stringstream &ss,
               std::chrono::time_point<std::chrono::high_resolution_clock> start,
@@ -106,8 +104,8 @@ std::vector<int64_t> Evaluation::apply_kernel(VecInt2D &img) {
   Timepoint t_end_keygen = Time::now();
   log_time(ss_time, t_start_keygen, t_end_keygen, false);
 
-  Timepoint t_start_input_encryption = Time::now();
   // Encrypt input image
+  Timepoint t_start_input_encryption = Time::now();
   std::vector<int64_t> img_as_vec;
   img_as_vec.reserve(image_size * image_size);
   for (auto row : img) {
@@ -202,7 +200,7 @@ std::vector<int64_t> Evaluation::apply_kernel(VecInt2D &img) {
   myfile.close();
 
   // write FHE parameters into file
-  write_parameters_to_file(context, "fhe_parameters.txt");
+  write_parameters_to_file(context, "fhe_parameters_kernel.txt");
 
   // return decrypted+decoded ciphertext
   return final_result;

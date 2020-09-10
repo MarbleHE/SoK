@@ -459,7 +459,7 @@ void Cardio::run_cardio() {
   myfile.close();
 
   // write FHE parameters into file
-  write_parameters_to_file(context, "fhe_parameters.txt");
+  write_parameters_to_file(context, "fhe_parameters_cardio.txt");
 }
 
 int main(int argc, char *argv[]) {

@@ -31,17 +31,17 @@ function run_benchmark() {
 Cardio BFV (with Cingulata parameters)
 export OUTPUT_FILENAME=seal_bfv_cardio_optimal.csv
 run_benchmark cardio_bfv
-upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters.txt
+upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
 # Cardio BFV (with optimal parameters)
 export OUTPUT_FILENAME=seal_bfv_cardio_optimal.csv
 run_benchmark cardio_bfv
-upload_files SEAL-BFV-OPT ${OUTPUT_FILENAME} fhe_parameters.txt
+upload_files SEAL-BFV-OPT ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
 # Cardio BFV batched
 export OUTPUT_FILENAME=seal_batched_bfv_cardio.csv
 run_benchmark cardio_bfv_batched
-upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters.txt
+upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
 # Cardio CKKS batched
 export OUTPUT_FILENAME=seal_batched_ckks_cardio.csv
@@ -66,9 +66,9 @@ upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
 # Kernel BFV
 export OUTPUT_FILENAME=seal_bfv_kernel.csv
 run_benchmark kernel
-upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters.txt
+upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_kernel.txt
 
 # Kernel BFV batched
 export OUTPUT_FILENAME=seal_batched_bfv_kernel.csv
 run_benchmark kernel_batched
-upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters.txt
+upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters_kernel.txt
