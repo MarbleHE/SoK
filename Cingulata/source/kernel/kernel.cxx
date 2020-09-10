@@ -45,7 +45,7 @@ int main() {
       SlicedInteger<int8_t> value = 0;
       for (int i = -1; i < 2; i++) {
         for (int j = -1; j < 2; j++) {
-          value += weight[i + 1][j + 1] * img[x + i][y + i];
+          value += weight[i + 1][j + 1] * img[x + i][y + j];
         }
       }
       out[x][y] = (img[x][y] << 1) - value;
