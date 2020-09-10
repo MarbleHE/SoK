@@ -3,7 +3,7 @@
 APPS_DIR=/cingu/build_bfv/apps
 IMAGE_SIZE=8
 
-CIRCUIT=bfv-kernel.blif
+CIRCUIT=bfv-kernel-opt.blif
 OUTPUT_FILENAME=cingulata_kernel.csv
 
 get_timestamp_ms() {
