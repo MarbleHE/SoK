@@ -18,7 +18,7 @@ void run_kernel(std::vector<std::vector<SecureMint>> img) {
   // implementations because E3 has issues working with negative numbers (i.e.,
   // the weight -8).
   std::vector<std::vector<SecureMint>> wm = {
-      {_0_Ea, _0_Ea, _0_Ea}, {_0_Ea, _0_Ea, _1_Ea}, {_0_Ea, _0_Ea, _0_Ea}};
+      {_1_Ea, _1_Ea, _1_Ea}, {_1_Ea, -SecureMint(_8_Ea), _1_Ea}, {_1_Ea, _1_Ea, _1_Ea}};
 
   for (size_t x = 1; x < image_size - 1; x++) {
     for (size_t y = 1; y < img.at(x).size() - 1; y++) {
