@@ -7,7 +7,7 @@ RUN apt-get update; \
  
 ###### build E3
 RUN git clone https://github.com/momalab/e3.git && \
-    cd e3 && git checkout 2565748327aec282baa613c38fa4e191c0acab66 && \
+    cd e3 && git checkout a89c7acf7f65533f4f966ff710284aa24a04a2f1 && \
     cd src 
 #&& make -j $(nproc)
 
