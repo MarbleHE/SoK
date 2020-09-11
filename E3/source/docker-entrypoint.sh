@@ -172,12 +172,10 @@ upload_files E3-TFHE ${OUT_FILENAME}
 # SEAL Programs
 ###############
 
-
 cd $E3/src && \
     make cleanall && \
     make SEAL=1 -j$(nproc)
 
-# myLabel: 
 echo "============================================================"
 echo "==== Running kernel-seal-batched ==========================="
 echo "============================================================"
@@ -259,6 +257,7 @@ do
 done
 
 upload_files E3-SEAL ${OUT_FILENAME}
+
  
 echo "============================================================"
 echo "==== Running cardio-seal ==================================="
