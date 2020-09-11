@@ -1,0 +1,8 @@
+**/*/cgtshared.*
+**/*/*.key
+**/*/secint.*
+**/*/*.tmp
+**/*/*.temp
+**/*/*.exe
+**/*/e3int.*
+**/*/*.csv
