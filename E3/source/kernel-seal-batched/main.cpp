@@ -77,7 +77,7 @@ int main() {
   // set all slots in the result vector 'value' to 0 that are not of our
   // interest but were computed as byproduct
   SecureMint extract_values_mask =
-      _0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1_1_1_1_1_1_0_0_1_1_1_1_1_1_0_0_1_1_1_1_1_1_0_0_1_1_1_1_1_1_0_0_1_1_1_1_1_1_0_0_1_1_1_1_1_1_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_Ea;
+      _0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_1_1_1_1_1_1_0_0_1_1_1_1_1_1_0_0_1_1_1_1_1_1_0_0_1_1_1_1_1_1_0_0_1_1_1_1_1_1_0_0_1_1_1_1_1_1_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_0_Ea;
   SecureMint masked_values = value * extract_values_mask;
 
   SecureMint img_center_mask =
@@ -94,9 +94,6 @@ int main() {
   // originaL img2[x][y] = img[x][y] - (value / 2);
   // modified variant as we cannot divide in FHE:
   SecureMint final = (2 * img_center_only) - masked_values;
-
-  std::cout << e3::decrypt(2*img_center_only) << '\n';
-  std::cout << e3::decrypt(masked_values) << '\n';
 
   // extract the border from the original image that must be preserved
   SecureMint img_border_only = img_rotated * img_border_mask;
