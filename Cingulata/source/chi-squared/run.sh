@@ -1,6 +1,6 @@
 #!/bin/bash
 
-UNOPT_OUTPUT_FILENAME=cingulata_chi_squared_unoptimized.csv
+OUTPUT_FILENAME=cingulata_chi_squared_unoptimized.csv
 
 UNOPT_CIRCUIT=bfv-chi-squared.blif
 
@@ -10,13 +10,7 @@ get_timestamp_ms() {
   echo $(date +%s%3N)
 }
 
-write_to_files() {
-  for item in "$@"; do
-    echo -ne $item | tee -a $UNOPT_OUTPUT_FILENAME >/dev/null
-  done
-}
-
-write_to_files "t_keygen,t_input_encryption,t_computation,t_decryption\n"
+echo -ne "t_keygen,t_input_encryption,t_computation,t_decryption\n" > $OUTPUT_FILENAME
 
 RUN=1
 
@@ -31,7 +25,7 @@ while (($RUN <= $NUM_RUNS)); do
   echo "FHE key generation"
   $APPS_DIR/generate_keys
   END_KEYGEN_T=$(get_timestamp_ms)
-  write_to_files $((${END_KEYGEN_T} - ${START_T}))","
+  echo -ne $((${END_KEYGEN_T} - ${START_T}))"," >> $OUTPUT_FILENAME
 
   # encrypt the inputs
   echo "Input encryption"
@@ -40,18 +34,18 @@ while (($RUN <= $NUM_RUNS)); do
   $APPS_DIR/encrypt --threads $NR_THREADS $($APPS_DIR/helper --bit-cnt 8 --prefix "input/i:n1_" 7)
   $APPS_DIR/encrypt --threads $NR_THREADS $($APPS_DIR/helper --bit-cnt 8 --prefix "input/i:n2_" 9)
   END_INPUT_ENCRYPTION_T=$(get_timestamp_ms)
-  write_to_files $((${END_INPUT_ENCRYPTION_T} - ${END_KEYGEN_T}))","
+  echo -ne $((${END_INPUT_ENCRYPTION_T} - ${END_KEYGEN_T}))"," >> $OUTPUT_FILENAME
 
   echo "FHE execution of unoptimized circuit"
   $APPS_DIR/dyn_omp $UNOPT_CIRCUIT --threads $NR_THREADS
   FHE_EXEC_UNOPT_T=$(get_timestamp_ms)
-  write_to_files $((${FHE_EXEC_UNOPT_T} - ${END_INPUT_ENCRYPTION_T}))","
+  echo -ne $((${FHE_EXEC_UNOPT_T} - ${END_INPUT_ENCRYPTION_T}))"," >> $OUTPUT_FILENAME
 
   echo -ne "Decrypted result: "
   OUT_FILES=$(ls -v output/*)
   $APPS_DIR/helper --from-bin --bit-cnt 16 $($APPS_DIR/decrypt --threads $NR_THREADS $OUT_FILES)
   DECRYPT_T=$(get_timestamp_ms)
-  write_to_files $((${DECRYPT_T} - ${FHE_EXEC_UNOPT_T}))"\n"
+  echo -ne $((${DECRYPT_T} - ${FHE_EXEC_UNOPT_T}))"\n" >> $OUTPUT_FILENAME
 done
 
 # Write FHE parameters into file for S3 upload
