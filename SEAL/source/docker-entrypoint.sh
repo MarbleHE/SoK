@@ -52,7 +52,7 @@ export OUTPUT_FILENAME=seal_bfv_chi_squared.csv
 run_benchmark chi_squared
 upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
 
-Chi-Squared BFV Batched
+# Chi-Squared BFV Batched
 export OUTPUT_FILENAME=seal_bfv_batched_chi_squared.csv
 run_benchmark chi_squared_batched
 upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
