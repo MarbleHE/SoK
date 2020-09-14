@@ -38,7 +38,7 @@ def plot_all_cardio():
         'Lobster-OPT-PARAMS',
         'Cingulata-Baseline',
         'Cingulata-OPT',
-        'SEAL-BFV',
+        'SEAL-BFV-OPT',
         'E3-SEAL',
         'TFHE',
         'E3-TFHE',

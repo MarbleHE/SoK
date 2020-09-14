@@ -60,7 +60,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
         'Cingulata-OPT': (2, 0),
 
-        'SEAL-BFV': (3, 0),
+        'SEAL-BFV-OPT': (3, 0),
         'E3-SEAL': (3, 1),
 
         'TFHE': (4, 0),
