@@ -59,7 +59,6 @@ export OUT_FILENAME=e3_tfhe_kernel.csv
 export CGT_FILENAME=cgt_tfhe.cfg
 
 cd $E3/eval/kernel-tfhe
-rm -f *.key secint.* *.temp *.tmp cgtshared.* *.exe e3int.* *.csv
 
 echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OUT_FILENAME
 
@@ -184,7 +183,6 @@ export OUT_FILENAME=e3_seal_batched_kernel.csv
 export CGT_FILENAME=cgt_seal.cfg
 
 cd $E3/eval/kernel-seal-batched
-rm -f *.key secint.* *.temp *.tmp cgtshared.* *.exe e3int.* *.csv
 
 echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OUT_FILENAME
 
@@ -216,8 +214,6 @@ done
 
 upload_files E3-SEAL ${OUT_FILENAME}
 
-exit 0;
-
 echo "============================================================"
 echo "==== Running kernel-seal ==================================="
 echo "============================================================"
@@ -226,7 +222,6 @@ export OUT_FILENAME=e3_seal_kernel.csv
 export CGT_FILENAME=cgt_seal.cfg
 
 cd $E3/eval/kernel-seal
-rm -f *.key secint.* *.temp *.tmp cgtshared.* *.exe e3int.* *.csv
 
 echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OUT_FILENAME
 
