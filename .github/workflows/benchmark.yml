@@ -121,8 +121,8 @@ jobs:
     steps:
       - name: Check out the SoK repository and cd into repository folder
         uses: actions/checkout@v2
-      - name: Copy plotting scripts from repository to S3
-        run: aws s3 cp --recursive scripts/plotting ${{ env.s3-repository-url }}/${{ needs.setup.outputs.ts }}/plot/ --include "*.py"
+      - name: Upload plotting scripts from repository to S3
+        run: aws s3 cp --recursive scripts/plotting ${{ env.s3-repository-url }}/${{ needs.setup.outputs.ts }}__${{ github.run_id }}/plot/ --include "*.py"
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
