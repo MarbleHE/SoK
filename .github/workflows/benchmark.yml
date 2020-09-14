@@ -137,7 +137,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
-      - name: Install dependencies
+      - name: Install LaTeX as plotting scripts require it
+        run: sudo apt-get install texlive-full
+      - name: Install plotting script dependencies
         run: pip install -r scripts/plotting/requirements.txt
       - name: Generate plots, upload plots to S3 and post to Slack channel
         run: |
