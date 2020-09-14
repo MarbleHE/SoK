@@ -36,13 +36,13 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     fig_width = 252 * inches_per_pt  # width in inches
     # fig_height = (fig_width * golden_mean)  # height in inches
     fig_height = 2.5
-    figsize = [fig_width * 0.67, fig_height / 1.22]
+    fig_size = [fig_width * 0.67, fig_height / 1.22]
 
     config_dpi = 100
     if fig is None:
-        fig = plt.figure(figsize=figsize, dpi=config_dpi)
+        fig = plt.figure(figsize=fig_size, dpi=config_dpi)
     else:
-        plt.rcParams["figure.figsize"] = figsize
+        plt.rcParams["figure.figsize"] = fig_size
         plt.rcParams["figure.dpi"] = config_dpi
 
     plt.figure(fig.number)
@@ -55,11 +55,12 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.rcParams["font.family"] = 'serif'
 
     positions = {
-        'SEAL-BFV': (0, 0),
-        'E3-SEAL': (0, 1),
-        'TFHE': (1, 0),
-        'E3-TFHE': (1, 1),
-        'Cingulata': (2, 0),
+        'Cingulata': (0, 0),
+        'SEAL-BFV': (1, 0),
+        'E3-SEAL': (1, 1),
+        'SEAL-BFV-Batched': (2, 0),
+        'E3-SEAL-Batched': (2, 1),
+        # 'E3-TFHE': (3, 0),
     }
 
     # plt.title('Runtime for Chi-Squared Test Benchmark', fontsize=10)
@@ -67,11 +68,11 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     bar_width = 0.002
     spacer = 0.01
-# {\fontsize{30pt}{3em}\selectfont{}{Mean WRFv3.5 LHF\r}{\fontsize{18pt}{3em}\selectfont{}(September 16 - October 30, 2012)}
     group_labels = [
+        'Cingulata',
         'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
-        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
-        'Cingulata'
+        'SEAL-Batched\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
+        # 'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
     ]
 
     # ['E3-SEAL', 'E3-TFHE', 'SEAL-BFV-Batched', 'SEAL-BFV', 'TFHE']

@@ -2,6 +2,7 @@ from multiprocessing import Process
 
 import plot_cardio
 import plot_chi_squared
+import plot_kernel
 import plot_nn
 from pathlib import PurePosixPath
 from urllib.parse import urlparse
@@ -82,7 +83,18 @@ def plot_all_chi_squared():
     # save plot in S3
     save_plot_in_s3(fig, 'plot_chi_squared', root_folder)
 
-def runInParallel(*fns):
+
+def plot_all_kernel():
+    labels, data, root_folder = get_labels_data_from_s3('kernel')
+
+    fig = plot_kernel.plot(labels, data)
+    fig.show()
+
+    # save plot in S3
+    save_plot_in_s3(fig, 'plot_kernel', root_folder)
+
+
+def run_in_parallel(*fns):
     proc = []
     for fn in fns:
         p = Process(target=fn)
@@ -91,11 +103,13 @@ def runInParallel(*fns):
     for p in proc:
         p.join()
 
+
 def plot_all():
     # runInParallel(plot_all_cardio, plot_all_nn, plot_all_chi_squared)
-    # plot_all_cardio()
+    plot_all_cardio()
     plot_all_nn()
-    # plot_all_chi_squared()
+    plot_all_chi_squared()
+    plot_all_kernel()
 
 
 if __name__ == "__main__":
