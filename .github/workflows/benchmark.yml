@@ -107,7 +107,7 @@ jobs:
             echo "Docker containers running: ${CONTAINERS_RUNNING}"
             if [ "$COUNTER" -eq "${{ env.instance-termination-timeout }}" ]; then
               echo "Timeout: Instance did not stop after ${{ env.instance-termination-timeout }} minutes. Ignoring and continuing workflow run."
-              curl -F $'text=*Benchmarking Status*\nVM ${{ github.run_id }}-${{ matrix.tool }} reached timeout! Please check status on EC2 Dashboard and manually terminate the VM.' -F channel=github-sok -H "Authorization: Bearer ${{ secrets.SLACK_APP_TOKEN }}" https://slack.com/api/chat.postMessage
+              curl -F $'text=⚠ *Benchmarking Status*\nVM ${{ github.run_id }}-${{ matrix.tool }} reached timeout! Please check status on EC2 Dashboard and manually terminate the VM.' -F channel=github-sok -H "Authorization: Bearer ${{ secrets.SLACK_APP_TOKEN }}" https://slack.com/api/chat.postMessage
               break
             fi
             sleep 60
@@ -138,7 +138,7 @@ jobs:
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
       - name: Install LaTeX as plotting scripts require it
-        run: sudo apt-get install texlive-full
+        run: sudo apt-get install texlive
       - name: Install plotting script dependencies
         run: pip install -r scripts/plotting/requirements.txt
       - name: Generate plots, upload plots to S3 and post to Slack channel
