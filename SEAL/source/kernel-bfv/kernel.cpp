@@ -91,7 +91,14 @@ std::vector<int64_t> Evaluation::apply_kernel(VecInt2D &img) {
   seal::KeyGenerator keygen(context);
   secret_key = std::make_unique<seal::SecretKey>(keygen.secret_key());
   public_key = std::make_unique<seal::PublicKey>(keygen.public_key());
-  galois_keys = std::make_unique<seal::GaloisKeys>(keygen.galois_keys_local());
+  // Only generate those keys that are actually required/used
+  std::vector<int> steps;
+  for (int j = -1; j < 2; ++j) { 
+    for (int i = -1; i < 2; ++i) {
+      steps.push_back(j + i * image_size);
+    }
+  }
+  galois_keys = std::make_unique<seal::GaloisKeys>(keygen.galois_keys_local(steps));
   relin_keys = std::make_unique<seal::RelinKeys>(keygen.relin_keys_local());
 
   // Create helper objects
