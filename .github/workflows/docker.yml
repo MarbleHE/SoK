@@ -38,6 +38,12 @@ jobs:
             dockerhub_repository: marblehe/base_sealion
           - tool: TFHE
             dockerhub_repository: marblehe/base_tfhe
+          - tool: PALISADE
+            dockerhub_repository: marblehe/base_palisade
+          - tool: Concrete
+            dockerhub_repository: marblehe/base_concrete
+          - tool: EVA
+            dockerhub_repository: marblehe/base_eva
     # Compilation is too resource-heavy to be performed on Github actions runner
     #          - tool: nGraph-HE
     #            dockerhub_repository: marblehe/base_ngraph-he
