@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Run example program: image_processing
+# Run microbenchmark
 cd /root/eval \
     && mkdir build \
     && cd build \
