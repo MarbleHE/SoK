@@ -6,5 +6,5 @@ cd /root/eval \
     && cd build \
     && cmake .. \
     && make \
-    && ./depth-bfvrns
+    && ./microbenchmark
 

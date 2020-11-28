@@ -20,4 +20,4 @@ link_directories( ${OPENMP_LIBRARIES} )
 link_libraries( ${PALISADE_LIBRARIES} )
 
 ### ADD YOUR EXECUTABLE(s) HERE
-add_executable(depth-bfvrns depth-bfvrns/depth-bfvrns.cpp )
+add_executable(microbenchmark microbenchmark/microbenchmark.cpp )
