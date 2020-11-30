@@ -32,10 +32,16 @@ export OUTPUT_FILENAME=seal_bfv_cardio_cinguparam.csv
 run_benchmark cardio_bfv_cinguparam
 upload_files SEAL-BFV-Cinguparam ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
-# Cardio BFV (using Seal's automatically determined parameters)
+# Cardio BFV (using Seal's automatically determined moduli)
 export OUTPUT_FILENAME=seal_bfv_cardio_sealparams.csv
 run_benchmark cardio_bfv_sealparams
 upload_files SEAL-BFV-Sealparams ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
+
+# Cardio BFV (using manually determined parameters)
+export OUTPUT_FILENAME=seal_bfv_cardio_manaulparams.csv
+run_benchmark cardio_bfv_manualparams
+upload_files SEAL-BFV-Manualparams ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
+
 
 # Cardio BFV Naive
 export OUTPUT_FILENAME=seal_bfv_cardio_naive.csv

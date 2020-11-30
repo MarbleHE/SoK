@@ -13,10 +13,15 @@ add_executable(cardio_bfv_cinguparam cardio-bfv-cinguparam/cardio.cpp common.h)
 set_target_properties(cardio_bfv_cinguparam PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(cardio_bfv_cinguparam SEAL::seal)
 
-# Cardio BFV with parameters selected by SEAL
+# Cardio BFV with moduli selected by SEAL
 add_executable(cardio_bfv_sealparams cardio-bfv-sealparams/cardio.cpp common.h)
 set_target_properties(cardio_bfv_sealparams PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(cardio_bfv_sealparams SEAL::seal)
+
+# Cardio BFV with manually selected
+add_executable(cardio_bfv_manualparams cardio-bfv-manualparams/cardio.cpp common.h)
+set_target_properties(cardio_bfv_manualparams PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(cardio_bfv_manualparams SEAL::seal)
 
 # Cardio BFV "naive"
 add_executable(cardio_bfv_naive cardio-bfv-naive/cardio.cpp common.h)
