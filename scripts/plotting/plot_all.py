@@ -39,6 +39,7 @@ def plot_all_cardio():
         'Cingulata-Baseline',
         'Cingulata-OPT',
         'SEAL-BFV-OPT',
+        'SEAL-BFV-Naive',
         'E3-SEAL',
         'TFHE',
         'E3-TFHE',
@@ -107,9 +108,9 @@ def run_in_parallel(*fns):
 def plot_all():
     # runInParallel(plot_all_cardio, plot_all_nn, plot_all_chi_squared)
     plot_all_cardio()
-    plot_all_nn()
-    plot_all_chi_squared()
-    plot_all_kernel()
+    #plot_all_nn()
+    #plot_all_chi_squared()
+    #plot_all_kernel()
 
 
 if __name__ == "__main__":

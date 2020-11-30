@@ -38,9 +38,9 @@ run_benchmark cardio_bfv_batched
 upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
 # Cardio BFV batched
-export OUTPUT_FILENAME=seal_batched_bfv_cardio_naive.csv
+export OUTPUT_FILENAME=seal_bfv_cardio_naive.csv
 run_benchmark cardio_bfv_naive
-upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
+upload_files SEAL-BFV-Naive ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
 # Cardio CKKS batched
 export OUTPUT_FILENAME=seal_batched_ckks_cardio.csv

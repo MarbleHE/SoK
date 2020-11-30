@@ -61,7 +61,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'Cingulata-OPT': (2, 0),
 
         'SEAL-BFV-OPT': (3, 0),
-        'E3-SEAL': (3, 1),
+        'SEAL-BFV-Naive': (3, 1),
+        'E3-SEAL': (3, 2),
 
         'TFHE': (4, 0),
         'E3-TFHE': (4, 1),
@@ -79,7 +80,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'Baseline',
         'Optimized\n{\\fontsize{7pt}{3em}\\selectfont{}(Mult. Depth)}',
         'Cingu.',
-        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
+        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/Naive/E\\textsuperscript{3})}',
         'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
         'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Batched)}'
     ]
