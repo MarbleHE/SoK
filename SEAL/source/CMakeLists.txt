@@ -18,6 +18,11 @@ add_executable(cardio_bfv_opt cardio-bfv-OPT-PARAMS/cardio.cpp common.h)
 set_target_properties(cardio_bfv_opt PROPERTIES LINKER_LANGUAGE CXX) 
 target_link_libraries(cardio_bfv_opt SEAL::seal)
 
+# Cardio BFV "naive"
+add_executable(cardio_bfv_naive cardio-bfv-naive/cardio.cpp common.h)
+set_target_properties(cardio_bfv_naive PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(cardio_bfv_naive SEAL::seal)
+
 # Cardio batched BFV
 add_executable(cardio_bfv_batched cardio-bfv-batched/cardio-batched.cpp common.h)
 set_target_properties(cardio_bfv_batched PROPERTIES LINKER_LANGUAGE CXX) 
