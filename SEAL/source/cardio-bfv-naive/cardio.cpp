@@ -137,13 +137,20 @@ CiphertextVector Cardio::add(CiphertextVector lhs, CiphertextVector rhs) {
 
   CiphertextVector res;
 
+  //std::cout << "lhs: " << ciphertextvector_to_int(lhs) << std::endl;
+  //std::cout << "rhs: " << ciphertextvector_to_int(rhs) << std::endl;
+
   for (std::size_t i = 0; i < size; ++i) {
 
     // SUM
+    //print_ciphertext("lhs[i]:", lhs[i]);
+    //print_ciphertext("rhs[i]:", rhs[i]);
     seal::Ciphertext sum;
     encryptor->encrypt(encoder->encode(0), sum);
     evaluator->add(lhs[i], rhs[i], sum);
+    //print_ciphertext("internal_sum (a+b):", sum);
     evaluator->add(sum, carry, sum);
+    //print_ciphertext("internal_sum (a+b+carry):", sum);
     res.push_back(sum);
 
     // CARRY
@@ -152,18 +159,27 @@ CiphertextVector Cardio::add(CiphertextVector lhs, CiphertextVector rhs) {
     evaluator->multiply(lhs[i], rhs[i], p);
     evaluator->relinearize(p, *relinKeys, p);
 
+    //print_ciphertext("p (lr):", p);
+
     seal::Ciphertext temp;
     encryptor->encrypt(encoder->encode(0), temp);
     evaluator->add(lhs[i], rhs[i], temp);
 
+    //print_ciphertext("temp (l+r):", temp);
+
     seal::Ciphertext temp2;
-    encryptor->encrypt(encoder->encode(0), temp);
+    encryptor->encrypt(encoder->encode(0), temp2);
     evaluator->multiply(carry, temp, temp2);
     evaluator->relinearize(temp2, *relinKeys, temp2);
 
-    evaluator->add(temp, temp2, carry);
+    //print_ciphertext("temp2 c(l+r):", temp2);
+
+    evaluator->add(p, temp2, carry);
+
+    //print_ciphertext("internal_carry (p + temp2):", carry);
   }
 
+  //std::cout << "sum: " << ciphertextvector_to_int(res) << std::endl;
   return res;
 }
 
@@ -256,7 +272,7 @@ void Cardio::run_cardio() {
 
   // set up the BFV schema
   auto t0 = Time::now();
-  setup_context_bfv(2*16384, 2);
+  setup_context_bfv(16384, 2);
   auto t1 = Time::now();
   log_time(ss_time, t0, t1, false);
 
@@ -325,15 +341,14 @@ void Cardio::run_cardio() {
   encryptor->encrypt(zero_ptxt, zero);
 
   //TODO: In the "optimized" versions, we can also significantly lower the depth here by doing a tree of additions
-  CiphertextVector risk_score1(8, zero);
-  CiphertextVector risk_score2(8, zero);
+  CiphertextVector risk_score(8, zero);
 
   // (flags[SEX_FIELD] & (50 < age))
   seal::Ciphertext condition1;
   CiphertextVector fifty = encode_and_encrypt(50);
   evaluator->multiply(flags[SEX_FIELD], *lower(fifty, age), condition1);
   evaluator->relinearize_inplace(condition1, *relinKeys);
-  risk_score1 = add(risk_score1, ctxt_to_ciphertextvector(condition1));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition1));
 
   // flags[SEX_FIELD]+1 & (60 < age)
   // expected: true
@@ -344,30 +359,30 @@ void Cardio::run_cardio() {
   seal::Ciphertext condition2;
   evaluator->multiply(sex_female, *lower(sixty, age), condition2);
   evaluator->relinearize_inplace(condition2, *relinKeys);
-  risk_score1 = add(risk_score1, ctxt_to_ciphertextvector(condition2));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition2));
 
   // flags[ANTECEDENT_FIELD]
   // expected: true
-  risk_score1 =
-      add(risk_score1, ctxt_to_ciphertextvector(flags[ANTECEDENT_FIELD]));
+  risk_score =
+      add(risk_score, ctxt_to_ciphertextvector(flags[ANTECEDENT_FIELD]));
 
   // flags[SMOKER_FIELD]
   // expected: true
-  risk_score1 = add(risk_score1, ctxt_to_ciphertextvector(flags[SMOKER_FIELD]));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[SMOKER_FIELD]));
 
   // flags[DIABETES_FIELD]
   // expected: true
-  risk_score1 = add(risk_score1, ctxt_to_ciphertextvector(flags[DIABETES_FIELD]));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[DIABETES_FIELD]));
 
   // flags[PRESSURE_FIELD]
   // expected: false
-  risk_score1 = add(risk_score1, ctxt_to_ciphertextvector(flags[PRESSURE_FIELD]));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[PRESSURE_FIELD]));
 
   // hdl < 40
   // expected: false
   CiphertextVector fourty = encode_and_encrypt(40);
   seal::Ciphertext condition7 = *lower(hdl, fourty);
-  risk_score2 = add(risk_score2, ctxt_to_ciphertextvector(condition7));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition7));
 
   // weight > height-90
   // iff. height < weight+90
@@ -375,13 +390,13 @@ void Cardio::run_cardio() {
   CiphertextVector ninety = encode_and_encrypt(90);
   CiphertextVector weight90 = add(weight, ninety);
   seal::Ciphertext condition8 = *lower(height, weight90);
-  risk_score2 = add(risk_score2, ctxt_to_ciphertextvector(condition8));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition8));
 
   // physical_act < 30
   // expected: false
   CiphertextVector thirty = encode_and_encrypt(30);
   seal::Ciphertext condition9 = *lower(physical_act, thirty);
-  risk_score2 = add(risk_score2, ctxt_to_ciphertextvector(condition9));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition9));
 
   // flags[SEX_FIELD] && (3 < drinking)
   // expected: true
@@ -389,7 +404,7 @@ void Cardio::run_cardio() {
   CiphertextVector three = encode_and_encrypt(3);
   evaluator->multiply(flags[SEX_FIELD], *lower(three, drinking), condition10);
   evaluator->relinearize_inplace(condition10, *relinKeys);
-  risk_score2 = add(risk_score2, ctxt_to_ciphertextvector(condition10));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition10));
 
   // !flags[SEX_FIELD] && (2 < drinking)
   // expected: true
@@ -397,7 +412,7 @@ void Cardio::run_cardio() {
   seal::Ciphertext condition11;
   evaluator->multiply(sex_female, *lower(two, drinking), condition11);
   evaluator->relinearize_inplace(condition11, *relinKeys);
-  risk_score2 = add(risk_score2, ctxt_to_ciphertextvector(condition11));
+  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition11));
 
   auto t5 = Time::now();
   log_time(ss_time, t4, t5, false);
@@ -407,7 +422,6 @@ void Cardio::run_cardio() {
   auto t6 = Time::now();
 
   // decrypt and check result
-  CiphertextVector risk_score = add(risk_score1, risk_score2);
   int result = ciphertextvector_to_int(risk_score);
   assert(("Cardio benchmark does not produce expected result!", result==6));
   std::cout << "Result: " << result << std::endl;
