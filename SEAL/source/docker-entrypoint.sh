@@ -28,19 +28,24 @@ function run_benchmark() {
 }
 
 # Cardio BFV (using modified Cingulata parameters)
-export OUTPUT_FILENAME=seal_bfv_cardio_cingu_params.csv
-run_benchmark cardio_bfv
-upload_files SEAL-BFV-OPT ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
+export OUTPUT_FILENAME=seal_bfv_cardio_cinguparam.csv
+run_benchmark cardio_bfv_cinguparam
+upload_files SEAL-BFV-Cinguparam ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
+
+# Cardio BFV (using Seal's automatically determined parameters)
+export OUTPUT_FILENAME=seal_bfv_cardio_sealparams.csv
+run_benchmark cardio_bfv_sealparams
+upload_files SEAL-BFV-Sealparams ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
+
+# Cardio BFV Naive
+export OUTPUT_FILENAME=seal_bfv_cardio_naive.csv
+run_benchmark cardio_bfv_naive
+upload_files SEAL-BFV-Naive ${OUTPUT_FILENAME} fhe_parameters_cardio.txt$
 
 # Cardio BFV batched
 export OUTPUT_FILENAME=seal_batched_bfv_cardio.csv
 run_benchmark cardio_bfv_batched
 upload_files SEAL-BFV-Batched ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
-
-# Cardio BFV batched
-export OUTPUT_FILENAME=seal_bfv_cardio_naive.csv
-run_benchmark cardio_bfv_naive
-upload_files SEAL-BFV-Naive ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
 # Cardio CKKS batched
 export OUTPUT_FILENAME=seal_batched_ckks_cardio.csv

@@ -9,14 +9,14 @@ set(CMAKE_BUILD_TYPE RELEASE)
 # target_link_libraries(main PRIVATE SEAL::seal MSGSL::MSGSL)
 
 # Cardio BFV with CinguParam parameters
-add_executable(cardio_bfv cardio-bfv/cardio.cpp common.h)
-set_target_properties(cardio_bfv PROPERTIES LINKER_LANGUAGE CXX) 
-target_link_libraries(cardio_bfv SEAL::seal)
+add_executable(cardio_bfv_cinguparam cardio-bfv-cinguparam/cardio.cpp common.h)
+set_target_properties(cardio_bfv_cinguparam PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(cardio_bfv_cinguparam SEAL::seal)
 
-# Cardio BFV with optimal parameters
-add_executable(cardio_bfv_opt cardio-bfv-OPT-PARAMS/cardio.cpp common.h)
-set_target_properties(cardio_bfv_opt PROPERTIES LINKER_LANGUAGE CXX) 
-target_link_libraries(cardio_bfv_opt SEAL::seal)
+# Cardio BFV with parameters selected by SEAL
+add_executable(cardio_bfv_sealparams cardio-bfv-sealparams/cardio.cpp common.h)
+set_target_properties(cardio_bfv_sealparams PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(cardio_bfv_sealparams SEAL::seal)
 
 # Cardio BFV "naive"
 add_executable(cardio_bfv_naive cardio-bfv-naive/cardio.cpp common.h)
