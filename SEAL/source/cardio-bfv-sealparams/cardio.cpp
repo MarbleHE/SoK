@@ -361,16 +361,11 @@ void Cardio::run_cardio() {
   // }
 
   // cardiac risk factor assessment algorithm
-  seal::Ciphertext zero;
-  encryptor->encrypt_zero(zero);
-  CiphertextVector risk_score(8, zero);
-
   // (flags[SEX_FIELD] & (50 < age))
   seal::Ciphertext condition1;
   CiphertextVector fifty = encode_and_encrypt(50);
   evaluator->multiply(flags[SEX_FIELD], *lower(fifty, age), condition1);
   evaluator->relinearize_inplace(condition1, *relinKeys);
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition1));
 
   // flags[SEX_FIELD]+1 & (60 < age)
   // expected: true
@@ -381,30 +376,30 @@ void Cardio::run_cardio() {
   seal::Ciphertext condition2;
   evaluator->multiply(sex_female, *lower(sixty, age), condition2);
   evaluator->relinearize_inplace(condition2, *relinKeys);
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition2));
+
+  auto risk_score_1_2 = add(ctxt_to_ciphertextvector(condition2), ctxt_to_ciphertextvector(condition1));
 
   // flags[ANTECEDENT_FIELD]
   // expected: true
-  risk_score =
-      add(risk_score, ctxt_to_ciphertextvector(flags[ANTECEDENT_FIELD]));
+
 
   // flags[SMOKER_FIELD]
   // expected: true
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[SMOKER_FIELD]));
+  auto risk_score_3_4 =
+      add(ctxt_to_ciphertextvector(flags[ANTECEDENT_FIELD]), ctxt_to_ciphertextvector(flags[SMOKER_FIELD]));
 
   // flags[DIABETES_FIELD]
   // expected: true
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[DIABETES_FIELD]));
 
   // flags[PRESSURE_FIELD]
   // expected: false
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(flags[PRESSURE_FIELD]));
+  auto risk_score_5_6 =
+      add(ctxt_to_ciphertextvector(flags[DIABETES_FIELD]), ctxt_to_ciphertextvector(flags[PRESSURE_FIELD]));
 
   // hdl < 40
   // expected: false
   CiphertextVector fourty = encode_and_encrypt(40);
   seal::Ciphertext condition7 = *lower(hdl, fourty);
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition7));
 
   // weight > height-90
   // iff. height < weight+90
@@ -412,13 +407,12 @@ void Cardio::run_cardio() {
   CiphertextVector ninety = encode_and_encrypt(90);
   CiphertextVector weight90 = add(weight, ninety);
   seal::Ciphertext condition8 = *lower(height, weight90);
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition8));
+  auto risk_score_7_8 = add(ctxt_to_ciphertextvector(condition7), ctxt_to_ciphertextvector(condition8));
 
   // physical_act < 30
   // expected: false
   CiphertextVector thirty = encode_and_encrypt(30);
   seal::Ciphertext condition9 = *lower(physical_act, thirty);
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition9));
 
   // flags[SEX_FIELD] && (3 < drinking)
   // expected: true
@@ -426,7 +420,7 @@ void Cardio::run_cardio() {
   CiphertextVector three = encode_and_encrypt(3);
   evaluator->multiply(flags[SEX_FIELD], *lower(three, drinking), condition10);
   evaluator->relinearize_inplace(condition10, *relinKeys);
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition10));
+  auto risk_score_9_10 = add(ctxt_to_ciphertextvector(condition9), ctxt_to_ciphertextvector(condition10));
 
   // !flags[SEX_FIELD] && (2 < drinking)
   // expected: true
@@ -434,7 +428,13 @@ void Cardio::run_cardio() {
   seal::Ciphertext condition11;
   evaluator->multiply(sex_female, *lower(two, drinking), condition11);
   evaluator->relinearize_inplace(condition11, *relinKeys);
-  risk_score = add(risk_score, ctxt_to_ciphertextvector(condition11));
+
+  auto risk_score_1_2_3_4 = add(risk_score_1_2, risk_score_3_4);
+  auto risk_score_5_6_7_8 = add(risk_score_5_6, risk_score_7_8);
+  auto risk_score_9_10_11 = add(risk_score_9_10, ctxt_to_ciphertextvector(condition11));
+
+  auto risk_score_1_2_3_4_5_6_7_8 = add(risk_score_1_2_3_4,risk_score_5_6_7_8);
+  auto risk_score = add(risk_score_1_2_3_4_5_6_7_8, risk_score_9_10_11);
 
   auto t5 = Time::now();
   log_time(ss_time, t4, t5, false);
