@@ -17,10 +17,20 @@ void CardioBatched::setup_context_bfv(std::size_t poly_modulus_degree) {
   //1240,15,4323,6, #16k {60, 60, 60, 60, 60, 60, 60}
   //1211,15,4294,6 #same as above
 
-  //parms.set_coeff_modulus(seal::CoeffModulus::BFVDefault(poly_modulus_degree));
-  parms.set_coeff_modulus(seal::CoeffModulus::Create(
-      poly_modulus_degree, {60, 60, 60, 60, 60, 60, 60}));
-  //std::cout << parms.coeff_modulus().size() << std::endl;
+#ifdef MANUALPARAMS
+  params.set_coeff_modulus(seal::CoeffModulus::Create(
+      poly_modulus_degree,  {30, 60, 60, 60, 60, 60}));
+#endif
+
+#ifdef CINGUPARAM
+  params.set_coeff_modulus(seal::CoeffModulus::Create(
+      poly_modulus_degree, {30, 40, 44, 50, 54, 60, 60}));
+#endif
+
+#ifdef SEALPARAMS
+  params.set_coeff_modulus(seal::CoeffModulus::BFVDefault(
+      poly_modulus_degree, seal::sec_level_type::tc128));
+#endif
 
   /* To enable batching, we need to set the plain_modulus to be a prime number
    * congruent to 1 modulo 2*poly_modulus_degree. Microsoft SEAL provides a
