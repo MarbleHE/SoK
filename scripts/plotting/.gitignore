@@ -1,2 +1,5 @@
 *.png
 *.pdf
+
+.idea
+venv/
