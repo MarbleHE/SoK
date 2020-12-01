@@ -1,5 +1,4 @@
 from multiprocessing import Process
-
 import plot_cardio
 import plot_chi_squared
 import plot_kernel
