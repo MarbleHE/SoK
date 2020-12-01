@@ -66,7 +66,7 @@ upload_files SEAL-BFV-Batched-Sealparams ${OUTPUT_FILENAME} fhe_parameters_cardi
 # Cardio BFV batched with cinguparam
 export OUTPUT_FILENAME=seal_batched_bfv_cardio_cingupara.csv
 run_benchmark cardio_bfv_batched_cinguparam
-upload_files SEAL-BFV-Batched-Cinguparams ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
+upload_files SEAL-BFV-Batched-Cinguparam ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
 # Cardio BFV batched with manual params
 export OUTPUT_FILENAME=seal_batched_bfv_cardio_manualparams.csv
