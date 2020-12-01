@@ -46,17 +46,17 @@ upload_files SEAL-BFV-Manualparams ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 # Cardio BFV Naive with seal default params
 export OUTPUT_FILENAME=seal_bfv_cardio_naive_sealparams.csv
 run_benchmark cardio_bfv_naive_sealparams
-upload_files SEAL-BFV-Naive-Sealparams ${OUTPUT_FILENAME} fhe_parameters_cardio.txt$
+upload_files SEAL-BFV-Naive-Sealparams ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
 # Cardio BFV Naive with same manually selected params as manualparams
 export OUTPUT_FILENAME=seal_bfv_cardio_naive_manualparams.csv
 run_benchmark cardio_bfv_naive_manualparams
-upload_files SEAL-BFV-Naive-Manualparams ${OUTPUT_FILENAME} fhe_parameters_cardio.txt$
+upload_files SEAL-BFV-Naive-Manualparams ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
 # Cardio BFV Naive with cinguparam parameters
 export OUTPUT_FILENAME=seal_bfv_cardio_naive_cinguparam.csv
 run_benchmark cardio_bfv_naive_cinguparam
-upload_files SEAL-BFV-Naive-Cinguparam ${OUTPUT_FILENAME} fhe_parameters_cardio.txt$
+upload_files SEAL-BFV-Naive-Cinguparam ${OUTPUT_FILENAME} fhe_parameters_cardio.txt
 
 # Cardio BFV batched with seal default params
 export OUTPUT_FILENAME=seal_batched_bfv_cardio_sealparams.csv
