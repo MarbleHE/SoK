@@ -42,14 +42,20 @@ def plot_all_cardio():
         'Lobster-OPT-PARAMS',
         'Cingulata-Baseline',
         'Cingulata-OPT',
-        'SEAL-BFV-OPT',
-        'SEAL-BFV-Naive',
+        'SEAL-BFV-Batched-Manualparams',
+        'SEAL-BFV-Batched-Cinguparams',
+        'SEAL-BFV-Batched-Sealparams',
+        'SEAL-CKKS-Batched',
+        'E3-SEAL-Batched',
+        'SEAL-BFV-Manualparams',
+        'SEAL-BFV-Cinguparam',
+        'SEAL-BFV-Sealparams',
+        'SEAL-BFV-Naive-Manualparams',
+        'SEAL-BFV-Naive-Cinguparam',
+        'SEAL-BFV-Naive-Sealparams',
         'E3-SEAL',
         'TFHE',
-        'E3-TFHE',
-        'SEAL-BFV-Batched',
-        'E3-SEAL-Batched',
-        'SEAL-CKKS-Batched',
+        'E3-TFHE'
     ]
 
     labeled_data = dict(zip(labels, data))
@@ -136,9 +142,9 @@ def plot_all():
     # runInParallel(plot_all_cardio, plot_all_nn, plot_all_chi_squared)
     plot_all_microbenchmark()
     plot_all_cardio()
-    plot_all_nn()
-    plot_all_chi_squared()
-    plot_all_kernel()
+    # plot_all_nn()
+    # plot_all_chi_squared()
+    # plot_all_kernel()
 
 
 if __name__ == "__main__":

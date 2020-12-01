@@ -24,9 +24,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # figsize = (int(len(labels) * 0.95), 6)
     inches_per_pt = 1.0 / 72.27 * 2  # Convert pt to inches
     golden_mean = ((np.math.sqrt(5) - 1.0) / 2.0) * .8  # Aesthetic ratio
-    fig_width = 252 * inches_per_pt  # width in inches
+    fig_width = 2 * 252 * inches_per_pt  # width in inches
     # fig_height = (fig_width * golden_mean)  # height in inches
-    fig_height = 2.5
+    fig_height = 6
     figsize = [fig_width * 0.67, fig_height / 1.22]
 
     config_dpi = 100
@@ -52,23 +52,17 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # OPT_PARAMS_SIGN = '\\textsuperscript{$\dagger$}'
     # BASELINE_SIGN = '*'
     positions = {
-        'Lobster-Baseline': (0, 0),
-
-        'Lobster-Baseline-OPT': (1, 0),
-        'MultiStart-OPT-PARAMS': (1, 1),
-        'Lobster-OPT-PARAMS': (1, 2),
-
-        'Cingulata-OPT': (2, 0),
-
-        'SEAL-BFV-OPT': (3, 0),
-        'SEAL-BFV-Naive': (3, 1),
-        'E3-SEAL': (3, 2),
-
-        'TFHE': (4, 0),
-        'E3-TFHE': (4, 1),
-
-        'SEAL-BFV-Batched': (5, 0),
-        'E3-SEAL-Batched': (5, 1)
+        'SEAL-BFV-Batched-Manualparams': (0, 0),
+        'SEAL-BFV-Batched-Cinguparams': (0, 1),
+        'SEAL-BFV-Batched-Sealparams': (0, 2),
+        'E3-SEAL-Batched': (1, 0),
+        'SEAL-BFV-Manualparams': (2, 0),
+        'SEAL-BFV-Cinguparam': (2, 1),
+        'SEAL-BFV-Sealparams': (2, 2),
+        'E3-SEAL': (3, 0),
+        'SEAL-BFV-Naive-Manualparams': (4, 0),
+        'SEAL-BFV-Naive-Cinguparam': (4, 1),
+        'SEAL-BFV-Naive-Sealparams': (4, 2)
     }
 
     # plt.title('Runtime for Cardio Benchmark', fontsize=10)
@@ -77,13 +71,14 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     spacer = 0.02
 
     group_labels = [
-        'Baseline',
-        'Optimized\n{\\fontsize{7pt}{3em}\\selectfont{}(Mult. Depth)}',
-        'Cingu.',
-        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/Naive/E\\textsuperscript{3})}',
-        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
-        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Batched)}'
+        'Batched\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/CinguParam/Seal Params)}',
+        'E3\n{\\fontsize{7pt}{3em}\\selectfont{}(Batched)}',
+        'Optimized but Non-Batched\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/CinguParam/Seal Params)}',
+        'E3\n{\\fontsize{7pt}{3em}\\selectfont{}(Non-Batched)}',
+        'Naive Baseline\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/CinguParam/Seal Params)}'
     ]
+
+    plt.title("Cardio Risk Score Benchmark in SEAL (BFV)")
 
     # reserved_indices = {}
     # def get_x_position(group_no: int) -> int:
