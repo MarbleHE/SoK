@@ -25,7 +25,10 @@ def save_plot_in_s3(fig: plt.Figure, filename: str, root_folder: str, use_tight_
 
 
 def plot_all_cardio():
-    labels, data, root_folder = get_labels_data_from_s3('cardio')
+    try:
+        labels, data, root_folder = get_labels_data_from_s3('cardio')
+    except TypeError:
+        return
 
     # sort the data (and labels) according to the following order
     tool__plot_position = [
@@ -65,7 +68,10 @@ def plot_all_cardio():
 
 
 def plot_all_nn():
-    labels, data, root_folder = get_labels_data_from_s3('nn')
+    try:
+        labels, data, root_folder = get_labels_data_from_s3('nn')
+    except TypeError:
+        return
 
     fig = plot_nn.plot(labels, data)
     fig.show()
@@ -75,7 +81,10 @@ def plot_all_nn():
 
 
 def plot_all_chi_squared():
-    labels, data, root_folder = get_labels_data_from_s3('chi_squared')
+    try:
+        labels, data, root_folder = get_labels_data_from_s3('chi_squared')
+    except TypeError:
+        return
 
     fig = plot_chi_squared.plot(labels, data)
     fig.show()
@@ -85,7 +94,10 @@ def plot_all_chi_squared():
 
 
 def plot_all_kernel():
-    labels, data, root_folder = get_labels_data_from_s3('kernel')
+    try:
+        labels, data, root_folder = get_labels_data_from_s3('kernel')
+    except TypeError:
+        return
 
     fig = plot_kernel.plot(labels, data)
     fig.show()
