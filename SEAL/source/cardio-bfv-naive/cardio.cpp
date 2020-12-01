@@ -143,7 +143,7 @@ CiphertextVector Cardio::add(CiphertextVector lhs, CiphertextVector rhs) {
   auto size = lhs.size();
 
   seal::Ciphertext zero;
-  encryptor->encrypt_zero(zero);
+  encryptor->encrypt(encoder->encode(0), zero);
 
   seal::Ciphertext carry;
   encryptor->encrypt(encoder->encode(0), carry);
@@ -213,11 +213,13 @@ std::unique_ptr<seal::Ciphertext> Cardio::lower(CiphertextVector &lhs,
 
   const int len = lhs.size();
   if (len==1) {
+    seal::Ciphertext one;
+    encryptor->encrypt(encoder->encode(1), one);
     seal::Ciphertext lhs_neg;
     // andNY(lhs[0], rhs[0]) = !(lhs[0]) & rhs[0]
-    evaluator->add_plain(lhs[0], encoder->encode(1), lhs_neg);
+    evaluator->add(lhs[0], one, lhs_neg);
     evaluator->multiply(lhs_neg, rhs[0], *result);
-    evaluator->relinearize_inplace(*result, *relinKeys);
+    evaluator->relinearize(*result, *relinKeys, *result);
     return result;
   }
 
@@ -232,7 +234,7 @@ std::unique_ptr<seal::Ciphertext> Cardio::lower(CiphertextVector &lhs,
   seal::Ciphertext term1 = *lower(lhs_h, rhs_h);
   seal::Ciphertext term2;
   evaluator->multiply(*equal(lhs_h, rhs_h), *lower(lhs_l, rhs_l), term2);
-  evaluator->relinearize_inplace(term2, *relinKeys);
+  evaluator->relinearize(term2, *relinKeys, term2);
   evaluator->add(term1, term2, *result);
   return result;
 }
