@@ -68,7 +68,7 @@ jobs:
             --iam-instance-profile ${{ env.iam-instance-profile-ssm }} \
             --query 'Instances[0].InstanceId' --output text)
           aws ec2 wait instance-status-ok --instance-ids $instanceId
-          echo "##[set-output name=instance_id;]$instanceId"      
+          echo "##[set-output name=instance_id;]$instanceId"
       # run the benchmark on the EC2 VM and shut it down afterward (this leads to termination due to the set termination policy)
       - name: invoke benchmark via AWS SSM
         uses: peterkimzz/aws-ssm-send-command@1.0.1
@@ -118,11 +118,13 @@ jobs:
     # wait until all benchmark runs finish
     needs: [setup, run-benchmarks]
     runs-on: ubuntu-20.04
+    env:
+      PLOT_SCRIPTS_DIR: "scripts/paper_plots"
     steps:
       - name: Check out the SoK repository and cd into repository folder
         uses: actions/checkout@v2
       - name: Upload plotting scripts from repository to S3
-        run: aws s3 cp --recursive scripts/plotting ${{ env.s3-repository-url }}/${{ needs.setup.outputs.ts }}__${{ github.run_id }}/plot/ --include "*.py"
+        run: aws s3 cp --recursive ${PLOT_SCRIPTS_DIR} ${{ env.s3-repository-url }}/${{ needs.setup.outputs.ts }}__${{ github.run_id }}/plot/ --include "*.py"
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
@@ -133,17 +135,17 @@ jobs:
           # This path is specific to Ubuntu
           path: ~/.cache/pip
           # Look to see if there is a cache hit for the corresponding requirements file
-          key: ${{ runner.os }}-pip-${{ hashFiles('scripts/plotting/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('${PLOT_SCRIPTS_DIR}/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
       - name: Install LaTeX as plotting scripts require it
         run: sudo apt-get install texlive
       - name: Install plotting script dependencies
-        run: pip install -r scripts/plotting/requirements.txt
+        run: pip install -r ${PLOT_SCRIPTS_DIR}/requirements.txt
       - name: Generate plots, upload plots to S3 and post to Slack channel
         run: |
-          python scripts/plotting/plot_all.py
+          python ${PLOT_SCRIPTS_DIR}/plot_all.py
           for filename in *.png
           do
             benchmark=$(echo ${filename%.png} | sed 's/plot_//g' | tr [a-z] [A-Z])
