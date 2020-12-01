@@ -8,25 +8,43 @@ set(CMAKE_BUILD_TYPE RELEASE)
 
 # target_link_libraries(main PRIVATE SEAL::seal MSGSL::MSGSL)
 
-# Cardio BFV with CinguParam parameters
-add_executable(cardio_bfv_cinguparam cardio-bfv-cinguparam/cardio.cpp common.h)
-set_target_properties(cardio_bfv_cinguparam PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(cardio_bfv_cinguparam SEAL::seal)
-
-# Cardio BFV with moduli selected by SEAL
-add_executable(cardio_bfv_sealparams cardio-bfv-sealparams/cardio.cpp common.h)
-set_target_properties(cardio_bfv_sealparams PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(cardio_bfv_sealparams SEAL::seal)
-
-# Cardio BFV with manually selected
-add_executable(cardio_bfv_manualparams cardio-bfv-manualparams/cardio.cpp common.h)
+# Cardio BFV "OPT" with manually selected params
+add_executable(cardio_bfv_manualparams cardio-bfv-opt/cardio.cpp common.h)
+target_compile_definitions(cardio_bfv_manualparams PRIVATE MANUALPARAMS)
 set_target_properties(cardio_bfv_manualparams PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(cardio_bfv_manualparams SEAL::seal)
 
-# Cardio BFV "naive"
-add_executable(cardio_bfv_naive cardio-bfv-naive/cardio.cpp common.h)
-set_target_properties(cardio_bfv_naive PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(cardio_bfv_naive SEAL::seal)
+# Cardio BFV "OPT" with CinguParam parameters
+add_executable(cardio_bfv_cinguparam cardio-bfv-opt/cardio.cpp common.h)
+target_compile_definitions(cardio_bfv_cinguparam PRIVATE CINGUPARAM)
+set_target_properties(cardio_bfv_cinguparam PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(cardio_bfv_cinguparam SEAL::seal)
+
+# Cardio BFV "OPT" with moduli selected by SEAL
+add_executable(cardio_bfv_sealparams cardio-bfv-opt/cardio.cpp common.h)
+target_compile_definitions(cardio_bfv_sealparams PRIVATE SEALPARAMS)
+set_target_properties(cardio_bfv_sealparams PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(cardio_bfv_sealparams SEAL::seal)
+
+
+# Cardio BFV "naive" with same manually selected params as manualparams
+add_executable(cardio_bfv_naive_manualparams cardio-bfv-naive/cardio.cpp common.h)
+target_compile_definitions(cardio_bfv_naive_manualparams PRIVATE MANUALPARAMS)
+set_target_properties(cardio_bfv_naive_manualparams PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(cardio_bfv_naive_manualparams SEAL::seal)
+
+# Cardio BFV "naive" with cinguparam parameters
+add_executable(cardio_bfv_naive_cinguparam cardio-bfv-naive/cardio.cpp common.h)
+target_compile_definitions(cardio_bfv_naive_cinguparam PRIVATE CINGUPARAM)
+set_target_properties(cardio_bfv_naive_cinguparam PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(cardio_bfv_naive_cinguparam SEAL::seal)
+
+# Cardio BFV "naive" with default seal parameters
+add_executable(cardio_bfv_naive_sealparams cardio-bfv-naive/cardio.cpp common.h)
+target_compile_definitions(cardio_bfv_naive_sealparams PRIVATE SEALPARAMS)
+set_target_properties(cardio_bfv_naive_sealparams PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(cardio_bfv_naive_sealparams SEAL::seal)
+
 
 # Cardio batched BFV
 add_executable(cardio_bfv_batched cardio-bfv-batched/cardio-batched.cpp common.h)
@@ -37,6 +55,7 @@ target_link_libraries(cardio_bfv_batched SEAL::seal)
 add_executable(cardio_ckks_batched cardio-ckks-batched/cardio-batched.cpp common.h)
 set_target_properties(cardio_ckks_batched PROPERTIES LINKER_LANGUAGE CXX) 
 target_link_libraries(cardio_ckks_batched SEAL::seal)
+
 
 # NN batched CKKS
 add_library(nn_ckks_batched_lib)

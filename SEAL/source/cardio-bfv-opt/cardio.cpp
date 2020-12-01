@@ -31,10 +31,24 @@ void Cardio::setup_context_bfv(std::size_t poly_modulus_degree,
   //  secure, but incorrect: #8k with {60, 37, 30, 30, 30, 30}
   //  secure, but incorrect: #8k with {60, 38, 30, 30, 30, 30}
   //  secure, but incorrect: #8k with {60, 39, 30, 30, 30, 30}
+
+#ifdef MANUALPARAMS
   params.set_coeff_modulus(seal::CoeffModulus::Create(
       poly_modulus_degree,  {30, 60, 60, 60, 60, 60}));
+#endif
+
+#ifdef CINGUPARAM
+  params.set_coeff_modulus(seal::CoeffModulus::Create(
+      poly_modulus_degree, {30, 40, 44, 50, 54, 60, 60}));
+#endif
+
+#ifdef SEALPARAMS
+  params.set_coeff_modulus(seal::CoeffModulus::BFVDefault(
+      poly_modulus_degree, seal::sec_level_type::tc128));
+#endif
+
   params.set_plain_modulus(plain_modulus);
-  
+
   // Instantiate context
   context = seal::SEALContext::Create(params);
 
@@ -65,7 +79,7 @@ CiphertextVector Cardio::encode_and_encrypt(int32_t number) {
   CiphertextVector result(NUM_BITS, zero);
   for (int i = 0; i < NUM_BITS; ++i) {
     // transform char -> int32_t
-    int32_t val = (int)bin.at(NUM_BITS - 1 - i) - 48;
+    int32_t val = (int) bin.at(NUM_BITS - 1 - i) - 48;
     // encode bit as integer
     seal::Plaintext b = encoder->encode(val);
     // encrypt bit
@@ -111,7 +125,7 @@ void Cardio::shift_right_inplace(CiphertextVector &ctxt) {
 std::unique_ptr<seal::Ciphertext> Cardio::multvect(CiphertextVector bitvec) {
   const int size = bitvec.size();
   for (std::size_t k = 1; k < size; k *= 2) {
-    for (std::size_t i = 0; i < size - k; i += 2 * k) {
+    for (std::size_t i = 0; i < size - k; i += 2*k) {
       evaluator->multiply_inplace(bitvec[i], bitvec[i + k]);
       evaluator->relinearize_inplace(bitvec[i], *relinKeys);
     }
@@ -121,7 +135,7 @@ std::unique_ptr<seal::Ciphertext> Cardio::multvect(CiphertextVector bitvec) {
 
 std::unique_ptr<seal::Ciphertext> Cardio::equal(CiphertextVector lhs,
                                                 CiphertextVector rhs) {
-  assert(("equal supports same-sized inputs only!", lhs.size() == rhs.size()));
+  assert(("equal supports same-sized inputs only!", lhs.size()==rhs.size()));
 
   CiphertextVector comp;
   for (std::size_t i = 0; i < lhs.size(); ++i) {
@@ -156,7 +170,7 @@ void Cardio::print_ciphertext(std::string name, seal::Ciphertext &ctxt) {
 void Cardio::evaluate_G(std::vector<CiphertextVector> &P,
                         std::vector<CiphertextVector> &G, int row_idx,
                         int col_idx, int step) {
-  int k = col_idx + (int)std::pow(2, step - 1);
+  int k = col_idx + (int) std::pow(2, step - 1);
   seal::Ciphertext r;
   encryptor->encrypt_zero(r);
   evaluator->multiply(P[row_idx][k], G[k - 1][col_idx], r);
@@ -167,7 +181,7 @@ void Cardio::evaluate_G(std::vector<CiphertextVector> &P,
 void Cardio::evaluate_P(std::vector<CiphertextVector> &P,
                         std::vector<CiphertextVector> &G, int row_idx,
                         int col_idx, int step) {
-  int k = col_idx + (int)std::pow(2, step - 1);
+  int k = col_idx + (int) std::pow(2, step - 1);
   evaluator->multiply(P[row_idx][k], P[k - 1][col_idx], P[row_idx][col_idx]);
   evaluator->relinearize_inplace(P[row_idx][col_idx], *relinKeys);
 }
@@ -196,7 +210,7 @@ CiphertextVector Cardio::add(CiphertextVector lhs, CiphertextVector rhs) {
   std::vector<CiphertextVector> G(size, CiphertextVector(size, zero));
 
   int num_steps = 0;
-  if (size > 1) num_steps = (int)std::floor(std::log2((double)size - 1)) + 1;
+  if (size > 1) num_steps = (int) std::floor(std::log2((double) size - 1)) + 1;
 
   // compute initial G, P
   pre_computation(P, G, lhs, rhs);
@@ -206,19 +220,19 @@ CiphertextVector Cardio::add(CiphertextVector lhs, CiphertextVector rhs) {
     int row = 0;
     int col = 0;
     // shift row
-    row += (int)std::pow(2, step - 1);
+    row += (int) std::pow(2, step - 1);
     // do while the size of enter is not reach
     while (row < size - 1) {
-      col = (int)std::floor(row / std::pow(2, step)) * (int)std::pow(2, step);
-      for (size_t i = 0; i < (int)std::pow(2, step - 1); ++i) {
+      col = (int) std::floor(row/std::pow(2, step))*(int) std::pow(2, step);
+      for (size_t i = 0; i < (int) std::pow(2, step - 1); ++i) {
         evaluate_G(P, G, row, col, step);
-        if (col != 0) {
+        if (col!=0) {
           evaluate_P(P, G, row, col, step);
         }
         row += 1;
-        if (row == size - 1) break;
+        if (row==size - 1) break;
       }
-      row += (int)std::pow(2, step - 1);
+      row += (int) std::pow(2, step - 1);
     }
   }
   // compute results
@@ -242,7 +256,7 @@ std::unique_ptr<seal::Ciphertext> Cardio::lower(CiphertextVector &lhs,
       std::make_unique<seal::Ciphertext>();
 
   const int len = lhs.size();
-  if (len == 1) {
+  if (len==1) {
     seal::Ciphertext lhs_neg;
     // andNY(lhs[0], rhs[0]) = !(lhs[0]) & rhs[0]
     evaluator->add_plain(lhs[0], encoder->encode(1), lhs_neg);
@@ -450,7 +464,7 @@ void Cardio::run_cardio() {
   auto risk_score_5_6_7_8 = add(risk_score_5_6, risk_score_7_8);
   auto risk_score_9_10_11 = add(risk_score_9_10, ctxt_to_ciphertextvector(condition11));
 
-  auto risk_score_1_2_3_4_5_6_7_8 = add(risk_score_1_2_3_4,risk_score_5_6_7_8);
+  auto risk_score_1_2_3_4_5_6_7_8 = add(risk_score_1_2_3_4, risk_score_5_6_7_8);
   auto risk_score = add(risk_score_1_2_3_4_5_6_7_8, risk_score_9_10_11);
 
   auto t5 = Time::now();
@@ -462,7 +476,7 @@ void Cardio::run_cardio() {
 
   // decrypt and check result
   int result = ciphertextvector_to_int(risk_score);
-  assert(("Cardio benchmark does not produce expected result!", result == 6));
+  assert(("Cardio benchmark does not produce expected result!", result==6));
   std::cout << "Result: " << result << std::endl;
 
   auto t7 = Time::now();

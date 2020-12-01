@@ -13,9 +13,22 @@ void Cardio::setup_context_bfv(std::size_t poly_modulus_degree,
   /// Wrapper for parameters
   seal::EncryptionParameters params(seal::scheme_type::BFV);
   params.set_poly_modulus_degree(poly_modulus_degree);
-  // Default SEAL params: correspond to approx. 128 bit of security
+
+#ifdef MANUALPARAMS
+  params.set_coeff_modulus(seal::CoeffModulus::Create(
+      poly_modulus_degree,  {30, 60, 60, 60, 60, 60}));
+#endif
+
+#ifdef CINGUPARAM
+  params.set_coeff_modulus(seal::CoeffModulus::Create(
+      poly_modulus_degree, {30, 40, 44, 50, 54, 60, 60}));
+#endif
+
+#ifdef SEALPARAMS
   params.set_coeff_modulus(seal::CoeffModulus::BFVDefault(
       poly_modulus_degree, seal::sec_level_type::tc128));
+#endif
+
   params.set_plain_modulus(plain_modulus);
 
   // Instantiate context
