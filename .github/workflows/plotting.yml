@@ -40,7 +40,7 @@ jobs:
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
       - name: Install LaTeX as plotting scripts require it
-        run: sudo apt-get install texlive texlive-latex-extra texlive-fonts-recommended dvipng
+        run: sudo apt-get install texlive texlive-latex-extra texlive-fonts-recommended dvipng cm-super
       - name: Install plotting script dependencies
         run: pip install -r ${PLOT_SCRIPTS_DIR}/requirements.txt
       - name: Generate plots, upload plots to S3 and post to Slack channel
