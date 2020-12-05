@@ -1,0 +1,122 @@
+syntax = "proto3";
+
+package VecLang;
+
+enum OpCode {
+    UNDEFINED_OP = 0;
+    // Basic computation
+    NEGATE = 1;
+    ADD = 2;
+    SUB = 3;
+    MULTIPLY = 4;
+    SUM = 5;
+    COPY = 6;
+    // Advanced computation
+    ROTATE_LEFT = 7;
+    ROTATE_RIGHT = 8;
+    // HE-specific computation
+    RELINEARIZE = 9;
+    MOD_SWITCH = 10;
+    RESCALE = 11;
+    NORMALIZE_SCALE = 12; // not being used currently
+}
+
+enum ObjectType {
+    UNDEFINED_TYPE = 0;
+    SCALAR_CONST = 1; // differentiate between double and int?
+    SCALAR_PLAIN = 2; 
+    SCALAR_CIPHER = 3; 
+    VECTOR_CONST = 4;
+    VECTOR_PLAIN = 5;
+    VECTOR_CIPHER = 6;
+}
+
+message Object {
+    uint64 id = 1; // unique identifier
+}
+
+message Instruction {
+    Object output = 1;
+    OpCode op_code = 2;
+    repeated Object args = 3;
+}
+
+message Vector {
+    repeated double elements = 1; // size must be 1 for scalar types
+    // separate field for int?
+}
+
+message Input {
+    Object obj = 1;
+    ObjectType type = 2; // must not be a constant type
+    double scale = 3; // in log2
+}
+
+message Constant {
+    Object obj = 1;
+    ObjectType type = 2; // must be a constant type
+    double scale = 3; // in log2
+    Vector vec = 4; // includes data (at compile-time)
+}
+
+message Output {
+    Object obj = 1;
+    double scale = 2; // in log2
+}
+
+message Program {
+    uint64 vec_size = 1; // must be a power of 2
+    repeated Constant constants = 2; // data available at compile-time
+    repeated Input inputs = 3; // data only available at runtime (must not include constants)
+    repeated Output outputs = 4;
+    repeated Instruction insts = 5;
+}
+
+message SEALObject {
+    enum SEALType {
+        ENCRYPTION_PARAMETERS = 0;
+        CIPHERTEXT = 1;
+        PLAINTEXT = 2;
+        SECRET_KEY = 3;
+        PUBLIC_KEY = 4;
+        GALOIS_KEYS = 5;
+        RELIN_KEYS = 6;
+    }
+    SEALType seal_type = 1;
+    bytes data = 2;
+}
+
+message ProgramEncryptionParameters {
+    SEALObject encryption_parameters = 1;
+    repeated uint64 galois_elements = 2;
+}
+
+message PublicKeys {
+    SEALObject public_key = 1;
+    SEALObject galois_keys = 2;
+    SEALObject relin_keys = 3;
+}
+
+message NamedValues {
+    map<string, SEALObject> values = 1;
+}
+
+message InputData {
+    Object obj = 1;
+    Vector vec = 2;
+    ObjectType type = 3; // must match that in Input: only replicated here for convenience
+    double scale = 4; // must match that in Input: only replicated here for convenience
+}
+
+message ProgramInput {
+    repeated InputData inputs = 1;
+}
+
+message OutputData {
+    Object obj = 1;
+    Vector vec = 2;
+}
+
+message ProgramOutput {
+    repeated OutputData outputs = 1;
+}
