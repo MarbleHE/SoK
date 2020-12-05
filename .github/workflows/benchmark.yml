@@ -140,7 +140,7 @@ jobs:
             ${{ runner.os }}-pip-
             ${{ runner.os }}-
       - name: Install LaTeX as plotting scripts require it
-        run: sudo apt-get install texlive
+        run: sudo apt-get install texlive texlive-latex-extra texlive-fonts-recommended dvipng cm-super
       - name: Install plotting script dependencies
         run: pip install -r ${PLOT_SCRIPTS_DIR}/requirements.txt
       - name: Generate plots, upload plots to S3 and post to Slack channel
@@ -149,5 +149,5 @@ jobs:
           for filename in *.png
           do
             benchmark=$(echo ${filename%.png} | sed 's/plot_//g' | tr [a-z] [A-Z])
-            curl -F file=@${filename} -F "title=Benchmark Result: ${benchmark}" -F $'initial_comment=🚀 *New Benchmark Results available!*\nS3 URL: s3://sok-repository-eval-benchmarks/${{ needs.setup.outputs.ts }}__${{ github.run_id }}/\nRun ID: ${{ github.run_id }} (https://github.com/MarbleHE/SoK/actions/runs/${{ github.run_id }})\nGit commit: ${{ github.sha }}' -F channels=github-sok -H "Authorization: Bearer ${{ secrets.SLACK_APP_TOKEN }}" https://slack.com/api/files.upload
+            curl -F file=@${filename} -F "title=Benchmark Result: ${benchmark}" -F $'initial_comment=🚀 *New Benchmark Results available!*\nRun ID: <https://github.com/MarbleHE/SoK/actions/runs/${{ github.run_id }}|${{ github.run_id }}>\nGit commit: <https://github.com/MarbleHE/SoK/tree/${{ github.sha }}|${{ github.sha }}>' -F channels=github-sok -H "Authorization: Bearer ${{ secrets.SLACK_APP_TOKEN }}" https://slack.com/api/files.upload
           done
