@@ -1,5 +1,5 @@
-boto3==1.16.26
-botocore==1.19.26
+boto3==1.16.30
+botocore==1.19.30
 brokenaxes==0.4.2
 cycler==0.10.0
 jmespath==0.10.0
@@ -14,5 +14,5 @@ pytz==2020.4
 s3transfer==0.3.3
 six==1.15.0
 urllib3==1.26.2
-fsspec==0.8.4
-s3fs==0.5.1
+fsspec
+s3fs

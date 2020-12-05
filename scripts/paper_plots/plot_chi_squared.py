@@ -67,7 +67,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     bar_width = 0.002
     spacer = 0.01
-# {\fontsize{30pt}{3em}\selectfont{}{Mean WRFv3.5 LHF\r}{\fontsize{18pt}{3em}\selectfont{}(September 16 - October 30, 2012)}
+    # {\fontsize{30pt}{3em}\selectfont{}{Mean WRFv3.5 LHF\r}{\fontsize{18pt}{3em}\selectfont{}(September 16 - October 30, 2012)}
     group_labels = [
         'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
         'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',

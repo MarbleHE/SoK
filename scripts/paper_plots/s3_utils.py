@@ -1,14 +1,10 @@
 import re
-from pathlib import PurePosixPath
-from urllib.parse import urlparse
-
 import boto3
 import pandas as pd
 from botocore.exceptions import ClientError
 from typing import List
 
 BUCKET_NAME = 'sok-repository-eval-benchmarks'
-
 client = boto3.client("s3")
 
 
@@ -43,7 +39,7 @@ def get_most_recent_folder_from_s3_bucket():
     bucket = s3.Bucket(BUCKET_NAME)
     result = bucket.meta.client.list_objects(Bucket=bucket.name, Delimiter='/')
     folders = []
-    date_pattern = re.compile(r'[0-9_]+')
+    date_pattern = re.compile(r"[0-9_]+")
     for o in result.get('CommonPrefixes'):
         folder_name = o.get('Prefix')
         if re.match(date_pattern, folder_name):
