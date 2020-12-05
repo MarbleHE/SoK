@@ -11,6 +11,12 @@ jobs:
     env:
       PLOT_SCRIPTS_DIR: "scripts/paper_plots"
       s3-repository-url: s3://sok-repository-eval-benchmarks
+      # the AWS user's access key ID
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      # the AWS user's secret access key
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      # the default AWS region to be used for the AWS CLI
+      AWS_DEFAULT_REGION: us-east-2
     steps:
       - name: Check out the SoK repository and cd into repository folder
         uses: actions/checkout@v2
