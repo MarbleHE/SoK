@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v2
       - name: Determine foldername of latest run
         id: get_folder
-        run: echo "::set-output name=foldername::$(aws s3 ls sok-repository-eval-benchmarks/ |  awk '{print $2}' | grep "[[:digit:]]\{8\}_[[:digit:]]\{6\}__[[:digit:]]*/" | sort -nr | head -n1 | sed 's/.$//')"
+        run: echo "::set-output name=foldername::$(aws s3 ls ${{ env.s3-repository-url }} |  awk '{print $2}' | grep "[[:digit:]]\{8\}_[[:digit:]]\{6\}__[[:digit:]]*/" | sort -nr | head -n1 | sed 's/.$//')"
       - name: Upload plotting scripts from repository to S3
         run: aws s3 cp --recursive ${PLOT_SCRIPTS_DIR} ${{ env.s3-repository-url }}/${{ steps.get_folder.outputs.foldername }}/plot/ --include "*.py"
       - name: Set up Python 3.8
