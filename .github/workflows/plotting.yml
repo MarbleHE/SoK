@@ -5,23 +5,20 @@ on:
   repository_dispatch:
     types: [generate_plots]
 
-env:
-  # S3 repository URL
-  s3-repository-url: s3://sok-repository-eval-benchmarks
-
 jobs:
   generate-plots:
     runs-on: ubuntu-20.04
     env:
       PLOT_SCRIPTS_DIR: "scripts/paper_plots"
+      s3-repository-url: s3://sok-repository-eval-benchmarks
     steps:
       - name: Check out the SoK repository and cd into repository folder
         uses: actions/checkout@v2
       - name: Determine foldername of latest run
         id: get_folder
-        run: echo "::set-output name=foldername::$(aws s3 ls ${{ env.s3-repository-url }} |  awk '{print $2}' | grep "[[:digit:]]\{8\}_[[:digit:]]\{6\}__[[:digit:]]*/" | sort -nr | head -n1 | sed 's/.$//')"
+        run: echo "FOLDERNAME=$(aws s3 ls ${{ env.s3-repository-url }} |  awk '{print $2}' | grep "[[:digit:]]\{8\}_[[:digit:]]\{6\}__[[:digit:]]*/" | sort -nr | head -n1 | sed 's/.$//')"
       - name: Upload plotting scripts from repository to S3
-        run: aws s3 cp --recursive ${PLOT_SCRIPTS_DIR} ${{ env.s3-repository-url }}/${{ steps.get_folder.outputs.foldername }}/plot/ --include "*.py"
+        run: aws s3 cp --recursive ${PLOT_SCRIPTS_DIR} ${{ env.s3-repository-url }}/${{ env.FOLDERNAME }}/plot/ --include "*.py"
       - name: Set up Python 3.8
         uses: actions/setup-python@v2
         with:
