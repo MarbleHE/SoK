@@ -4,6 +4,10 @@ name: generate_plots
 on:
   repository_dispatch:
     types: [generate_plots]
+  workflow_run:
+    workflows: ["dummy"]
+    types: 
+      - completed
 
 jobs:
   generate-plots:
@@ -49,5 +53,5 @@ jobs:
           for filename in *.png
           do
             benchmark=$(echo ${filename%.png} | sed 's/plot_//g' | tr [a-z] [A-Z])
-            curl -F file=@${filename} -F "title=Benchmark Result: ${benchmark}" -F $'initial_comment=🚀 *New Benchmark Results available!*\nS3 URL: s3://sok-repository-eval-benchmarks/${{ steps.get_folder.outputs.foldername }}/\nRun ID: ${{ github.run_id }} (https://github.com/MarbleHE/SoK/actions/runs/${{ github.run_id }})\nGit commit: ${{ github.sha }}' -F channels=github-sok -H "Authorization: Bearer ${{ secrets.SLACK_APP_TOKEN }}" https://slack.com/api/files.upload
+            curl -F file=@${filename} -F "title=Benchmark Result: ${benchmark}" -F $'initial_comment=🚀 *New Benchmark Results available!*\nRun ID: <https://github.com/MarbleHE/SoK/actions/runs/${{ github.run_id }}|${{ github.run_id }}>\nGit commit: <https://github.com/MarbleHE/SoK/tree/${{ github.sha }}|${{ github.sha }}>' -F channels=github-sok -H "Authorization: Bearer ${{ secrets.SLACK_APP_TOKEN }}" https://slack.com/api/files.upload
           done
