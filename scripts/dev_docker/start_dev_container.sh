@@ -8,10 +8,11 @@
 TOOLNAME=$(echo $1 | tr '[:upper:]' '[:lower:]')
 
 # the location where your source files are located at
-SRC_DIR=../e3/source
+# note that this must be an absolute path
+SRC_DIR="/Users/patrick//git/eth-dsg/SoK/SEAL/source/"
 
 # the location where you want to map your files into (i.e., path in container)
 DST_DIR=/eval
 
-cd ../$1/image_base \
-	&& docker run -it --rm -v ${SRC_DIR}:${DST_DIR}:consistent marblehe/base_${TOOLNAME} /bin/bash
+cd ../../$1/image_base \
+	&& docker run -it --rm -v "${SRC_DIR}":"${DST_DIR}":consistent marblehe/base_${TOOLNAME} /bin/bash
