@@ -8,6 +8,12 @@ set(CMAKE_BUILD_TYPE RELEASE)
 
 # target_link_libraries(main PRIVATE SEAL::seal MSGSL::MSGSL)
 
+# Microbenchmarks
+add_executable(microbenchmark microbenchmarks/microbenchmarks.cpp common.h)
+target_compile_definitions(microbenchmark PRIVATE SEALPARAMS)
+set_target_properties(microbenchmark PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(microbenchmark SEAL::seal)
+
 # Cardio BFV "OPT" with manually selected params
 add_executable(cardio_bfv_manualparams cardio-bfv-opt/cardio.cpp common.h)
 target_compile_definitions(cardio_bfv_manualparams PRIVATE MANUALPARAMS)
@@ -25,7 +31,6 @@ add_executable(cardio_bfv_sealparams cardio-bfv-opt/cardio.cpp common.h)
 target_compile_definitions(cardio_bfv_sealparams PRIVATE SEALPARAMS)
 set_target_properties(cardio_bfv_sealparams PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(cardio_bfv_sealparams SEAL::seal)
-
 
 # Cardio BFV "naive" with same manually selected params as manualparams
 add_executable(cardio_bfv_naive_manualparams cardio-bfv-naive/cardio.cpp common.h)

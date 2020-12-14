@@ -27,6 +27,11 @@ function run_benchmark() {
     done
 }
 
+# Microbenchmarks
+export OUTPUT_FILENAME=seal_bfv_microbenchmark.csv
+run_benchmark microbenchmark
+upload_files SEAL-BFV-Cinguparam ${OUTPUT_FILENAME} fhe_parameters_microbenchmark.txt
+
 # Cardio BFV (using modified Cingulata parameters)
 export OUTPUT_FILENAME=seal_bfv_cardio_cinguparam.csv
 run_benchmark cardio_bfv_cinguparam
