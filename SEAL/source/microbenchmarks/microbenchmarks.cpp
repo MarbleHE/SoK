@@ -2,12 +2,6 @@
 
 #include "../common.h"
 
-#define SEX_FIELD 0
-#define ANTECEDENT_FIELD 1
-#define SMOKER_FIELD 2
-#define DIABETES_FIELD 3
-#define PRESSURE_FIELD 4
-
 typedef std::chrono::microseconds TARGET_TIME_UNIT;
 
 void Microbenchmark::setup_context_bfv(std::size_t poly_modulus_degree,
@@ -322,7 +316,7 @@ void Microbenchmark::run_benchmark() {
   myfile.close();
 
   // write FHE parameters into file
-  write_parameters_to_file(context, "fhe_parameters.txt");
+  write_parameters_to_file(context, "fhe_parameters_microbenchmark.txt");
 }
 
 int main(int argc, char *argv[]) {

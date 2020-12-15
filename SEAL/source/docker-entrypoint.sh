@@ -27,10 +27,26 @@ function run_benchmark() {
     done
 }
 
+function run_microbenchmark() {
+    cd $EVAL_BUILD_DIR
+    echo "t_mul_ct_ct,t_mul_ct_ct_inplace,t_mul_ct_pt,t_mul_ct_pt_inplace,t_add_ct_ct,t_add_ct_ct_inplace,t_add_ct_pt,t_add_ct_pt_inplace,t_enc_sk,t_enc_pk,t_dec,t_rot" > $OUTPUT_FILENAME
+    RUN=1
+    if [ -z "${NUM_RUNS}" ]
+    then
+        echo "Cannot continue as NUM_RUNS is undefined!"
+        exit 1
+    fi
+    while (( $RUN <= $NUM_RUNS ))
+    do
+        RUN=$(( $RUN + 1))
+        ./$1
+    done
+}
+
 # Microbenchmarks
 export OUTPUT_FILENAME=seal_bfv_microbenchmark.csv
-run_benchmark microbenchmark
-upload_files SEAL-BFV-Cinguparam ${OUTPUT_FILENAME} fhe_parameters_microbenchmark.txt
+run_microbenchmark microbenchmark
+upload_files SEAL-BFV-Microbenchmark ${OUTPUT_FILENAME} fhe_parameters_microbenchmark.txt
 
 # Cardio BFV (using modified Cingulata parameters)
 export OUTPUT_FILENAME=seal_bfv_cardio_cinguparam.csv
