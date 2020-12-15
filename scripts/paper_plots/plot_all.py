@@ -1,7 +1,9 @@
+import code
 from multiprocessing import Process
 import plot_cardio
 import plot_chi_squared
 import plot_kernel
+import plot_microbenchmarks
 import plot_nn
 from pathlib import PurePosixPath
 from urllib.parse import urlparse
@@ -106,6 +108,20 @@ def plot_all_kernel():
     save_plot_in_s3(fig, 'plot_kernel', root_folder)
 
 
+def plot_all_microbenchmark():
+    try:
+        # labels, data, root_folder = get_labels_data_from_s3('microbenchmark')
+        labels, data, root_folder = get_labels_data_from_s3('microbenchmark')
+    except TypeError:
+        return
+
+    fig = plot_microbenchmarks.plot(labels, data)
+    fig.show()
+
+    # save plot in S3
+    save_plot_in_s3(fig, 'plot_microbenchmark', root_folder)
+
+
 def run_in_parallel(*fns):
     proc = []
     for fn in fns:
@@ -118,6 +134,7 @@ def run_in_parallel(*fns):
 
 def plot_all():
     # runInParallel(plot_all_cardio, plot_all_nn, plot_all_chi_squared)
+    plot_all_microbenchmark()
     plot_all_cardio()
     plot_all_nn()
     plot_all_chi_squared()
