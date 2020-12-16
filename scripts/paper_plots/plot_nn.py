@@ -6,7 +6,6 @@ import numpy as np
 from brokenaxes import brokenaxes
 from matplotlib.ticker import FuncFormatter
 
-
 def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> plt.Figure:
     """
 
@@ -23,7 +22,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     inches_per_pt = 1.0 / 72.27 * 2  # Convert pt to inches
     golden_mean = ((np.math.sqrt(5) - 1.0) / 2.0) * .8  # Aesthetic ratio
-    fig_width = 252 * inches_per_pt  # width in inches
+    fig_width = 300 * inches_per_pt  # width in inches
     # fig_height = (fig_width * golden_mean)  # height in inches
     fig_height = 2.15
     figsize = [fig_width * 0.67, fig_height / 1.22]
@@ -45,13 +44,17 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.rcParams["text.usetex"] = True
     plt.rcParams["font.family"] = 'serif'
 
+    # TODO: For the purpose of quickly producing a plot, I have added EVA MLP and LeNet-5 as a single bar
+    #  Later, however, we need to adjust the plotting code to handle grouped bars (see, for example, cardio)
+
     # Nice names for labels: maps folder name -> short name
     # and adds linebreaks where required
     subs = {'SEAL-CKKS-Batched': 'SEAL-CKKS\n(MLP)',
             'SEALion': 'SEALION\n(MLP)',
             'nGraph-HE-MLP': 'nGraph-HE\n(MLP)',
             'nGraph-HE-Cryptonets': 'nGraph-HE\n(Cryptonets)',
-            'nGraph-HE-LeNet5': 'nGraph-HE\n(LeNet-5)'
+            'nGraph-HE-LeNet5': 'nGraph-HE\n(LeNet-5)',
+            'EVA-MLP': 'EVA\n(MLP, LeNet-5)',  # TODO: This is just a temporary hack
             }
     labels = [subs.get(item, item) for item in labels]
 
@@ -60,14 +63,17 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'SEALION\n(MLP)': 1,
         'nGraph-HE\n(MLP)': 2,
         'nGraph-HE\n(Cryptonets)': 3,
-        'nGraph-HE\n(LeNet-5)': 4
+        'nGraph-HE\n(LeNet-5)': 4,
+        'EVA\n(MLP, LeNet-5)': 5 # TODO: This is just a temporary hack
     }
 
     sorted_labels = ('SEAL-CKKS\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
                      'SEALion\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
                      'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
                      'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(Cryptonets)}',
-                     'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(LeNet-5)}')
+                     'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(LeNet-5)}',
+                     'EVA\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP, LeNet-5)}' # TODO: This is just a temporary hack
+                     )
 
     # Setup brokenaxes
     # TODO: Make break depend on value of nGraph-HE LeNet-5 runtime?
@@ -83,8 +89,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     def ms_to_sec(num):
         return num / 1_000
 
-    colors = ['0.1', '0.35', '0.5', '0.85']
-    hatches = ['', '.', '///', '']
+    # colorblind-safe set of colors created by https://colorbrewer2.org
+    colors = ['#a6cee3', '#1f78b4', '#D9DC8E', '#33a02c']
 
     # Plot Bars
     width = 0.30
@@ -95,21 +101,32 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         if not labels[i] in positions:
             continue
         else:
+
+            # TODO: Remove this dirty
+            if 'EVA' in label:
+                width = 2*width + 0.1
+                for k in df.columns:
+                    df[k] = 0
+            else:
+                width = 0.30
+
             x_pos = positions[label]
             d1 = ms_to_sec(df['t_keygen'].mean())
             d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
-            p1 = bax.bar(x_pos, d1, width, color=colors[0], hatch=hatches[0])
+            p1 = bax.bar(x_pos, d1, width, color=colors[0])
+
             d2 = ms_to_sec(df['t_input_encryption'].mean())
             d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
-            p2 = bax.bar(x_pos, d2, width, bottom=d1, color=colors[1], hatch=hatches[1])
+            p2 = bax.bar(x_pos, d2, width, bottom=d1, color=colors[1])
+
             d3 = ms_to_sec(df['t_computation'].mean())
             d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
-            p3 = bax.bar(x_pos, d3, width, bottom=d1 + d2, color=colors[2], hatch=hatches[2])
+            p3 = bax.bar(x_pos, d3, width, bottom=d1 + d2, color=colors[2])
+
             d4 = ms_to_sec(df['t_decryption'].mean())
             d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
             total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
-            p4 = bax.bar(x_pos, d4, width, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3,
-                         color=colors[3], hatch=hatches[3])
+            p4 = bax.bar(x_pos, d4, width, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3, color=colors[3])
             print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ',
                   d1 + d2 + d3 + d4,
                   ')')
@@ -123,12 +140,13 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     bax.axs[0].set_xticks(np.arange(len(sorted_labels)))
     bax.axs[1].set_xticks(np.arange(len(sorted_labels)))
     bax.axs[1].set_xticklabels(sorted_labels)
-    bax.set_ylabel('Time [s]', labelpad=18)
+    bax.set_ylabel('Time [s]', labelpad=26)
 
     # plt.title('Runtime for Neural Network Benchmark', fontsize=10)
 
     # Add Legend
-    plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Decryption', 'Computation', 'Encryption', 'Key Generation'),
+    plt.legend((p1[0], p2[0], p3[0], p4[0]),
+               ('Key Generation', 'Encryption', 'Computation', 'Decryption'),
                loc='upper left')
 
     # Restore current figure

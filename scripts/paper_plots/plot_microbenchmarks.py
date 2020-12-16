@@ -4,10 +4,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 from matplotlib.ticker import FuncFormatter
-import itertools
-import operator
-from operator import add
-
 
 def human_format(num):
     num = float('{:.3g}'.format(num))
@@ -83,8 +79,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         "PALISADE-Microbenchmark": "PALISADE",
         "SEAL-BFV-Microbenchmark": "SEAL-BFV",
     }
-    colors = ['0.1', '0.35', '0.5', '0.85']
-    hatches = ['', '.', '///', '']
+
+    # colorblind-safe set of colors created by https://colorbrewer2.org
+    colors = ['#a6cee3', '#1f78b4', '#D9DC8E', '#33a02c']
 
     data = pd.DataFrame(index=pandas_dataframes[0].columns)  #
     for v, l in zip(pandas_dataframes, labels):

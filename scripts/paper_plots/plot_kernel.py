@@ -110,8 +110,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     def ms_to_sec(num):
         return num / 1_000
 
-    colors = ['0.1', '0.35', '0.5', '0.85']
-    hatches = ['', '.', '///', '']
+    # colorblind-safe set of colors created by https://colorbrewer2.org
+    colors = ['#a6cee3', '#1f78b4', '#D9DC8E', '#33a02c']
 
     # Plot Bars
     max_y_value = 0
@@ -123,19 +123,19 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         df = pandas_dataframes[i]
         d1 = ms_to_sec(df['t_keygen'].mean())
         d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
-        p1 = plt.bar(x_pos, d1, bar_width * 0.9, color=colors[0], hatch=hatches[0])
+        p1 = plt.bar(x_pos, d1, bar_width * 0.9, color=colors[0])
         d2 = ms_to_sec(df['t_input_encryption'].mean())
         d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
-        p2 = plt.bar(x_pos, d2, bar_width * 0.9, bottom=d1, color=colors[1], hatch=hatches[1])
+        p2 = plt.bar(x_pos, d2, bar_width * 0.9, bottom=d1, color=colors[1])
         d3 = ms_to_sec(df['t_computation'].mean())
         d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
-        p3 = plt.bar(x_pos, d3, bar_width * 0.9, bottom=d1 + d2, color=colors[2], hatch=hatches[2])
+        p3 = plt.bar(x_pos, d3, bar_width * 0.9, bottom=d1 + d2, color=colors[2])
         d4 = ms_to_sec(df['t_decryption'].mean())
         d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
         total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
         max_y_value = d1 + d2 + d3 + d4 if (d1 + d2 + d3 + d4) > max_y_value else max_y_value
         p4 = plt.bar(x_pos, d4, bar_width * 0.9, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3,
-                     color=colors[3], hatch=hatches[3])
+                     color=colors[3])
         print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ', d1 + d2 + d3 + d4,
               ')')
 

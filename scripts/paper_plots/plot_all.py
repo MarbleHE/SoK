@@ -36,20 +36,21 @@ def plot_all_cardio():
     tool__plot_position = [
         'Lobster-Baseline',
         'Lobster-Baseline-OPT',
-        'MultiStart',
         'MultiStart-OPT-PARAMS',
-        'Lobster',
         'Lobster-OPT-PARAMS',
-        'Cingulata-Baseline',
+
         'Cingulata-OPT',
-        'SEAL-BFV-OPT',
-        'SEAL-BFV-Naive',
+
+        'SEAL-BFV-Sealparams',
+        'SEAL-BFV-Naive-Sealparams',
         'E3-SEAL',
+
         'TFHE',
+        'TFHE-Naive',
         'E3-TFHE',
-        'SEAL-BFV-Batched',
+
+        'SEAL-BFV-Batched-Sealparams',
         'E3-SEAL-Batched',
-        'SEAL-CKKS-Batched',
     ]
 
     labeled_data = dict(zip(labels, data))
@@ -110,7 +111,6 @@ def plot_all_kernel():
 
 def plot_all_microbenchmark():
     try:
-        # labels, data, root_folder = get_labels_data_from_s3('microbenchmark')
         labels, data, root_folder = get_labels_data_from_s3('microbenchmark')
     except TypeError:
         return

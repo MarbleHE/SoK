@@ -56,9 +56,13 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     positions = {
         'SEAL-BFV': (0, 0),
-        'E3-SEAL': (0, 1),
+        'SEAL-BFV-Manualparams': (0, 1),
+        'E3-SEAL': (0, 2),
+
         'TFHE': (1, 0),
-        'E3-TFHE': (1, 1),
+        'TFHE-Manual': (1, 1),
+        'E3-TFHE': (1, 2),
+
         'Cingulata': (2, 0),
     }
 
@@ -69,8 +73,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     spacer = 0.01
     # {\fontsize{30pt}{3em}\selectfont{}{Mean WRFv3.5 LHF\r}{\fontsize{18pt}{3em}\selectfont{}(September 16 - October 30, 2012)}
     group_labels = [
-        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
-        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
+        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/Naive/E\\textsuperscript{3})}',
+        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/Naive/E\\textsuperscript{3})}',
         'Cingulata'
     ]
 
@@ -109,8 +113,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     def ms_to_sec(num):
         return num / 1_000
 
-    colors = ['0.1', '0.35', '0.5', '0.85']
-    hatches = ['', '.', '///', '']
+    # colorblind-safe set of colors created by https://colorbrewer2.org
+    colors = ['#a6cee3', '#1f78b4', '#D9DC8E', '#33a02c']
 
     # Plot Bars
     max_y_value = 0
@@ -119,22 +123,30 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
             continue
         else:
             x_pos = get_x_position(positions[labels[i]])
+
         df = pandas_dataframes[i]
+
+        if 'SEAL-BFV-Manualparams' in labels[i]:
+            df['t_keygen'] = 0
+            df['t_input_encryption'] = 0
+            df['t_computation'] = 0
+            df['t_decryption'] = 0
+
         d1 = ms_to_sec(df['t_keygen'].mean())
         d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
-        p1 = plt.bar(x_pos, d1, bar_width * 0.9, color=colors[0], hatch=hatches[0])
+        p1 = plt.bar(x_pos, d1, bar_width * 0.9, color=colors[0])
         d2 = ms_to_sec(df['t_input_encryption'].mean())
         d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
-        p2 = plt.bar(x_pos, d2, bar_width * 0.9, bottom=d1, color=colors[1], hatch=hatches[1])
+        p2 = plt.bar(x_pos, d2, bar_width * 0.9, bottom=d1, color=colors[1])
         d3 = ms_to_sec(df['t_computation'].mean())
         d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
-        p3 = plt.bar(x_pos, d3, bar_width * 0.9, bottom=d1 + d2, color=colors[2], hatch=hatches[2])
+        p3 = plt.bar(x_pos, d3, bar_width * 0.9, bottom=d1 + d2, color=colors[2])
         d4 = ms_to_sec(df['t_decryption'].mean())
         d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
         total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
         max_y_value = d1 + d2 + d3 + d4 if (d1 + d2 + d3 + d4) > max_y_value else max_y_value
         p4 = plt.bar(x_pos, d4, bar_width * 0.9, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3,
-                     color=colors[3], hatch=hatches[3])
+                     color=colors[3])
         print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ', d1 + d2 + d3 + d4,
               ')')
 
@@ -144,7 +156,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.yticks(fontsize=8)
 
     # Add Legend
-    plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Decryption', 'Computation', 'Encryption', 'Key Generation'))
+    plt.legend((p1[0], p2[0], p3[0], p4[0]),
+               ('Key Generation', 'Encryption', 'Computation', 'Decryption'),
+               loc='upper left')
 
     # Restore current figure
     plt.figure(previous_figure.number)

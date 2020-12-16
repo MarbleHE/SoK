@@ -25,7 +25,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # figsize = (int(len(labels) * 0.95), 6)
     inches_per_pt = 1.0 / 72.27 * 2  # Convert pt to inches
     golden_mean = ((np.math.sqrt(5) - 1.0) / 2.0) * .8  # Aesthetic ratio
-    fig_width = 252 * inches_per_pt  # width in inches
+    fig_width = 275 * inches_per_pt  # width in inches
     # fig_height = (fig_width * golden_mean)  # height in inches
     fig_height = 2.5
     figsize = [fig_width * 0.67, fig_height / 1.22]
@@ -54,22 +54,22 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # BASELINE_SIGN = '*'
     positions = {
         'Lobster-Baseline': (0, 0),
+        'Lobster-Baseline-OPT': (0, 1),
+        'MultiStart-OPT-PARAMS': (0, 2),
+        'Lobster-OPT-PARAMS': (0, 3),
 
-        'Lobster-Baseline-OPT': (1, 0),
-        'MultiStart-OPT-PARAMS': (1, 1),
-        'Lobster-OPT-PARAMS': (1, 2),
+        'Cingulata-OPT': (1, 0),
 
-        'Cingulata-OPT': (2, 0),
+        'SEAL-BFV-Sealparams': (2, 0),
+        'SEAL-BFV-Naive-Sealparams': (2, 1),
+        'E3-SEAL': (2, 2),
 
-        'SEAL-BFV-OPT': (3, 0),
-        'SEAL-BFV-Naive': (3, 1),
-        'E3-SEAL': (3, 2),
+        'TFHE': (3, 0),
+        'TFHE-Naive': (3, 1),
+        'E3-TFHE': (3, 2),
 
-        'TFHE': (4, 0),
-        'E3-TFHE': (4, 1),
-
-        'SEAL-BFV-Batched': (5, 0),
-        'E3-SEAL-Batched': (5, 1)
+        'SEAL-BFV-Batched-Sealparams': (4, 0),
+        'E3-SEAL-Batched': (4, 1)
     }
 
     # plt.title('Runtime for Cardio Benchmark', fontsize=10)
@@ -78,12 +78,11 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     spacer = 0.02
 
     group_labels = [
-        'Baseline',
-        'Optimized\n{\\fontsize{7pt}{3em}\\selectfont{}(Mult. Depth)}',
+        'Depth Optimized\n{\\fontsize{6pt}{3em}\\selectfont{(A/B/C/D})}',
         'Cingu.',
-        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/Naive/E\\textsuperscript{3})}',
-        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
-        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Batched)}'
+        'SEAL\n{\\fontsize{6pt}{3em}\\selectfont{}(Man./Naive/E\\textsuperscript{3})}',
+        'TFHE\n{\\fontsize{6pt}{3em}\\selectfont{}(Man./Naive/E\\textsuperscript{3})}',
+        'SEAL Bat.\n{\\fontsize{6pt}{3em}\\selectfont{}(Man./E\\textsuperscript{3})}'
     ]
 
     # reserved_indices = {}
@@ -126,7 +125,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # hatches = ['', '.', '///', '']
     # colors = ['#808080', '#0a008f', '#268c8c', '#595959']
 
-    colors = list(mcolors.TABLEAU_COLORS)
+    # colorblind-safe set of colors created by https://colorbrewer2.org
+    colors = ['#a6cee3', '#1f78b4', '#D9DC8E', '#33a02c']
 
     # Plot Bars
     max_y_value = 0
@@ -160,12 +160,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.yticks(fontsize=8)
 
     # Add Legend
-    plt.legend((p4[0], p3[0], p2[0], p1[0]), ('Dec.', 'Comp.', 'Enc.', 'Key Gen.'),
-               ncol=2, loc='upper left', fontsize=8)
-
     plt.legend((p1[0], p2[0], p3[0], p4[0]),
                ('Key Gen.', 'Enc.', 'Comp.', 'Dec.'),
-               ncol=2, loc='upper left', fontsize=8)
+               ncol=2, loc='upper left', fontsize=7)
 
     # Restore current figure
     plt.figure(previous_figure.number)
