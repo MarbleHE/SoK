@@ -104,10 +104,16 @@ export OUTPUT_FILENAME=seal_batched_ckks_nn.csv
 run_benchmark nn_ckks_batched
 upload_files SEAL-CKKS-Batched ${OUTPUT_FILENAME} fhe_parameters_nn.txt
 
-# Chi-Squared BFV
-export OUTPUT_FILENAME=seal_bfv_chi_squared.csv
-run_benchmark chi_squared
-upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
+# Chi-Squared BFV with manual params, reusing subexpressions, etc (OPT)
+export OUTPUT_FILENAME=seal_bfv_chi_squared_opt.csv
+run_benchmark chi_squared_opt
+upload_files SEAL-BFV-Opt ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
+
+
+# Chi-Squared BFV with seal params, not reusing subexpressions, etc (NAIVE)
+export OUTPUT_FILENAME=seal_bfv_chi_squared_naive.csv
+run_benchmark chi_squared_naive
+upload_files SEAL-BFV-Naive ${OUTPUT_FILENAME} fhe_parameters_chi_squared.txt
 
 # Chi-Squared BFV Batched
 export OUTPUT_FILENAME=seal_bfv_batched_chi_squared.csv

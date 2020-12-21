@@ -93,10 +93,17 @@ target_link_libraries(nn_ckks_batched nn_ckks_batched_lib SEAL::seal)
 # NN batched CKKS tests
 # add_subdirectory(nn-ckks-batched/tests)
 
-# Chi Squared BFV
-add_executable(chi_squared chi-squared-bfv/chi_squared.cpp)
-set_target_properties(chi_squared PROPERTIES LINKER_LANGUAGE CXX) 
-target_link_libraries(chi_squared SEAL::seal)
+# Chi Squared BFV OPT (MANUAl PARAMS)
+add_executable(chi_squared_opt chi-squared-bfv-opt/chi_squared.cpp)
+target_compile_definitions(chi_squared_opt PRIVATE MANUALPARAMS)
+set_target_properties(chi_squared_opt PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(chi_squared_opt SEAL::seal)
+
+# Chi Squared BFV NAIVE (SEAL PARAMS)
+add_executable(chi_squared_naive chi-squared-bfv-naive/chi_squared.cpp)
+target_compile_definitions(chi_squared_naive PRIVATE SEALPARAMS)
+set_target_properties(chi_squared_naive PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(chi_squared_naive SEAL::seal)
 
 # Chi Squared BFV Batched
 add_executable(chi_squared_batched chi-squared-bfv-batched/chi_squared_batched.cpp)

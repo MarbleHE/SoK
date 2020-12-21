@@ -55,8 +55,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.rcParams["font.family"] = 'serif'
 
     positions = {
-        'SEAL-BFV': (0, 0),
-        'SEAL-BFV-Manualparams': (0, 1),
+        'SEAL-BFV-Opt': (0, 0),
+        'SEAL-BFV-Naive': (0, 1),
         'E3-SEAL': (0, 2),
 
         'TFHE': (1, 0),
@@ -126,7 +126,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
         df = pandas_dataframes[i]
 
-        if 'SEAL-BFV-Manualparams' in labels[i]:
+        if 'SEAL-BFV-Naive' in labels[i]:
             df['t_keygen'] = 0
             df['t_input_encryption'] = 0
             df['t_computation'] = 0
