@@ -1,2 +1,4 @@
-numpy
-Pillow
+numpy~=1.19.1
+Pillow~=7.2.0
+pandas~=1.0.5
+eva~=1.0.0
