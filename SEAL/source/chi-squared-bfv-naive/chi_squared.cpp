@@ -61,46 +61,49 @@ int32_t ChiSquared::get_decrypted_value(seal::Ciphertext value) {
 ResultCiphertexts ChiSquared::compute_alpha_betas(const seal::Ciphertext &N_0,
                                                   const seal::Ciphertext &N_1,
                                                   const seal::Ciphertext &N_2) {
-  seal::Plaintext four;
-  encoder->encode(4, four);
-  seal::Plaintext two;
-  encoder->encode(2, two);
 
   // compute alpha
-  seal::Ciphertext alpha1;
+  std::cout << "Computing alpha" << std::endl;
+  seal::Plaintext four;
+  encoder->encode(4, four);
+  seal::Ciphertext four_n0;
   seal::Ciphertext four_ctxt;
   encryptor->encrypt(four, four_ctxt);
-  evaluator->multiply(N_0, four_ctxt, alpha1);
-  seal::Ciphertext alpha2;
-  evaluator->relinearize(alpha1, *relinKeys, alpha2);
-  seal::Ciphertext alpha3;
-  evaluator->multiply(alpha2, N_2, alpha3);
-  seal::Ciphertext alpha4;
-  evaluator->relinearize(alpha3, *relinKeys, alpha4);
+  evaluator->multiply(N_0, four_ctxt, four_n0);
+  evaluator->relinearize(four_n0, *relinKeys, four_n0);
+  seal::Ciphertext four_n0_n2;
+  evaluator->multiply(four_n0, N_2, four_n0_n2);
+  evaluator->relinearize(four_n0_n2, *relinKeys, four_n0_n2);
   seal::Ciphertext N_1_pow2;
   evaluator->exponentiate(N_1, 2, *relinKeys, N_1_pow2);
-  seal::Ciphertext alpha5;
-  evaluator->sub(alpha4, N_1_pow2, alpha5);
+  seal::Ciphertext difference;
+  evaluator->sub(four_n0_n2, N_1_pow2, difference);
   seal::Ciphertext alpha;
-  evaluator->exponentiate(alpha5, 2, *relinKeys, alpha);
+  evaluator->exponentiate(difference, 2, *relinKeys, alpha);
+
 
   // compute beta_1
+  std::cout << "Computing beta_1" << std::endl;
+
   seal::Ciphertext N_0_t2;
+  seal::Plaintext two;
+  encoder->encode(2, two);
   seal::Ciphertext two_ctxt;
   encryptor->encrypt(two, two_ctxt);
   evaluator->multiply(N_0, two_ctxt, N_0_t2);
   seal::Ciphertext N_0_t2_relin;
   evaluator->relinearize(N_0_t2, *relinKeys, N_0_t2_relin);
   seal::Ciphertext twot_N_0__plus__N_1;
-  evaluator->add(N_0_t2, N_1, twot_N_0__plus__N_1);
+  evaluator->add(N_0_t2_relin, N_1, twot_N_0__plus__N_1);
   seal::Ciphertext beta_1_t1;
   evaluator->exponentiate(twot_N_0__plus__N_1, 2, *relinKeys, beta_1_t1);
   seal::Ciphertext beta_1_t2;
   evaluator->multiply(beta_1_t1, two_ctxt, beta_1_t2);
   seal::Ciphertext beta_1;
-  evaluator->relinearize(beta_1, *relinKeys, beta_1);
+  evaluator->relinearize(beta_1_t2, *relinKeys, beta_1);
 
   // compute beta_2
+  std::cout << "Computing beta_2" << std::endl;
 
   // First, re-compute twot_N_0__plus__N_1
   seal::Ciphertext beta_1_;
@@ -125,6 +128,8 @@ ResultCiphertexts ChiSquared::compute_alpha_betas(const seal::Ciphertext &N_0,
   evaluator->relinearize(beta_2_temp, *relinKeys, beta_2);
 
   // compute beta_3
+  std::cout << "Computing beta_3" << std::endl;
+
   seal::Ciphertext beta_3_t1;
   evaluator->exponentiate(twot_N_2__plus__N_1, 2, *relinKeys, beta_3_t1);
   seal::Ciphertext beta_3_t2;
@@ -194,7 +199,7 @@ void ChiSquared::run_chi_squared() {
 }
 
 int main(int argc, char *argv[]) {
-  std::cout << "Starting benchmark 'chi-squared-bfv-opt'..." << std::endl;
+  std::cout << "Starting benchmark 'chi-squared-bfv-naive'..." << std::endl;
   ChiSquared().run_chi_squared();
   return 0;
 }
