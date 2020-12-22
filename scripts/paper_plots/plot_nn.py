@@ -45,8 +45,23 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.rcParams["text.usetex"] = True
     plt.rcParams["font.family"] = 'serif'
 
-    # TODO: For the purpose of quickly producing a plot, I have added EVA MLP and LeNet-5 as a single bar
-    #  Later, however, we need to adjust the plotting code to handle grouped bars (see, for example, cardio)
+    # Add fake EVA data if not present in data
+    if 'EVA-MLP' not in labels:
+        labels.append('EVA-MLP')
+        pandas_dataframes.append(pd.DataFrame.from_dict({
+            't_keygen': [0],
+            't_input_encryption': [0],
+            't_computation': [10000],
+            't_decryption': [0]}
+        ))
+    if 'EVA-CHET' not in labels:
+        labels.append('EVA-CHET')
+        pandas_dataframes.append(pd.DataFrame.from_dict({
+            't_keygen': [0],
+            't_input_encryption': [0],
+            't_computation': [10000],
+            't_decryption': [0]}
+        ))
 
     # Nice names for labels: maps folder name -> short name
     # and adds linebreaks where required
@@ -55,7 +70,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
             'nGraph-HE-MLP': 'nGraph-HE\n(MLP)',
             'nGraph-HE-Cryptonets': 'nGraph-HE\n(Cryptonets)',
             'nGraph-HE-LeNet5': 'nGraph-HE\n(LeNet-5)',
-            'EVA-MLP': 'EVA\n(MLP, LeNet-5)',  # TODO: This is just a temporary hack
+            'EVA-MLP': 'EVA\n(MLP)',
+            'EVA-CHET': 'EVA\n(LeNet-5)'
             }
     labels = [subs.get(item, item) for item in labels]
 
@@ -65,15 +81,17 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'nGraph-HE\n(MLP)': 2,
         'nGraph-HE\n(Cryptonets)': 3,
         'nGraph-HE\n(LeNet-5)': 4,
-        'EVA\n(MLP, LeNet-5)': 5  # TODO: This is just a temporary hack
+        'EVA\n(MLP)': 5,
+        'EVA\n(LeNet-5)': 6
     }
 
-    sorted_labels = ('SEAL-CKKS\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
+    sorted_labels = ('SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
                      'SEALion\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
                      'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
                      'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(Cryptonets)}',
                      'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(LeNet-5)}',
-                     'EVA\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP, LeNet-5)}'  # TODO: This is just a temporary hack
+                     'EVA\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
+                     'EVA\n{\\fontsize{7pt}{3em}\\selectfont{}(LeNet-5)}'
                      )
 
     # Setup brokenaxes
@@ -101,14 +119,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         if not labels[i] in positions:
             continue
         else:
-
-            # TODO: Remove this dirty
-            if 'EVA' in label:
-                width = 2 * width + 0.1
-                for k in df.columns:
-                    df[k] = 0
-            else:
-                width = 0.30
+            width = 0.30
 
             x_pos = positions[label]
             d1 = ms_to_sec(df['t_keygen'].mean())
