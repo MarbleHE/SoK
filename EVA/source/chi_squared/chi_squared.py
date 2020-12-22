@@ -10,11 +10,6 @@ import time
 import copy
 import numpy as np
 import pandas as pd
-from google.protobuf.json_format import MessageToJson
-from google.protobuf import text_format
-import known_type_pb2
-import eva_pb2
-import vec_lang_pb2
 
 ####################
 # BENCHMARKING     #
@@ -58,14 +53,6 @@ def compile():
         save(chi_squared, 'chi_squared.eva')
         save(params, 'chi_squared.evaparams')
         save(signature, 'chi_squared.evasignature')
-
-        # Print IR representation
-        with open('chi_squared.eva', 'rb') as f, open('chi_squared.txt', 'w') as g:
-            read_kt = known_type_pb2.KnownType()
-            read_kt.ParseFromString(f.read())
-            read_eva = eva_pb2.Program()
-            read_eva.ParseFromString(read_kt.contents.value)
-            g.write(str(read_eva))
 
 
 def compute():

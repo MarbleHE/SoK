@@ -8,16 +8,16 @@ upload_files() {
     done
 }
 
-# Run example program: image_processing
-export OUTPUT_FILENAME=eva_kernel.csv
-cd /root/eval/image_processing \
-    && python3 -m pip install -r requirements.txt \
-    && python3 image_processing.py 
-upload_files EVA ${OUTPUT_FILENAME}
+## Run example program: image_processing
+#export OUTPUT_FILENAME=eva_kernel.csv
+#cd /root/eval/image_processing \
+#    && python3 -m pip install -r requirements.txt \
+#    && python3 image_processing.py
+#upload_files EVA ${OUTPUT_FILENAME}
 
 # Run benchmark program: chi_squared
 export OUTPUT_FILENAME=eva_chi_squared.csv
 cd /root/eval/chi_squared \
     && python3 -m pip install -r requirements.txt \
-    && python3 chi_squared.py 
+    && python3 chi_squared.py
 upload_files EVA ${OUTPUT_FILENAME}
