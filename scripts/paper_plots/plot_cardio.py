@@ -53,22 +53,22 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # OPT_PARAMS_SIGN = '\\textsuperscript{$\dagger$}'
     # BASELINE_SIGN = '*'
     positions = {
-        'Lobster-Baseline': (0, 0),
-        'Lobster-Baseline-OPT': (0, 1),
-        'MultiStart-OPT-PARAMS': (0, 2),
-        'Lobster-OPT-PARAMS': (0, 3),
 
-        'Cingulata-OPT': (1, 0),
+        'SEAL-BFV-Batched-Manualparams': (0, 0),
+        'E3-SEAL-Batched': (0, 1),
+        'SEAL-BFV-Manualparams': (0, 2),
+        'E3-SEAL': (0, 3),
+        'SEAL-BFV-Naive-Sealparams': (0, 4),
+
+        'Lobster-Baseline': (1, 0),
+        'Lobster-Baseline-OPT': (1, 1),
+        'Lobster-OPT-PARAMS': (1, 2),
+        'Cingulata-OPT': (1, 3),
+        'MultiStart-OPT-PARAMS': (1, 4),
 
         'TFHE': (2, 0),
-        'E3-TFHE': (2, 1),
+        'E3-TFHE': (2, 1)
 
-        'SEAL-BFV-Manualparams': (3, 0),
-        'SEAL-BFV-Naive-Sealparams': (3, 1),
-        'E3-SEAL': (3, 2),
-
-        'SEAL-BFV-Batched-Manualparams': (4, 0),
-        'E3-SEAL-Batched': (4, 1)
     }
 
     # plt.title('Runtime for Cardio Benchmark', fontsize=10)
@@ -78,11 +78,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     inner_spacer = 0.0005
 
     group_labels = [
-        'Depth Optimized\n{\\fontsize{6pt}{3em}\\selectfont{(A/B/C/D})}',
-        'Cingu.',
-        'TFHE\n{\\fontsize{6pt}{3em}\\selectfont{}(Opt./E\\textsuperscript{3})}',
-        'SEAL\n{\\fontsize{6pt}{3em}\\selectfont{}(Opt./Naive/E\\textsuperscript{3})}',
-        'SEAL Bat.\n{\\fontsize{6pt}{3em}\\selectfont{}(Opt./E\\textsuperscript{3})}'
+        'SEAL\n{\\fontsize{6pt}{3em}\\selectfont{}(Opt.*/E\\textsuperscript{3}*/Opt./E\\textsuperscript{3}/Naive)}',
+        'Cingulata\n{\\fontsize{6pt}{3em}\\selectfont{(A/B/C/D/E})}',
+        'TFHE\n{\\fontsize{6pt}{3em}\\selectfont{}(Opt./E\\textsuperscript{3})}'
     ]
 
     x_center, x_start = get_x_ticks_positions(positions, bar_width, inner_spacer, spacer)
@@ -135,7 +133,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # Add Legend
     plt.legend((p4[0], p3[0], p2[0], p1[0]),
                ('Dec.', 'Comp.', 'Enc.', 'Key Gen.'),
-               ncol=2, loc='upper left', fontsize=7)
+               ncol=2, fontsize=7)
 
     # Restore current figure
     plt.figure(previous_figure.number)
