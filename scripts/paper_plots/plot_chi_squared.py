@@ -75,7 +75,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # {\fontsize{30pt}{3em}\selectfont{}{Mean WRFv3.5 LHF\r}{\fontsize{18pt}{3em}\selectfont{}(September 16 - October 30, 2012)}
     group_labels = [
         'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Opt./Naive/E\\textsuperscript{3}/EVA)}',
-        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/Naive/E\\textsuperscript{3})}',
+        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Naive/E\\textsuperscript{3})}',
         'Cingulata'
     ]
 
