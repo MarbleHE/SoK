@@ -2,12 +2,7 @@ import math
 from typing import List
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 from matplotlib.ticker import FuncFormatter
-import itertools
-import operator
-from operator import add
-
 from plot_utils import get_x_ticks_positions, get_x_position
 
 
