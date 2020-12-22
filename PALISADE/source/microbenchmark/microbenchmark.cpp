@@ -1,30 +1,3 @@
-// @file depth-bfvrns.cpp - Example of a computation circuit of depth 3.
-// @author TPOC: contact@palisade-crypto.org
-//
-// @copyright Copyright (c) 2019, New Jersey Institute of Technology (NJIT))
-// All rights reserved.
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are met:
-// 1. Redistributions of source code must retain the above copyright notice,
-// this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright notice,
-// this list of conditions and the following disclaimer in the documentation
-// and/or other materials provided with the distribution. THIS SOFTWARE IS
-// PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
-// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-// MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
-// EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-//
-// @section DESCRIPTION
-// BFVrns demo for a homomorphic multiplication of depth 6 and three different
-// approaches for depth-3 multiplications
-
 #define PROFILE
 
 #include <chrono>
@@ -38,34 +11,19 @@
 using namespace std;
 using namespace lbcrypto;
 
+typedef std::chrono::microseconds TARGET_TIME_UNIT;
+
 int main(int argc, char *argv[]) {
-  ////////////////////////////////////////////////////////////
-  // Set-up of parameters
-  ////////////////////////////////////////////////////////////
-
-  std::cout << "\nThis code demonstrates the use of the BFVrns scheme for "
-               "homomorphic multiplication. "
-            << std::endl;
-  std::cout
-      << "This code shows how to auto-generate parameters during run-time "
-         "based on desired plaintext moduli and security levels. "
-      << std::endl;
-  std::cout << "In this demonstration we use three input plaintext and show "
-               "how to both add them together and multiply them together. "
-            << std::endl;
-
-  // benchmarking variables
-  TimeVar t;
-  double processingTime(0.0);
+  std::stringstream ss_params;
 
   usint plaintextModulus = 536903681;
+  ss_params << "plaintextModulus: " << plaintextModulus << std::endl;
   double sigma = 3.2;
+  ss_params << "sigma: " << sigma << std::endl;
   SecurityLevel securityLevel = HEStd_128_classic;
+  ss_params << "securityLevel: " << securityLevel << std::endl;
 
-  ////////////////////////////////////////////////////////////
   // Parameter generation
-  ////////////////////////////////////////////////////////////
-
   EncodingParams encodingParams(
       std::make_shared<EncodingParamsImpl>(plaintextModulus));
 
@@ -81,16 +39,16 @@ int main(int argc, char *argv[]) {
   cryptoContext->Enable(ENCRYPTION);
   cryptoContext->Enable(SHE);
 
-  std::cout << "\np = "
+  ss_params << "p = "
             << cryptoContext->GetCryptoParameters()->GetPlaintextModulus()
             << std::endl;
-  std::cout << "n = "
+  ss_params << "n = "
             << cryptoContext->GetCryptoParameters()
                        ->GetElementParams()
                        ->GetCyclotomicOrder() /
                    2
             << std::endl;
-  std::cout << "log2 q = "
+  ss_params << "log2 q = "
             << log2(cryptoContext->GetCryptoParameters()
                         ->GetElementParams()
                         ->GetModulus()
@@ -104,241 +62,231 @@ int main(int argc, char *argv[]) {
   // Perform Key Generation Operation
   ////////////////////////////////////////////////////////////
 
-  std::cout << "\nRunning key generation (used for source data)..."
-            << std::endl;
-
-  TIC(t);
-
   keyPair = cryptoContext->KeyGen();
-
-  processingTime = TOC(t);
-  std::cout << "Key generation time: " << processingTime << "ms" << std::endl;
-
   if (!keyPair.good()) {
     std::cout << "Key generation failed!" << std::endl;
     exit(1);
   }
 
-  std::cout << "Running key generation for homomorphic multiplication "
-               "evaluation keys..."
-            << std::endl;
-
-  TIC(t);
-
   cryptoContext->EvalMultKeysGen(keyPair.secretKey);
 
-  processingTime = TOC(t);
-  std::cout
-      << "Key generation time for homomorphic multiplication evaluation keys: "
-      << processingTime << "ms" << std::endl;
+  // write ss_params into file
+  std::ofstream fheParamsFile;
+  fheParamsFile.open("fhe_parameters_microbenchmark.txt", std::ios_base::app);
+  fheParamsFile << ss_params.str() << std::endl;
+  fheParamsFile.close();
+
+  const int NUM_REPETITIONS{250};
+  std::stringstream ss_time;
 
-  // cryptoContext->EvalMultKeyGen(keyPair.secretKey);
+  // =======================================================
+  // Ctxt-Ctxt Multiplication with new ciphertext
+  // =======================================================
 
-  ////////////////////////////////////////////////////////////
-  // Encode source data
-  ////////////////////////////////////////////////////////////
-
-  std::vector<int64_t> vectorOfInts1 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  Plaintext plaintext1 = cryptoContext->MakePackedPlaintext(vectorOfInts1);
-
-  std::vector<int64_t> vectorOfInts2 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  Plaintext plaintext2 = cryptoContext->MakePackedPlaintext(vectorOfInts2);
-
-  std::vector<int64_t> vectorOfInts3 = {2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  Plaintext plaintext3 = cryptoContext->MakePackedPlaintext(vectorOfInts3);
-
-  std::vector<int64_t> vectorOfInts4 = {2, 1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  Plaintext plaintext4 = cryptoContext->MakePackedPlaintext(vectorOfInts4);
-
-  std::vector<int64_t> vectorOfInts5 = {3, 2, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  Plaintext plaintext5 = cryptoContext->MakePackedPlaintext(vectorOfInts5);
-
-  std::vector<int64_t> vectorOfInts6 = {3, 2, 1, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  Plaintext plaintext6 = cryptoContext->MakePackedPlaintext(vectorOfInts6);
-
-  std::vector<int64_t> vectorOfInts7 = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  Plaintext plaintext7 = cryptoContext->MakePackedPlaintext(vectorOfInts7);
-
-  cout << "\nOriginal Plaintext #1: \n";
-  cout << plaintext1 << endl;
-
-  cout << "\nOriginal Plaintext #2: \n";
-  cout << plaintext2 << endl;
-
-  cout << "\nOriginal Plaintext #3: \n";
-  cout << plaintext3 << endl;
-
-  cout << "\nOriginal Plaintext #4: \n";
-  cout << plaintext4 << endl;
-
-  cout << "\nOriginal Plaintext #5: \n";
-  cout << plaintext5 << endl;
-
-  cout << "\nOriginal Plaintext #6: \n";
-  cout << plaintext6 << endl;
-
-  cout << "\nOriginal Plaintext #7: \n";
-  cout << plaintext7 << endl;
-
-  ////////////////////////////////////////////////////////////
-  // Encryption
-  ////////////////////////////////////////////////////////////
-
-  cout << "\nRunning encryption of all plaintexts... ";
-
-  vector<Ciphertext<DCRTPoly>> ciphertexts;
-
-  TIC(t);
-
-  ciphertexts.push_back(cryptoContext->Encrypt(keyPair.publicKey, plaintext1));
-  ciphertexts.push_back(cryptoContext->Encrypt(keyPair.publicKey, plaintext2));
-  ciphertexts.push_back(cryptoContext->Encrypt(keyPair.publicKey, plaintext3));
-  ciphertexts.push_back(cryptoContext->Encrypt(keyPair.publicKey, plaintext4));
-  ciphertexts.push_back(cryptoContext->Encrypt(keyPair.publicKey, plaintext5));
-  ciphertexts.push_back(cryptoContext->Encrypt(keyPair.publicKey, plaintext6));
-  ciphertexts.push_back(cryptoContext->Encrypt(keyPair.publicKey, plaintext7));
-
-  processingTime = TOC(t);
-
-  cout << "Completed\n";
-
-  std::cout << "\nAverage encryption time: " << processingTime / 7 << "ms"
-            << std::endl;
-
-  ////////////////////////////////////////////////////////////
-  // Homomorphic multiplication of 2 ciphertexts
-  ////////////////////////////////////////////////////////////
-
-  TIC(t);
-
-  auto ciphertextMult = cryptoContext->EvalMult(ciphertexts[0], ciphertexts[1]);
-
-  processingTime = TOC(t);
-  std::cout << "\nTotal time of multiplying 2 ciphertexts using EvalMult w/ "
-               "relinearization: "
-            << processingTime << "ms" << std::endl;
-
-  Plaintext plaintextDecMult;
-
-  TIC(t);
-
-  cryptoContext->Decrypt(keyPair.secretKey, ciphertextMult, &plaintextDecMult);
-
-  processingTime = TOC(t);
-  std::cout << "\nDecryption time: " << processingTime << "ms" << std::endl;
-
-  plaintextDecMult->SetLength(plaintext1->GetLength());
-
-  cout << "\nResult of homomorphic multiplication of ciphertexts #1 and #2: \n";
-  cout << plaintextDecMult << endl;
-
-  ////////////////////////////////////////////////////////////
-  // Homomorphic multiplication of 7 ciphertexts
-  ////////////////////////////////////////////////////////////
-
-  cout << "\nRunning a binary-tree multiplication of 7 ciphertexts...";
-
-  TIC(t);
-
-  auto ciphertextMult7 = cryptoContext->EvalMultMany(ciphertexts);
-
-  processingTime = TOC(t);
-
-  cout << "Completed\n";
-
-  std::cout << "\nTotal time of multiplying 7 ciphertexts using EvalMultMany: "
-            << processingTime << "ms" << std::endl;
-
-  Plaintext plaintextDecMult7;
-
-  cryptoContext->Decrypt(keyPair.secretKey, ciphertextMult7,
-                         &plaintextDecMult7);
-
-  plaintextDecMult7->SetLength(plaintext1->GetLength());
-
-  cout << "\nResult of 6 homomorphic multiplications: \n";
-  cout << plaintextDecMult7 << endl;
-
-  ////////////////////////////////////////////////////////////
-  // Homomorphic multiplication of 3 ciphertexts where relinearization is done
-  // at the end
-  ////////////////////////////////////////////////////////////
-
-  cout << "\nRunning a depth-3 multiplication w/o relinearization until the "
-          "very end...";
-
-  TIC(t);
-
-  auto ciphertextMult12 =
-      cryptoContext->EvalMultNoRelin(ciphertexts[0], ciphertexts[1]);
-
-  processingTime = TOC(t);
-
-  cout << "Completed\n";
-
-  std::cout << "Time of multiplying 2 ciphertexts w/o relinearization: "
-            << processingTime << "ms" << std::endl;
-
-  auto ciphertextMult123 =
-      cryptoContext->EvalMultAndRelinearize(ciphertextMult12, ciphertexts[2]);
-
-  Plaintext plaintextDecMult123;
-
-  cryptoContext->Decrypt(keyPair.secretKey, ciphertextMult123,
-                         &plaintextDecMult123);
-
-  plaintextDecMult123->SetLength(plaintext1->GetLength());
-
-  cout << "\nResult of 3 homomorphic multiplications: \n";
-  cout << plaintextDecMult123 << endl;
-
-  ////////////////////////////////////////////////////////////
-  // Homomorphic multiplication of 3 ciphertexts w/o any relinearization
-  ////////////////////////////////////////////////////////////
-
-  cout << "\nRunning a depth-3 multiplication w/o relinearization...";
-
-  ciphertextMult12 =
-      cryptoContext->EvalMultNoRelin(ciphertexts[0], ciphertexts[1]);
-  ciphertextMult123 =
-      cryptoContext->EvalMultNoRelin(ciphertextMult12, ciphertexts[2]);
-
-  cout << "Completed\n";
-
-  cryptoContext->Decrypt(keyPair.secretKey, ciphertextMult123,
-                         &plaintextDecMult123);
-
-  plaintextDecMult123->SetLength(plaintext1->GetLength());
-
-  cout << "\nResult of 3 homomorphic multiplications: \n";
-  cout << plaintextDecMult123 << endl;
-
-  ////////////////////////////////////////////////////////////
-  // Homomorphic multiplication of 3 ciphertexts w/ relinearization after each
-  // multiplication
-  ////////////////////////////////////////////////////////////
-
-  cout << "\nRunning a depth-3 multiplication w/ relinearization after each "
-          "multiplication...";
-
-  TIC(t);
-
-  ciphertextMult12 = cryptoContext->EvalMult(ciphertexts[0], ciphertexts[1]);
-
-  processingTime = TOC(t);
-  cout << "Completed\n";
-  std::cout << "Time of multiplying 2 ciphertexts w/ relinearization: "
-            << processingTime << "ms" << std::endl;
-
-  ciphertextMult123 = cryptoContext->EvalMult(ciphertextMult12, ciphertexts[2]);
-
-  cryptoContext->Decrypt(keyPair.secretKey, ciphertextMult123,
-                         &plaintextDecMult123);
-
-  plaintextDecMult123->SetLength(plaintext1->GetLength());
-
-  cout << "\nResult of 3 homomorphic multiplications: \n";
-  cout << plaintextDecMult123 << endl;
+  std::cout << "== Ctxt-Ctxt Multiplication with new ciphertext" << std::endl;
+  size_t total_time = 0;
+
+  for (size_t i = 0; i < NUM_REPETITIONS; i++) {
+    auto pa = cryptoContext->MakeIntegerPlaintext(4214);
+    auto ca = cryptoContext->Encrypt(keyPair.publicKey, pa);
+
+    auto pb = cryptoContext->MakeIntegerPlaintext(28);
+    auto cb = cryptoContext->Encrypt(keyPair.publicKey, pb);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    auto ciphertextMult = cryptoContext->EvalMultAndRelinearize(ca, cb);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    total_time +=
+        std::chrono::duration_cast<TARGET_TIME_UNIT>(end - start).count();
+  }
+  ss_time << (total_time / NUM_REPETITIONS) << ",";
+
+  // =======================================================
+  // Ctxt-Ctxt Multiplication in-place
+  // =======================================================
+
+  // not supported by PALISADE
+  ss_time << 0 << ",";
+
+  // =======================================================
+  // Ctxt-Ptxt Multiplication with new ciphertext
+  // =======================================================
+
+  std::cout << "== Ctxt-Ptxt Multiplication with new ciphertext" << std::endl;
+  total_time = 0;
+  for (size_t i = 0; i < NUM_REPETITIONS; i++) {
+    auto pa = cryptoContext->MakeIntegerPlaintext(4214);
+    auto ca = cryptoContext->Encrypt(keyPair.publicKey, pa);
+
+    auto pb = cryptoContext->MakeIntegerPlaintext(28);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    auto ciphertextMult = cryptoContext->EvalMult(ca, pb);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    total_time +=
+        std::chrono::duration_cast<TARGET_TIME_UNIT>(end - start).count();
+  }
+  ss_time << (total_time / NUM_REPETITIONS) << ",";
+
+  // =======================================================
+  // Ctxt-Ptxt Multiplication in-place
+  // =======================================================
+
+  // not supported by PALISADE
+  ss_time << 0 << ",";
+
+  // =======================================================
+  // Ctxt-Ctxt Addition time with new ciphertext
+  // =======================================================
+
+  std::cout << "== Ctxt-Ctxt Addition time with new ciphertext" << std::endl;
+  total_time = 0;
+  for (size_t i = 0; i < NUM_REPETITIONS; i++) {
+    auto pa = cryptoContext->MakeIntegerPlaintext(4214);
+    auto ca = cryptoContext->Encrypt(keyPair.publicKey, pa);
+
+    auto pb = cryptoContext->MakeIntegerPlaintext(28);
+    auto cb = cryptoContext->Encrypt(keyPair.publicKey, pb);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    cryptoContext->EvalAdd(ca, cb);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    total_time +=
+        std::chrono::duration_cast<TARGET_TIME_UNIT>(end - start).count();
+  }
+  ss_time << (total_time / NUM_REPETITIONS) << ",";
+
+  // =======================================================
+  // Ctxt-Ctxt Addition time in-place
+  // =======================================================
+
+  // not supported by PALISADE
+  ss_time << 0 << ",";
+
+  // =======================================================
+  // Ctxt-Ptxt Addition with new ciphertext
+  // =======================================================
+
+  std::cout << "== Ctxt-Ptxt Addition with new ciphertext" << std::endl;
+  total_time = 0;
+  for (size_t i = 0; i < NUM_REPETITIONS; i++) {
+    auto pa = cryptoContext->MakeIntegerPlaintext(4214);
+    auto ca = cryptoContext->Encrypt(keyPair.publicKey, pa);
+
+    auto pb = cryptoContext->MakeIntegerPlaintext(28);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    auto ciphertextMult = cryptoContext->EvalAdd(pb, ca);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    total_time +=
+        std::chrono::duration_cast<TARGET_TIME_UNIT>(end - start).count();
+  }
+  ss_time << (total_time / NUM_REPETITIONS) << ",";
+
+  // =======================================================
+  // Ctxt-Ptxt Addition in-place
+  // =======================================================
+
+  // not supported by PALISADE
+  ss_time << 0 << ",";
+
+  // =======================================================
+  // Sk Encryption time
+  // =======================================================
+
+  std::cout << "== Sk Encryption time" << std::endl;
+  total_time = 0;
+  for (size_t i = 0; i < NUM_REPETITIONS; i++) {
+    auto start = std::chrono::high_resolution_clock::now();
+    auto pa = cryptoContext->MakeIntegerPlaintext(23213);
+    cryptoContext->Encrypt(keyPair.publicKey, pa);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    total_time +=
+        std::chrono::duration_cast<TARGET_TIME_UNIT>(end - start).count();
+  }
+  ss_time << (total_time / NUM_REPETITIONS) << ",";
+
+  // =======================================================
+  // Pk Encryption Time
+  // =======================================================
+
+  std::cout << "== Pk Encryption time" << std::endl;
+  total_time = 0;
+  for (size_t i = 0; i < NUM_REPETITIONS; i++) {
+    auto start = std::chrono::high_resolution_clock::now();
+    auto pa = cryptoContext->MakeIntegerPlaintext(23213);
+    cryptoContext->Encrypt(keyPair.secretKey, pa);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    total_time +=
+        std::chrono::duration_cast<TARGET_TIME_UNIT>(end - start).count();
+  }
+  ss_time << (total_time / NUM_REPETITIONS) << ",";
+
+  // =======================================================
+  // Decryption time
+  // =======================================================
+
+  std::cout << "== Decryption time" << std::endl;
+  total_time = 0;
+  for (size_t i = 0; i < NUM_REPETITIONS; i++) {
+    auto pa = cryptoContext->MakeIntegerPlaintext(23213);
+    auto ca = cryptoContext->Encrypt(keyPair.publicKey, pa);
+
+    auto start = std::chrono::high_resolution_clock::now();
+    Plaintext ptxt;
+    cryptoContext->Decrypt(keyPair.secretKey, ca, &ptxt);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    total_time +=
+        std::chrono::duration_cast<TARGET_TIME_UNIT>(end - start).count();
+  }
+  ss_time << (total_time / NUM_REPETITIONS) << ",";
+
+  // =======================================================
+  // Rotation (native, i.e. single-key)
+  // =======================================================
+
+  // Get BGVrns crypto context as BFV does not support EvalFastRotation
+  auto cc = CryptoContextFactory<DCRTPoly>::genCryptoContextBGVrns(1, 65537);
+  cc->Enable(ENCRYPTION);
+  cc->Enable(SHE);
+
+  auto keys = cc->KeyGen();
+  cc->EvalAtIndexKeyGen(keys.secretKey, {4});
+
+  std::vector<int64_t> vec = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
+  Plaintext ptxt = cc->MakePackedPlaintext(vec);
+  auto ctxt = cc->Encrypt(keys.publicKey, ptxt);
+
+  total_time = 0;
+  for (size_t i = 0; i < NUM_REPETITIONS; i++) {
+    auto start = std::chrono::high_resolution_clock::now();
+    //   auto precomp = cc->EvalFastRotationPrecompute(ctxt);
+    //   auto cRot = cc->EvalFastRotation(ctxt, 1, M, precomp);
+
+    auto cPrecomp = cc->EvalFastRotationPrecompute(ctxt);
+    uint32_t N = cc->GetRingDimension();
+    uint32_t M = 2 * N;
+    auto cRot1 = cc->EvalFastRotation(ctxt, 4, M, cPrecomp);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    total_time +=
+        std::chrono::duration_cast<TARGET_TIME_UNIT>(end - start).count();
+  }
+  ss_time << (total_time / NUM_REPETITIONS);
+
+  // write ss_time into file
+  std::ofstream myfile;
+  auto out_filename = std::getenv("OUTPUT_FILENAME");
+  myfile.open(out_filename, std::ios_base::app);
+  myfile << ss_time.str() << std::endl;
+  myfile.close();
 
   return 0;
 }
