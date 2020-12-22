@@ -61,10 +61,10 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'E3-SEAL': (0, 2),
         'EVA': (0, 3),
 
-        'TFHE': (1, 0),
-        'E3-TFHE': (1, 1),
+        'Cingulata': (1, 0),
 
-        'Cingulata': (2, 0),
+        'TFHE': (2, 0),
+        'E3-TFHE': (2, 1)
     }
 
     # plt.title('Runtime for Chi-Squared Test Benchmark', fontsize=10)
@@ -76,8 +76,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # {\fontsize{30pt}{3em}\selectfont{}{Mean WRFv3.5 LHF\r}{\fontsize{18pt}{3em}\selectfont{}(September 16 - October 30, 2012)}
     group_labels = [
         'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Opt./Naive/E\\textsuperscript{3}/EVA)}',
-        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Naive/E\\textsuperscript{3})}',
-        'Cingulata'
+        'Cingulata\n{\\fontsize{7pt}{3em}\\selectfont{}(Cingulata)}',
+        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Naive/E\\textsuperscript{3})}'
     ]
 
     # ['E3-SEAL', 'E3-TFHE', 'SEAL-BFV-Batched', 'SEAL-BFV', 'TFHE']
