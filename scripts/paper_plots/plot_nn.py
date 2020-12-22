@@ -2,9 +2,10 @@ import math
 from typing import List
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 from brokenaxes import brokenaxes
 from matplotlib.ticker import FuncFormatter
+
+from plot_utils import get_x_ticks_positions, get_x_position
 
 
 def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> plt.Figure:
@@ -22,10 +23,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # figsize = (int(len(labels) * 0.95), 6)
 
     inches_per_pt = 1.0 / 72.27 * 2  # Convert pt to inches
-    golden_mean = ((np.math.sqrt(5) - 1.0) / 2.0) * .8  # Aesthetic ratio
-    fig_width = 300 * inches_per_pt  # width in inches
+    fig_width = 252 * inches_per_pt  # width in inches
     # fig_height = (fig_width * golden_mean)  # height in inches
-    fig_height = 2.15
+    fig_height = 2.5
     figsize = [fig_width * 0.67, fig_height / 1.22]
 
     # figsize = (5.5, 4)
@@ -63,36 +63,29 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
             't_decryption': [0]}
         ))
 
-    # Nice names for labels: maps folder name -> short name
-    # and adds linebreaks where required
-    subs = {'SEAL-CKKS-Batched': 'SEAL-CKKS\n(MLP)',
-            'SEALion': 'SEALION\n(MLP)',
-            'nGraph-HE-MLP': 'nGraph-HE\n(MLP)',
-            'nGraph-HE-Cryptonets': 'nGraph-HE\n(Cryptonets)',
-            'nGraph-HE-LeNet5': 'nGraph-HE\n(LeNet-5)',
-            'EVA-MLP': 'EVA\n(MLP)',
-            'EVA-CHET': 'EVA\n(LeNet-5)'
-            }
-    labels = [subs.get(item, item) for item in labels]
-
     positions = {
-        'SEAL-CKKS\n(MLP)': 0,
-        'SEALION\n(MLP)': 1,
-        'nGraph-HE\n(MLP)': 2,
-        'nGraph-HE\n(Cryptonets)': 3,
-        'nGraph-HE\n(LeNet-5)': 4,
-        'EVA\n(MLP)': 5,
-        'EVA\n(LeNet-5)': 6
+        'SEAL-CKKS-Batched': (0, 0),
+
+        'SEALion': (1, 0),
+
+        'nGraph-HE-MLP': (2, 0),
+        'nGraph-HE-Cryptonets': (2, 1),
+        'nGraph-HE-LeNet5': (2, 2),
+
+        'EVA-MLP': (3, 0),
+        'EVA-CHET': (3, 1)
     }
 
-    sorted_labels = ('SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
-                     'SEALion\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
-                     'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
-                     'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(Cryptonets)}',
-                     'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(LeNet-5)}',
-                     'EVA\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
-                     'EVA\n{\\fontsize{7pt}{3em}\\selectfont{}(LeNet-5)}'
-                     )
+    bar_width = 0.002
+    spacer = 0.004
+    inner_spacer = 0.0005
+
+    group_labels = (
+        'Manual\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
+        'SEALion\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
+        'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP, CryptoNets, LeNet-5)}',
+        'EVA\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP, LeNet-5)}'
+    )
 
     # Setup brokenaxes
     # TODO: Make break depend on value of nGraph-HE LeNet-5 runtime?
@@ -110,38 +103,38 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     colors = ['#15607a', '#ffbd70', '#e7e7e7', '#ff483a']
 
+    x_center, x_start = get_x_ticks_positions(positions, bar_width, inner_spacer, spacer)
+    # plt.xticks(x_center, group_labels, fontsize=9)
+
     # Plot Bars
     width = 0.002
     for i, label in enumerate(labels):
         df = pandas_dataframes[i]
-        if len(df) == 0:
+        if len(df) == 0 or not labels[i] in positions:
             continue
-        if not labels[i] in positions:
-            continue
-        else:
-            width = 0.30
 
-            x_pos = positions[label]
-            d1 = ms_to_sec(df['t_keygen'].mean())
-            d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
-            p1 = bax.bar(x_pos, d1, width, color=colors[0])
+        x_pos = get_x_position(positions[labels[i]], x_start, bar_width, inner_spacer)
 
-            d2 = ms_to_sec(df['t_input_encryption'].mean())
-            d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
-            p2 = bax.bar(x_pos, d2, width, bottom=d1, color=colors[1])
+        d1 = ms_to_sec(df['t_keygen'].mean())
+        d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
+        p1 = bax.bar(x_pos, d1, width, color=colors[0])
 
-            d3 = ms_to_sec(df['t_computation'].mean())
-            d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
-            p3 = bax.bar(x_pos, d3, width, bottom=d1 + d2, color=colors[2])
+        d2 = ms_to_sec(df['t_input_encryption'].mean())
+        d2_err = 0 if math.isnan(df['t_input_encryption'].std()) else df['t_input_encryption'].std()
+        p2 = bax.bar(x_pos, d2, width, bottom=d1, color=colors[1])
 
-            d4 = ms_to_sec(df['t_decryption'].mean())
-            d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
-            total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
-            p4 = bax.bar(x_pos, d4, width, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3,
-                         color=colors[3])
-            print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ',
-                  d1 + d2 + d3 + d4,
-                  ')')
+        d3 = ms_to_sec(df['t_computation'].mean())
+        d3_err = 0 if math.isnan(df['t_computation'].std()) else df['t_computation'].std()
+        p3 = bax.bar(x_pos, d3, width, bottom=d1 + d2, color=colors[2])
+
+        d4 = ms_to_sec(df['t_decryption'].mean())
+        d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
+        total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
+        p4 = bax.bar(x_pos, d4, width, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3,
+                     color=colors[3])
+        print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ',
+              d1 + d2 + d3 + d4,
+              ')')
 
     # Setup axes
     bax.axs[1].tick_params(axis='x', which='major', labelsize=9)
@@ -149,9 +142,11 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     bax.axs[1].tick_params(axis='y', which='major', labelsize=8)
     bax.axs[0].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
     bax.axs[1].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
-    bax.axs[0].set_xticks(np.arange(len(sorted_labels)))
-    bax.axs[1].set_xticks(np.arange(len(sorted_labels)))
-    bax.axs[1].set_xticklabels(sorted_labels)
+    # bax.axs[0].set_xticks(np.arange(len(group_labels)))
+    bax.axs[0].set_xticks(x_center)
+    # bax.axs[1].set_xticks(np.arange(len(group_labels)))
+    bax.axs[1].set_xticks(x_center)
+    bax.axs[1].set_xticklabels(group_labels)
     bax.set_ylabel('Time [s]', labelpad=26)
 
     # plt.title('Runtime for Neural Network Benchmark', fontsize=10)
