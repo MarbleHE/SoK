@@ -58,10 +58,10 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'SEAL-BFV-Opt': (0, 0),
         'SEAL-BFV-Naive': (0, 1),
         'E3-SEAL': (0, 2),
+        'EVA': (0, 3),
 
         'TFHE': (1, 0),
-        'TFHE-Manual': (1, 1),
-        'E3-TFHE': (1, 2),
+        'E3-TFHE': (1, 1),
 
         'Cingulata': (2, 0),
     }
@@ -70,10 +70,11 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.ylabel('Time [s]', labelpad=0)
 
     bar_width = 0.002
-    spacer = 0.01
+    spacer = 0.004
+    inner_spacer = 0.0005
     # {\fontsize{30pt}{3em}\selectfont{}{Mean WRFv3.5 LHF\r}{\fontsize{18pt}{3em}\selectfont{}(September 16 - October 30, 2012)}
     group_labels = [
-        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/Naive/E\\textsuperscript{3})}',
+        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Opt./Naive/E\\textsuperscript{3}/EVA)}',
         'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Manual/Naive/E\\textsuperscript{3})}',
         'Cingulata'
     ]
@@ -85,7 +86,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         x_pos_start = []
         x_pos_end = []
         for key, group in itertools.groupby(positions.values(), operator.itemgetter(0)):
-            group_widths.append(len(list(group)) * bar_width)
+            group_widths.append(len(list(group)) * (bar_width + inner_spacer) - inner_spacer)
         for w in group_widths:
             if not x_pos_start:
                 x_pos_start.append(0 + spacer)
@@ -98,7 +99,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     x_center, x_start = get_x_ticks_positions()
 
     def get_x_position(group_pos: tuple) -> int:
-        return x_start[group_pos[0]] + (group_pos[1] * bar_width) + (bar_width / 2)
+        return x_start[group_pos[0]] + (group_pos[1] * (bar_width + inner_spacer)) + (bar_width / 2)
 
     plt.yscale('log')
 
@@ -113,8 +114,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     def ms_to_sec(num):
         return num / 1_000
 
-    # colorblind-safe set of colors created by https://colorbrewer2.org
-    colors = ['#a6cee3', '#1f78b4', '#D9DC8E', '#33a02c']
+    # colors = ['#15607a', '#18a1cd', '#09bb9f', '#39f3bb']
+    colors = ['#15607a', '#ffbd70', '#e7e7e7', '#ff483a']
 
     # Plot Bars
     max_y_value = 0
@@ -125,12 +126,6 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
             x_pos = get_x_position(positions[labels[i]])
 
         df = pandas_dataframes[i]
-
-        if 'SEAL-BFV-Naive' in labels[i]:
-            df['t_keygen'] = 0
-            df['t_input_encryption'] = 0
-            df['t_computation'] = 0
-            df['t_decryption'] = 0
 
         d1 = ms_to_sec(df['t_keygen'].mean())
         d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
@@ -156,8 +151,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.yticks(fontsize=8)
 
     # Add Legend
-    plt.legend((p1[0], p2[0], p3[0], p4[0]),
-               ('Key Generation', 'Encryption', 'Computation', 'Decryption'),
+    plt.legend((p4[0], p3[0], p2[0], p1[0]),
+               ('Decryption', 'Computation', 'Encryption', 'Key Generation'),
                loc='upper left')
 
     # Restore current figure

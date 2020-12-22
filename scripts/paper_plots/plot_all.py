@@ -27,6 +27,7 @@ def save_plot_in_s3(fig: plt.Figure, filename: str, root_folder: str, use_tight_
 
 
 def plot_all_cardio():
+    print("Plotting Cardio")
     try:
         labels, data, root_folder = get_labels_data_from_s3('cardio')
     except TypeError:
@@ -41,15 +42,14 @@ def plot_all_cardio():
 
         'Cingulata-OPT',
 
-        'SEAL-BFV-Sealparams',
+        'SEAL-BFV-Manualparams',
         'SEAL-BFV-Naive-Sealparams',
         'E3-SEAL',
 
         'TFHE',
-        'TFHE-Naive',
         'E3-TFHE',
 
-        'SEAL-BFV-Batched-Sealparams',
+        'SEAL-BFV-Batched-Manualparams',
         'E3-SEAL-Batched',
     ]
 
@@ -71,6 +71,7 @@ def plot_all_cardio():
 
 
 def plot_all_nn():
+    print("Plotting NN")
     try:
         labels, data, root_folder = get_labels_data_from_s3('nn')
     except TypeError:
@@ -84,6 +85,7 @@ def plot_all_nn():
 
 
 def plot_all_chi_squared():
+    print("Plotting Chi Squared")
     try:
         labels, data, root_folder = get_labels_data_from_s3('chi_squared')
     except TypeError:
@@ -97,6 +99,7 @@ def plot_all_chi_squared():
 
 
 def plot_all_kernel():
+    print("Plotting Kernel")
     try:
         labels, data, root_folder = get_labels_data_from_s3('kernel')
     except TypeError:
@@ -110,6 +113,7 @@ def plot_all_kernel():
 
 
 def plot_all_microbenchmark():
+    print("Plotting Microbenchmarks")
     try:
         labels, data, root_folder = get_labels_data_from_s3('microbenchmark')
     except TypeError:
