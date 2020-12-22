@@ -8,6 +8,8 @@ import itertools
 import operator
 from operator import add
 
+from plot_utils import get_x_ticks_positions, get_x_position
+
 
 def human_format(num):
     num = float('{:.3g}'.format(num))
@@ -67,7 +69,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     plt.ylabel('Time [s]', labelpad=0)
 
     bar_width = 0.002
-    spacer = 0.01
+    spacer = 0.004
+    inner_spacer = 0.0005
+
     group_labels = [
         'Cingulata',
         'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
@@ -75,27 +79,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         # 'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Native/E\\textsuperscript{3})}',
     ]
 
-    # ['E3-SEAL', 'E3-TFHE', 'SEAL-BFV-Batched', 'SEAL-BFV', 'TFHE']
-
-    def get_x_ticks_positions():
-        group_widths = []
-        x_pos_start = []
-        x_pos_end = []
-        for key, group in itertools.groupby(positions.values(), operator.itemgetter(0)):
-            group_widths.append(len(list(group)) * bar_width)
-        for w in group_widths:
-            if not x_pos_start:
-                x_pos_start.append(0 + spacer)
-            else:
-                x_pos_start.append(x_pos_end[-1] + spacer)
-            x_pos_end.append(x_pos_start[-1] + w)
-        result = list(map(add, x_pos_start, [w / 2 for w in group_widths]))
-        return result, x_pos_start
-
-    x_center, x_start = get_x_ticks_positions()
-
-    def get_x_position(group_pos: tuple) -> int:
-        return x_start[group_pos[0]] + (group_pos[1] * bar_width) + (bar_width / 2)
+    x_center, x_start = get_x_ticks_positions(positions, bar_width, inner_spacer, spacer)
 
     plt.yscale('log')
 
@@ -110,8 +94,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     def ms_to_sec(num):
         return num / 1_000
 
-    # colorblind-safe set of colors created by https://colorbrewer2.org
-    colors = ['#a6cee3', '#1f78b4', '#D9DC8E', '#33a02c']
+    colors = ['#15607a', '#ffbd70', '#e7e7e7', '#ff483a']
 
     # Plot Bars
     max_y_value = 0
@@ -119,7 +102,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         if not labels[i] in positions:
             continue
         else:
-            x_pos = get_x_position(positions[labels[i]])
+            x_pos = get_x_position(positions[labels[i]], x_start, bar_width, inner_spacer)
         df = pandas_dataframes[i]
         d1 = ms_to_sec(df['t_keygen'].mean())
         d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()

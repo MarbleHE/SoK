@@ -49,7 +49,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # change legend font size
     plt.rcParams["legend.fontsize"] = 8
     # NOTE: Enabling this requires latex to be installed on the Github actions runner
-    # plt.rcParams["text.usetex"] = True
+    plt.rcParams["text.usetex"] = True
     plt.rcParams["font.family"] = 'serif'
 
     positions = {
@@ -64,7 +64,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     }
 
     # plt.title('Runtime for Chi-Squared Test Benchmark', fontsize=10)
-    plt.ylabel('Time [s]', labelpad=0)
+    plt.ylabel('Time [$\mu$s]', labelpad=0)
 
     # adds a thousand separator
     # fig.axes[0].get_yaxis().set_major_formatter(FuncFormatter(lambda x, p: format(int(x), ',')))
@@ -72,16 +72,12 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     ax = plt.gca()
     ax.grid(which='major', axis='y', linestyle=':')
 
-    def us_to_msec(num):
-        return num / 1_000
-
     tools = {
-        "PALISADE-Microbenchmark": "PALISADE",
-        "SEAL-BFV-Microbenchmark": "SEAL-BFV",
+        "PALISADE-Microbenchmark": "PALISADE BFV-RNS",
+        "SEAL-BFV-Microbenchmark": "SEAL BFV",
     }
 
-    # colorblind-safe set of colors created by https://colorbrewer2.org
-    colors = ['#a6cee3', '#1f78b4', '#D9DC8E', '#33a02c']
+    colors = ['#15607a', '#ffbd70', '#e7e7e7', '#ff483a']
 
     data = pd.DataFrame(index=pandas_dataframes[0].columns)  #
     for v, l in zip(pandas_dataframes, labels):
@@ -111,8 +107,6 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     ax.yaxis.set_major_formatter(FuncFormatter(lambda x, p: human_format(x)))
 
     plt.tight_layout()
-
-    plt.show()
 
     # Restore current figure
     plt.figure(previous_figure.number)

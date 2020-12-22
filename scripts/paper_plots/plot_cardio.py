@@ -9,6 +9,8 @@ import operator
 from operator import add
 import matplotlib.colors as mcolors
 
+from plot_utils import get_x_ticks_positions, get_x_position
+
 
 def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> plt.Figure:
     """
@@ -24,7 +26,6 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # Set the current figure to fig
     # figsize = (int(len(labels) * 0.95), 6)
     inches_per_pt = 1.0 / 72.27 * 2  # Convert pt to inches
-    golden_mean = ((np.math.sqrt(5) - 1.0) / 2.0) * .8  # Aesthetic ratio
     fig_width = 275 * inches_per_pt  # width in inches
     # fig_height = (fig_width * golden_mean)  # height in inches
     fig_height = 2.5
@@ -46,7 +47,6 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # NOTE: Enabling this requires latex to be installed on the Github actions runner
     plt.rcParams["text.usetex"] = True
     plt.rcParams["font.family"] = 'serif'
-    plt.rcParams['hatch.linewidth'] = 0.1  # previous pdf hatch linewidth
 
     # Nice names for labels: maps folder name -> short name
     # and adds linebreaks where required
@@ -73,8 +73,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     # plt.title('Runtime for Cardio Benchmark', fontsize=10)
 
-    bar_width = 0.03
-    spacer = 0.02
+    bar_width = 0.002
+    spacer = 0.004
+    inner_spacer = 0.0005
 
     group_labels = [
         'Depth Optimized\n{\\fontsize{6pt}{3em}\\selectfont{(A/B/C/D})}',
@@ -84,31 +85,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'SEAL Bat.\n{\\fontsize{6pt}{3em}\\selectfont{}(Opt./E\\textsuperscript{3})}'
     ]
 
-    # reserved_indices = {}
-    # def get_x_position(group_no: int) -> int:
-    #     next_idx = reserved_indices[group_no] + 1 if group_no in reserved_indices else 0
-    #     reserved_indices[group_no] = next_idx
-    #     return group_no + next_idx * bar_width
-
-    def get_x_ticks_positions():
-        group_widths = []
-        x_pos_start = []
-        x_pos_end = []
-        for key, group in itertools.groupby(positions.values(), operator.itemgetter(0)):
-            group_widths.append(len(list(group)) * bar_width)
-        for w in group_widths:
-            if not x_pos_start:
-                x_pos_start.append(0 + spacer)
-            else:
-                x_pos_start.append(x_pos_end[-1] + spacer)
-            x_pos_end.append(x_pos_start[-1] + w)
-        result = list(map(add, x_pos_start, [w / 2 for w in group_widths]))
-        return result, x_pos_start
-
-    x_center, x_start = get_x_ticks_positions()
-
-    def get_x_position(group_pos: tuple) -> int:
-        return x_start[group_pos[0]] + (group_pos[1] * bar_width) + (bar_width / 2)
+    x_center, x_start = get_x_ticks_positions(positions, bar_width, inner_spacer, spacer)
 
     plt.xticks(x_center, group_labels, fontsize=9)  # rotation='35',)
     # adds a thousand separator
@@ -122,10 +99,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     # colors = ['0.1', '0.35', '0.5', '0.85']
     # hatches = ['', '.', '///', '']
-    # colors = ['#808080', '#0a008f', '#268c8c', '#595959']
 
-    # colorblind-safe set of colors created by https://colorbrewer2.org
-    colors = ['#a6cee3', '#1f78b4', '#D9DC8E', '#33a02c']
+    colors = ['#15607a', '#ffbd70', '#e7e7e7', '#ff483a']
 
     # Plot Bars
     max_y_value = 0
@@ -133,7 +108,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         if not labels[i] in positions:
             continue
         else:
-            x_pos = get_x_position(positions[labels[i]])
+            x_pos = get_x_position(positions[labels[i]], x_start, bar_width, inner_spacer)
         df = pandas_dataframes[i]
         d1 = ms_to_sec(df['t_keygen'].mean())
         d1_err = 0 if math.isnan(df['t_keygen'].std()) else df['t_keygen'].std()
@@ -155,12 +130,11 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     plt.ylabel('Time [s]', labelpad=0)
     max_y_rounded = (int(math.ceil(max_y_value / 10.0)) * 10) + 10
-    # plt.yticks(np.arange(0, max_y_rounded, step=20), fontsize=8)
     plt.yticks(fontsize=8)
 
     # Add Legend
-    plt.legend((p1[0], p2[0], p3[0], p4[0]),
-               ('Key Gen.', 'Enc.', 'Comp.', 'Dec.'),
+    plt.legend((p4[0], p3[0], p2[0], p1[0]),
+               ('Dec.', 'Comp.', 'Enc.', 'Key Gen.'),
                ncol=2, loc='upper left', fontsize=7)
 
     # Restore current figure

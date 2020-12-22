@@ -137,7 +137,7 @@ def run_in_parallel(*fns):
 
 
 def plot_all():
-    # runInParallel(plot_all_cardio, plot_all_nn, plot_all_chi_squared)
+    # run_in_parallel(plot_all_microbenchmark, plot_all_cardio, plot_all_kernel, plot_all_nn, plot_all_chi_squared)
     plot_all_microbenchmark()
     plot_all_cardio()
     plot_all_nn()

@@ -6,6 +6,7 @@ import numpy as np
 from brokenaxes import brokenaxes
 from matplotlib.ticker import FuncFormatter
 
+
 def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> plt.Figure:
     """
 
@@ -64,7 +65,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'nGraph-HE\n(MLP)': 2,
         'nGraph-HE\n(Cryptonets)': 3,
         'nGraph-HE\n(LeNet-5)': 4,
-        'EVA\n(MLP, LeNet-5)': 5 # TODO: This is just a temporary hack
+        'EVA\n(MLP, LeNet-5)': 5  # TODO: This is just a temporary hack
     }
 
     sorted_labels = ('SEAL-CKKS\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
@@ -72,7 +73,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
                      'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP)}',
                      'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(Cryptonets)}',
                      'nGraph-HE\n{\\fontsize{7pt}{3em}\\selectfont{}(LeNet-5)}',
-                     'EVA\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP, LeNet-5)}' # TODO: This is just a temporary hack
+                     'EVA\n{\\fontsize{7pt}{3em}\\selectfont{}(MLP, LeNet-5)}'  # TODO: This is just a temporary hack
                      )
 
     # Setup brokenaxes
@@ -89,11 +90,10 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     def ms_to_sec(num):
         return num / 1_000
 
-    # colorblind-safe set of colors created by https://colorbrewer2.org
-    colors = ['#a6cee3', '#1f78b4', '#D9DC8E', '#33a02c']
+    colors = ['#15607a', '#ffbd70', '#e7e7e7', '#ff483a']
 
     # Plot Bars
-    width = 0.30
+    width = 0.002
     for i, label in enumerate(labels):
         df = pandas_dataframes[i]
         if len(df) == 0:
@@ -104,7 +104,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
             # TODO: Remove this dirty
             if 'EVA' in label:
-                width = 2*width + 0.1
+                width = 2 * width + 0.1
                 for k in df.columns:
                     df[k] = 0
             else:
@@ -126,7 +126,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
             d4 = ms_to_sec(df['t_decryption'].mean())
             d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
             total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
-            p4 = bax.bar(x_pos, d4, width, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3, color=colors[3])
+            p4 = bax.bar(x_pos, d4, width, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3,
+                         color=colors[3])
             print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ',
                   d1 + d2 + d3 + d4,
                   ')')
@@ -145,8 +146,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # plt.title('Runtime for Neural Network Benchmark', fontsize=10)
 
     # Add Legend
-    plt.legend((p1[0], p2[0], p3[0], p4[0]),
-               ('Key Generation', 'Encryption', 'Computation', 'Decryption'),
+    plt.legend((p4[0], p3[0], p2[0], p1[0]),
+               ('Decryption', 'Computation', 'Encryption', 'Key Generation'),
                loc='upper left')
 
     # Restore current figure
