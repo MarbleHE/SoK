@@ -13,41 +13,20 @@ using namespace lbcrypto;
 
 typedef std::chrono::microseconds TARGET_TIME_UNIT;
 
-int main(int argc, char *argv[]) {
+void write_parameters_into_file(CryptoContext<DCRTPoly> &cryptoContext) {
   std::stringstream ss_params;
 
-  usint plaintextModulus = 536903681;
-  ss_params << "plaintextModulus: " << plaintextModulus << std::endl;
-  double sigma = 3.2;
-  ss_params << "sigma: " << sigma << std::endl;
-  SecurityLevel securityLevel = HEStd_128_classic;
-  ss_params << "securityLevel: " << securityLevel << std::endl;
-
-  // Parameter generation
-  EncodingParams encodingParams(
-      std::make_shared<EncodingParamsImpl>(plaintextModulus));
-
-  // Set Crypto Parameters
-  // # of evalMults = 3 (first 3) is used to support the multiplication of 7
-  // ciphertexts, i.e., ceiling{log2{7}} Max depth is set to 3 (second 3) to
-  // generate homomorphic evaluation multiplication keys for s^2 and s^3
-  CryptoContext<DCRTPoly> cryptoContext =
-      CryptoContextFactory<DCRTPoly>::genCryptoContextBFVrns(
-          encodingParams, securityLevel, sigma, 0, 3, 0, OPTIMIZED, 3);
-
-  // enable features that you wish to use
-  cryptoContext->Enable(ENCRYPTION);
-  cryptoContext->Enable(SHE);
-
-  ss_params << "p = "
+  ss_params << "Plaintext Modulus p = "
             << cryptoContext->GetCryptoParameters()->GetPlaintextModulus()
             << std::endl;
-  ss_params << "n = "
+
+  ss_params << "Cyclotomic Order n = "
             << cryptoContext->GetCryptoParameters()
                        ->GetElementParams()
                        ->GetCyclotomicOrder() /
                    2
             << std::endl;
+
   ss_params << "log2 q = "
             << log2(cryptoContext->GetCryptoParameters()
                         ->GetElementParams()
@@ -55,26 +34,57 @@ int main(int argc, char *argv[]) {
                         .ConvertToDouble())
             << std::endl;
 
-  // Initialize Public Key Containers
-  LPKeyPair<DCRTPoly> keyPair;
+  ss_params << "Max Depth = "
+            << cryptoContext->GetCryptoParameters()->GetMaxDepth() << std::endl;
 
-  ////////////////////////////////////////////////////////////
-  // Perform Key Generation Operation
-  ////////////////////////////////////////////////////////////
+  ss_params << "Ring Dimension = " << cryptoContext->GetRingDimension()
+            << std::endl;
 
-  keyPair = cryptoContext->KeyGen();
+  ss_params << "Batch Size = "
+            << cryptoContext->GetEncodingParams()->GetBatchSize() << std::endl;
+
+  // write ss_params into file
+  std::ofstream fheParamsFile;
+  fheParamsFile.open("fhe_parameters_microbenchmark_ckks.txt");
+  fheParamsFile << ss_params.str() << std::endl;
+  fheParamsFile.close();
+}
+
+int main(int argc, char *argv[]) {
+  // the multiplicative depth that these paramters should support
+  uint32_t multDepth = 1;
+
+  // corresponds to the plaintext modulus
+  uint32_t scaleFactorBits = 4000;
+
+  // the number of plaintext/ciphertext slots
+  uint32_t batchSize = 1;
+
+  SecurityLevel securityLevel = HEStd_128_classic;
+
+  // create a CKKS crypto context
+  CryptoContext<DCRTPoly> cryptoContext =
+      CryptoContextFactory<DCRTPoly>::genCryptoContextCKKS(
+          multDepth, scaleFactorBits, batchSize, securityLevel);
+
+  cryptoContext->Enable(ENCRYPTION);
+  cryptoContext->Enable(SHE);
+
+  // generate the encryption keys
+  auto keyPair = cryptoContext->KeyGen();
   if (!keyPair.good()) {
     std::cout << "Key generation failed!" << std::endl;
     exit(1);
   }
 
-  cryptoContext->EvalMultKeysGen(keyPair.secretKey);
+  // generate the relinearization keys
+  cryptoContext->EvalMultKeyGen(keyPair.secretKey);
 
-  // write ss_params into file
-  std::ofstream fheParamsFile;
-  fheParamsFile.open("fhe_parameters_microbenchmark.txt", std::ios_base::app);
-  fheParamsFile << ss_params.str() << std::endl;
-  fheParamsFile.close();
+  // generate the rotation keys
+  cryptoContext->EvalAtIndexKeyGen(keyPair.secretKey, {1, -2});
+
+  // write parameters into file
+  write_parameters_into_file(cryptoContext);
 
   const int NUM_REPETITIONS{250};
   std::stringstream ss_time;
@@ -87,10 +97,10 @@ int main(int argc, char *argv[]) {
   size_t total_time = 0;
 
   for (size_t i = 0; i < NUM_REPETITIONS; i++) {
-    auto pa = cryptoContext->MakeIntegerPlaintext(4214);
+    auto pa = cryptoContext->MakeCKKSPackedPlaintext({14});
     auto ca = cryptoContext->Encrypt(keyPair.publicKey, pa);
 
-    auto pb = cryptoContext->MakeIntegerPlaintext(28);
+    auto pb = cryptoContext->MakeCKKSPackedPlaintext({28});
     auto cb = cryptoContext->Encrypt(keyPair.publicKey, pb);
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -116,10 +126,10 @@ int main(int argc, char *argv[]) {
   std::cout << "== Ctxt-Ptxt Multiplication with new ciphertext" << std::endl;
   total_time = 0;
   for (size_t i = 0; i < NUM_REPETITIONS; i++) {
-    auto pa = cryptoContext->MakeIntegerPlaintext(4214);
+    auto pa = cryptoContext->MakeCKKSPackedPlaintext({214});
     auto ca = cryptoContext->Encrypt(keyPair.publicKey, pa);
 
-    auto pb = cryptoContext->MakeIntegerPlaintext(28);
+    auto pb = cryptoContext->MakeCKKSPackedPlaintext({28});
 
     auto start = std::chrono::high_resolution_clock::now();
     auto ciphertextMult = cryptoContext->EvalMult(ca, pb);
@@ -144,10 +154,10 @@ int main(int argc, char *argv[]) {
   std::cout << "== Ctxt-Ctxt Addition time with new ciphertext" << std::endl;
   total_time = 0;
   for (size_t i = 0; i < NUM_REPETITIONS; i++) {
-    auto pa = cryptoContext->MakeIntegerPlaintext(4214);
+    auto pa = cryptoContext->MakeCKKSPackedPlaintext({214});
     auto ca = cryptoContext->Encrypt(keyPair.publicKey, pa);
 
-    auto pb = cryptoContext->MakeIntegerPlaintext(28);
+    auto pb = cryptoContext->MakeCKKSPackedPlaintext({28});
     auto cb = cryptoContext->Encrypt(keyPair.publicKey, pb);
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -173,10 +183,10 @@ int main(int argc, char *argv[]) {
   std::cout << "== Ctxt-Ptxt Addition with new ciphertext" << std::endl;
   total_time = 0;
   for (size_t i = 0; i < NUM_REPETITIONS; i++) {
-    auto pa = cryptoContext->MakeIntegerPlaintext(4214);
+    auto pa = cryptoContext->MakeCKKSPackedPlaintext({214});
     auto ca = cryptoContext->Encrypt(keyPair.publicKey, pa);
 
-    auto pb = cryptoContext->MakeIntegerPlaintext(28);
+    auto pb = cryptoContext->MakeCKKSPackedPlaintext({28});
 
     auto start = std::chrono::high_resolution_clock::now();
     auto ciphertextMult = cryptoContext->EvalAdd(pb, ca);
@@ -202,7 +212,7 @@ int main(int argc, char *argv[]) {
   total_time = 0;
   for (size_t i = 0; i < NUM_REPETITIONS; i++) {
     auto start = std::chrono::high_resolution_clock::now();
-    auto pa = cryptoContext->MakeIntegerPlaintext(23213);
+    auto pa = cryptoContext->MakeCKKSPackedPlaintext({3213});
     cryptoContext->Encrypt(keyPair.publicKey, pa);
     auto end = std::chrono::high_resolution_clock::now();
 
@@ -219,7 +229,7 @@ int main(int argc, char *argv[]) {
   total_time = 0;
   for (size_t i = 0; i < NUM_REPETITIONS; i++) {
     auto start = std::chrono::high_resolution_clock::now();
-    auto pa = cryptoContext->MakeIntegerPlaintext(23213);
+    auto pa = cryptoContext->MakeCKKSPackedPlaintext({3213});
     cryptoContext->Encrypt(keyPair.secretKey, pa);
     auto end = std::chrono::high_resolution_clock::now();
 
@@ -235,7 +245,7 @@ int main(int argc, char *argv[]) {
   std::cout << "== Decryption time" << std::endl;
   total_time = 0;
   for (size_t i = 0; i < NUM_REPETITIONS; i++) {
-    auto pa = cryptoContext->MakeIntegerPlaintext(23213);
+    auto pa = cryptoContext->MakeCKKSPackedPlaintext({3213});
     auto ca = cryptoContext->Encrypt(keyPair.publicKey, pa);
 
     auto start = std::chrono::high_resolution_clock::now();
@@ -252,28 +262,18 @@ int main(int argc, char *argv[]) {
   // Rotation (native, i.e. single-key)
   // =======================================================
 
-  // Get BGVrns crypto context as BFV does not support EvalFastRotation
-  auto cc = CryptoContextFactory<DCRTPoly>::genCryptoContextBGVrns(1, 65537);
-  cc->Enable(ENCRYPTION);
-  cc->Enable(SHE);
+  cryptoContext->EvalAtIndexKeyGen(keyPair.secretKey, {4});
 
-  auto keys = cc->KeyGen();
-  cc->EvalAtIndexKeyGen(keys.secretKey, {4});
-
-  std::vector<int64_t> vec = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-  Plaintext ptxt = cc->MakePackedPlaintext(vec);
-  auto ctxt = cc->Encrypt(keys.publicKey, ptxt);
+  Plaintext ptxt = cryptoContext->MakeCKKSPackedPlaintext({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
+  auto ctxt = cryptoContext->Encrypt(keyPair.publicKey, ptxt);
 
   total_time = 0;
   for (size_t i = 0; i < NUM_REPETITIONS; i++) {
     auto start = std::chrono::high_resolution_clock::now();
-    //   auto precomp = cc->EvalFastRotationPrecompute(ctxt);
-    //   auto cRot = cc->EvalFastRotation(ctxt, 1, M, precomp);
-
-    auto cPrecomp = cc->EvalFastRotationPrecompute(ctxt);
-    uint32_t N = cc->GetRingDimension();
+    auto cPrecomp = cryptoContext->EvalFastRotationPrecompute(ctxt);
+    uint32_t N = cryptoContext->GetRingDimension();
     uint32_t M = 2 * N;
-    auto cRot1 = cc->EvalFastRotation(ctxt, 4, M, cPrecomp);
+    auto cRot1 = cryptoContext->EvalFastRotation(ctxt, 4, M, cPrecomp);
 
     auto end = std::chrono::high_resolution_clock::now();
     total_time +=

@@ -15,7 +15,11 @@ cd /root/eval \
     && cmake .. \
     && make
 
-# Run microbenchmark
-./microbenchmark
-export OUTPUT_FILENAME=palisade_microbenchmark.csv
-upload_files PALISADE-BFV ${OUTPUT_FILENAME} fhe_parameters_microbenchmark.txt
+# Run microbenchmarks
+export OUTPUT_FILENAME=palisade_microbenchmark-bfv-bgv.csv
+./microbenchmark-bfv-bgv
+upload_files PALISADE-BFV-BGV ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_bfv_bgv.txt
+
+export OUTPUT_FILENAME=palisade_microbenchmark-ckks.csv
+./microbenchmark-ckks
+upload_files PALISADE-CKKS ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_ckks.txt

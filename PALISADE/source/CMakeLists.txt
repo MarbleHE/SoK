@@ -20,4 +20,5 @@ link_directories( ${OPENMP_LIBRARIES} )
 link_libraries( ${PALISADE_LIBRARIES} )
 
 ### ADD YOUR EXECUTABLE(s) HERE
-add_executable(microbenchmark microbenchmark/microbenchmark.cpp )
+add_executable(microbenchmark-bfv-bgv microbenchmark-bfv-bgv/microbenchmark.cpp )
+add_executable(microbenchmark-ckks microbenchmark-ckks/microbenchmark.cpp )

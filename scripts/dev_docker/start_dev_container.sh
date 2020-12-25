@@ -9,7 +9,7 @@ TOOLNAME=$(echo $1 | tr '[:upper:]' '[:lower:]')
 
 # the location where your source files are located at
 # note that this must be an absolute path
-SRC_DIR="/Users/patrick//git/eth-dsg/SoK/SEAL/source/"
+SRC_DIR="/Users/patrick/git/eth-dsg/SoK/PALISADE/source/"
 
 # the location where you want to map your files into (i.e., path in container)
 DST_DIR=/eval
