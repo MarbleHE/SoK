@@ -54,8 +54,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
             't_computation': [10000],
             't_decryption': [0]}
         ))
-    if 'EVA-CHET' not in labels:
-        labels.append('EVA-CHET')
+    if 'EVA-LeNet5' not in labels:
+        labels.append('EVA-LeNet5')
         pandas_dataframes.append(pd.DataFrame.from_dict({
             't_keygen': [0],
             't_input_encryption': [0],
@@ -73,7 +73,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'nGraph-HE-LeNet5': (2, 2),
 
         'EVA-MLP': (3, 0),
-        'EVA-CHET': (3, 1)
+        'EVA-LeNet5': (3, 1)
     }
 
     bar_width = 0.002
@@ -91,7 +91,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     # TODO: Make break depend on value of nGraph-HE LeNet-5 runtime?
     # hspace controls how much space is in between the broken axes left=0.15
     # bax = brokenaxes(ylims=((0, 10), (120, 130)), hspace=.3, despine=False, left = 0.25, bottom = 0.25)
-    bax = brokenaxes(ylims=((0, 10), (120, 140)), hspace=.4, despine=False, left=0.115, bottom=0.115)
+    bax = brokenaxes(ylims=((0, 20), (120, 130)), hspace=.4, despine=False, left=0.115, bottom=0.115)
     # bax = brokenaxes(ylims=((0, 10), (120, 130)), despine=False)
 
     # Setup Grids (0 is top, 1 is bottom part)
