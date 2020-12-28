@@ -23,3 +23,7 @@ upload_files PALISADE-BFV-BGV ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_b
 export OUTPUT_FILENAME=palisade_microbenchmark-ckks.csv
 ./microbenchmark-ckks
 upload_files PALISADE-CKKS ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_ckks.txt
+
+export OUTPUT_FILENAME=palisade_microbenchmark-fhew.csv
+./microbenchmark-fhew
+upload_files PALISADE-FHEW ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_fhew.txt

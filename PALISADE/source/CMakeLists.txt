@@ -13,6 +13,7 @@ include_directories( ${PALISADE_INCLUDE} )
 include_directories( ${PALISADE_INCLUDE}/third-party/include )
 include_directories( ${PALISADE_INCLUDE}/core )
 include_directories( ${PALISADE_INCLUDE}/pke )
+include_directories( ${PALISADE_INCLUDE}/binfhe )
 ### add directories for other PALISADE modules as needed for your project
 
 link_directories( ${PALISADE_LIBDIR} )
@@ -22,3 +23,4 @@ link_libraries( ${PALISADE_LIBRARIES} )
 ### ADD YOUR EXECUTABLE(s) HERE
 add_executable(microbenchmark-bfv-bgv microbenchmark-bfv-bgv/microbenchmark.cpp )
 add_executable(microbenchmark-ckks microbenchmark-ckks/microbenchmark.cpp )
+add_executable(microbenchmark-fhew microbenchmark-fhew/microbenchmark.cpp )
