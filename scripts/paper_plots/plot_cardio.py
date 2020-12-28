@@ -121,7 +121,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
         total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
         max_y_value = d1 + d2 + d3 + d4 if (d1 + d2 + d3 + d4) > max_y_value else max_y_value
-        p4 = plt.bar(x_pos, d4, bar_width * 0.9, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3,
+        p4 = plt.bar(x_pos, d4, bar_width * 0.9, ecolor='black', capsize=3, bottom=d1 + d2 + d3,
                      color=colors[3])
         print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ', d1 + d2 + d3 + d4,
               ')')

@@ -130,8 +130,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         d4 = ms_to_sec(df['t_decryption'].mean())
         d4_err = 0 if math.isnan(df['t_decryption'].std()) else df['t_decryption'].std()
         total_err = ms_to_sec(d1_err + d2_err + d3_err + d4_err)
-        p4 = bax.bar(x_pos, d4, width, yerr=total_err, ecolor='black', capsize=3, bottom=d1 + d2 + d3,
-                     color=colors[3])
+        p4 = bax.bar(x_pos, d4, width, ecolor='black', capsize=3, bottom=d1 + d2 + d3, color=colors[3])
         print(labels[i].replace('\n', ' '), ": \n", d1, '\t', d2, '\t', d3, '\t', d4, '\t( total: ',
               d1 + d2 + d3 + d4,
               ')')
