@@ -73,8 +73,10 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     ax.grid(which='major', axis='y', linestyle=':')
 
     tools = {
-        "PALISADE-Microbenchmark": "PALISADE BFV-RNS",
-        "SEAL-BFV-Microbenchmark": "SEAL BFV",
+        "SEAL-BFV": "SEAL BFV",
+        "PALISADE-BFV-BGV": "PALISADE BFV",
+        "PALISADE-CKKS": "PALISADE CKKS",
+        "PALISADE-FHEW": "PALISADE FHEW",
     }
 
     colors = ['#15607a', '#ffbd70', '#e7e7e7', '#ff483a']
