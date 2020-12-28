@@ -18,10 +18,12 @@ output_filetypes = ['pdf', 'png']
 def save_plot_in_s3(fig: plt.Figure, filename: str, root_folder: str, use_tight_layout: bool = True):
     for fn, ext in zip(filename, output_filetypes):
         full_filename = f"{filename}.{ext}"
-        if use_tight_layout:
-            fig.savefig(full_filename, format=ext, bbox_inches='tight', pad_inches=0)
-        else:
-            fig.savefig(full_filename, format=ext)
+
+        bbox_inches = 'tight' if (use_tight_layout and ext == 'pdf') else None
+        pad_inches = 0 if (use_tight_layout and ext == 'pdf') else 0.1
+        dpi = 300
+        fig.savefig(full_filename, format=ext, bbox_inches=bbox_inches, pad_inches=pad_inches, dpi=dpi)
+
         dst_path_s3 = str(PurePosixPath(urlparse(root_folder).path) / 'plot' / full_filename)
         upload_file_to_s3_bucket(full_filename, dst_path_s3)
 
