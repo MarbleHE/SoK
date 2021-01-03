@@ -14,7 +14,8 @@ cd /cingu/eval/chi-squared \
     && upload_file Cingulata cingulata_chi_squared_unoptimized.csv fhe_parameters_chi_squared.txt
 
 echo "Running cardio-cingulata-tfhe"
-cd /cingu/eval/cardio-cingulata-tfhe \
+cd /cingu/build_tfhe/tests/tfhe/cardio \
+    && chmod +x run.sh \
     && ./run.sh \
     && upload_file Cingulata-TFHE cingulata_cardio_tfhe.csv fhe_parameters.txt
 
