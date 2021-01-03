@@ -21,21 +21,51 @@
 #
 #
 
+OPT_OUTPUT_FILENAME=cingulata_cardio_tfhe.csv
 APPS_DIR=@APPS_DIR@
 
-rm -f a_* b_* c_*
+get_timestamp_ms() {
+  echo $(date +%s%3N)
+}
 
-echo "Input encryption"
+write_to_files() {
+  for item in "$@"; do
+    echo -ne $item | tee -a $OPT_OUTPUT_FILENAME >/dev/null
+  done
+}
 
-# Generate keys
-echo "TFHE key generation"
-$APPS_DIR/tfhe-keygen
+echo "t_keygen,t_input_encryption,t_computation,t_decryption" > $OPT_OUTPUT_FILENAME
 
-# Encrypt inputs
-./tfhe-cardio-encrypt
+RUN=1
 
-echo "Homomorphic execution..."
-time ./tfhe-cardio-exec
+if [[ -z "${NUM_RUNS}" ]]; then
+  NUM_RUNS=1
+else
+  NUM_RUNS="${NUM_RUNS}"
+fi
 
-echo "Output decryption"
-./tfhe-cardio-decrypt
+while (( $RUN <= $NUM_RUNS ))
+do
+    RUN=$(( $RUN + 1))
+
+    # Generate keys
+    START_T=$( get_timestamp_ms )
+    $APPS_DIR/tfhe-keygen
+    END_KEYGEN_T=$( get_timestamp_ms )
+    write_to_files $((${END_KEYGEN_T}-${START_T}))","
+
+    # Encrypt inputs
+    ./tfhe-cardio-encrypt
+    END_ENCRYPTION_T=$( get_timestamp_ms )
+    write_to_files $((${END_ENCRYPTION_T}-${END_KEYGEN_T}))","
+
+    # Execute Computation
+    time ./tfhe-cardio-exec
+    FHE_EXEC_OPT_T=$( get_timestamp_ms )
+    write_to_files $((${FHE_EXEC_OPT_T}-${END_ENCRYPTION_T}))","
+
+    # Decrypt Output
+    ./tfhe-cardio-decrypt
+    DECRYPT_T=$( get_timestamp_ms )
+    write_to_files $((${DECRYPT_T}-${FHE_EXEC_OPT_T}))"\n"
+done
