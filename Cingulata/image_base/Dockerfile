@@ -52,7 +52,7 @@ RUN mkdir -p /cingu/build_bfv \
  && make
 
 # compile cingulata TFHE
-CMD mkdir -p /cingu/build_tfhe \
+RUN mkdir -p /cingu/build_tfhe \
  && cd /cingu/build_tfhe \
  && cmake -DTFHE_PATH=/tfhe -j $(nproc) .. \
  && make
