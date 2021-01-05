@@ -73,7 +73,7 @@ seal::Ciphertext Microbenchmark::encode_and_encrypt(double numbers) {
 }
 
 void Microbenchmark::run_benchmark() {
-  const int NUM_REPETITIONS{250};
+  const int NUM_REPETITIONS{100};
   std::stringstream ss_time;
 
   // set up the CKKS scheme
