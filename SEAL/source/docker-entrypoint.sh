@@ -43,10 +43,15 @@ function run_microbenchmark() {
     done
 }
 
-# Microbenchmarks
+# Microbenchmark BFV
 export OUTPUT_FILENAME=seal_bfv_microbenchmark.csv
-run_microbenchmark microbenchmark
-upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_microbenchmark.txt
+run_microbenchmark microbenchmark-bfv
+upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_bfv.txt
+
+# Microbenchmark CKKS
+export OUTPUT_FILENAME=seal_ckks_microbenchmark.csv
+run_microbenchmark microbenchmark-ckks
+upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_ckks.txt
 
 # Cardio BFV (using modified Cingulata parameters)
 export OUTPUT_FILENAME=seal_bfv_cardio_cinguparam.csv

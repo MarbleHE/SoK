@@ -61,7 +61,7 @@ void log_time(std::stringstream &ss,
 }  // namespace
 
 void Microbenchmark::run_benchmark() {
-  const int NUM_REPETITIONS{250};
+  const int NUM_REPETITIONS{100};
   std::stringstream ss_time;
 
   // set up the BFV scheme
@@ -315,7 +315,7 @@ void Microbenchmark::run_benchmark() {
   myfile.close();
 
   // write FHE parameters into file
-  write_parameters_to_file(context, "fhe_parameters_microbenchmark.txt");
+  write_parameters_to_file(context, "fhe_parameters_microbenchmark_bfv.txt");
 }
 
 int main(int argc, char *argv[]) {
