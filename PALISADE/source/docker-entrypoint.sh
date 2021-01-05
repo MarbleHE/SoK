@@ -26,4 +26,4 @@ upload_files PALISADE-CKKS ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_ckks
 
 export OUTPUT_FILENAME=palisade_microbenchmark-fhew.csv
 ./microbenchmark-fhew
-upload_files PALISADE-FHEW ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_fhew.txt
+upload_files PALISADE-FHEW ${OUTPUT_FILENAME}
