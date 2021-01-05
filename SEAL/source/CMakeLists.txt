@@ -8,11 +8,17 @@ set(CMAKE_BUILD_TYPE RELEASE)
 
 # target_link_libraries(main PRIVATE SEAL::seal MSGSL::MSGSL)
 
-# Microbenchmarks
-add_executable(microbenchmark microbenchmarks/microbenchmarks.cpp common.h)
-target_compile_definitions(microbenchmark PRIVATE SEALPARAMS)
-set_target_properties(microbenchmark PROPERTIES LINKER_LANGUAGE CXX)
-target_link_libraries(microbenchmark SEAL::seal)
+# Microbenchmark BFV
+add_executable(microbenchmark-bfv microbenchmark-bfv/microbenchmark.cpp common.h)
+target_compile_definitions(microbenchmark-bfv PRIVATE SEALPARAMS)
+set_target_properties(microbenchmark-bfv PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(microbenchmark-bfv SEAL::seal)
+
+# Microbenchmark CKKS
+add_executable(microbenchmark-ckks microbenchmark-ckks/microbenchmark.cpp common.h)
+target_compile_definitions(microbenchmark-ckks PRIVATE SEALPARAMS)
+set_target_properties(microbenchmark-ckks PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(microbenchmark-ckks SEAL::seal)
 
 # Cardio BFV "OPT" with manually selected params
 add_executable(cardio_bfv_manualparams cardio-bfv-opt/cardio.cpp common.h)

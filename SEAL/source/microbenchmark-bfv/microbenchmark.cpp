@@ -1,4 +1,4 @@
-#include "microbenchmarks.h"
+#include "microbenchmark.h"
 
 #include "../common.h"
 
@@ -17,8 +17,7 @@ void Microbenchmark::setup_context_bfv(std::size_t poly_modulus_degree,
 #endif
 
   if (use_batching) {
-    params.set_plain_modulus(
-        seal::PlainModulus::Batching(poly_modulus_degree, 20));
+    params.set_plain_modulus(seal::PlainModulus::Batching(poly_modulus_degree, 20));
   } else {
     params.set_plain_modulus(plain_modulus);
   }
@@ -320,7 +319,7 @@ void Microbenchmark::run_benchmark() {
 }
 
 int main(int argc, char *argv[]) {
-  std::cout << "Starting 'microbenchmarks'..." << std::endl;
+  std::cout << "Starting 'microbenchmark-bfv'..." << std::endl;
   Microbenchmark().run_benchmark();
   return 0;
 }
