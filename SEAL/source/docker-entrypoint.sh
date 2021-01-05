@@ -29,7 +29,7 @@ function run_benchmark() {
 
 function run_microbenchmark() {
     cd $EVAL_BUILD_DIR
-    echo "t_mul_ct_ct,t_mul_ct_ct_inplace,t_mul_ct_pt,t_mul_ct_pt_inplace,t_add_ct_ct,t_add_ct_ct_inplace,t_add_ct_pt,t_add_ct_pt_inplace,t_enc_sk,t_enc_pk,t_dec,t_rot" > $OUTPUT_FILENAME
+    # echo "t_mul_ct_ct,t_mul_ct_ct_inplace,t_mul_ct_pt,t_mul_ct_pt_inplace,t_add_ct_ct,t_add_ct_ct_inplace,t_add_ct_pt,t_add_ct_pt_inplace,t_enc_sk,t_enc_pk,t_dec,t_rot" > $OUTPUT_FILENAME
     RUN=1
     if [ -z "${NUM_RUNS}" ]
     then
@@ -51,7 +51,7 @@ upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_bfv.txt
 # Microbenchmark CKKS
 export OUTPUT_FILENAME=seal_ckks_microbenchmark.csv
 run_microbenchmark microbenchmark-ckks
-upload_files SEAL-BFV ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_ckks.txt
+upload_files SEAL-CKKS-Batched ${OUTPUT_FILENAME} fhe_parameters_microbenchmark_ckks.txt
 
 # Cardio BFV (using modified Cingulata parameters)
 export OUTPUT_FILENAME=seal_bfv_cardio_cinguparam.csv
