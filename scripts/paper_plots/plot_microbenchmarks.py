@@ -74,16 +74,17 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     tools = {
         "SEAL-BFV": "SEAL BFV",
-        "PALISADE-BFV-BGV": "PALISADE BFV",
+        "SEAL-CKKS-Batched": "SEAL CKKS",
+        "PALISADE-BFV-BGV": "PALISADE BFV/BGV",
         "PALISADE-CKKS": "PALISADE CKKS",
         "PALISADE-FHEW": "PALISADE FHEW",
     }
 
-    colors = ['#15607a', '#ffbd70', '#e7e7e7', '#ff483a']
+    colors = ['#15607a', '#ffbd70', '#e7e7e7', '#ff483a', '#493548']
 
     data = pd.DataFrame(index=pandas_dataframes[0].columns)  #
     for v, l in zip(pandas_dataframes, labels):
-        data[tools[l]] = v.values.tolist()[0]
+        data[tools[l]] = v.columns.tolist()
 
     x_labels = {
         't_mul_ct_ct': 'mul\n(ct,ct)',
@@ -99,12 +100,13 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         't_dec': 'dec',
         't_rot': 'rot',
     }
-    old_keys = list(data.index)
-    new_keys = []
-    for k in old_keys:
-        new_keys.append(x_labels[k])
-    data.index = new_keys
+    # old_keys = list(data.index)
+    # new_keys = []
+    # for k in old_keys:
+    #     new_keys.append(x_labels[k])
+    data.index = x_labels.values()
 
+    data = data.astype(float)
     ax = data.plot.bar(color=colors, width=0.4, logy=True, rot=0, ax=ax)
     ax.yaxis.set_major_formatter(FuncFormatter(lambda x, p: human_format(x)))
 
