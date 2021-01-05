@@ -45,7 +45,7 @@ void write_parameters_into_file(CryptoContext<DCRTPoly> &cryptoContext) {
 
   // write ss_params into file
   std::ofstream fheParamsFile;
-  fheParamsFile.open("fhe_parameters_microbenchmark_ckks.txt");
+  fheParamsFile.open("fhe_parameters_microbenchmark_bfv_bgv.txt");
   fheParamsFile << ss_params.str() << std::endl;
   fheParamsFile.close();
 }
