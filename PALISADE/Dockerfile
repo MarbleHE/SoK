@@ -4,8 +4,7 @@ FROM marblehe/base_palisade:latest
 COPY source /root/eval
 
 WORKDIR /root/eval
-COPY source/docker-entrypoint.sh /
-RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x docker-entrypoint.sh
 
 # start eval program execution
-ENTRYPOINT ["/docker-entrypoint.sh"]
+ENTRYPOINT ["/root/eval/docker-entrypoint.sh"]
