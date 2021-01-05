@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
   auto ct1 = cryptoContext.Encrypt(sk, 1);
   auto ct2 = cryptoContext.Encrypt(sk, 1);
 
-  const int NUM_REPETITIONS{250};
+  const int NUM_REPETITIONS{100};
   std::stringstream ss_time;
 
   // =======================================================

@@ -46,7 +46,7 @@ void write_parameters_into_file(CryptoContext<DCRTPoly> &cryptoContext) {
   // write ss_params into file
   std::ofstream fheParamsFile;
   fheParamsFile.open("fhe_parameters_microbenchmark_bfv_bgv.txt");
-  fheParamsFile << ss_params.str() << std::endl;
+  fheParamsFile << ss_params.str();
   fheParamsFile.close();
 }
 
@@ -54,11 +54,9 @@ int main(int argc, char *argv[]) {
   std::stringstream ss_params;
 
   usint plaintextModulus = 536903681;
-  ss_params << "plaintextModulus: " << plaintextModulus << std::endl;
   double sigma = 3.2;
-  ss_params << "sigma: " << sigma << std::endl;
   SecurityLevel securityLevel = HEStd_128_classic;
-  ss_params << "securityLevel: " << securityLevel << std::endl;
+  ss_params << "securityLevel = " << securityLevel << std::endl;
 
   // Parameter generation
   EncodingParams encodingParams(
@@ -100,7 +98,7 @@ int main(int argc, char *argv[]) {
   fheParamsFile << ss_params.str() << std::endl;
   fheParamsFile.close();
 
-  const int NUM_REPETITIONS{250};
+  const int NUM_REPETITIONS{100};
   std::stringstream ss_time;
 
   // =======================================================

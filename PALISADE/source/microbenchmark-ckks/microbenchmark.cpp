@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
   // write parameters into file
   write_parameters_into_file(cryptoContext);
 
-  const int NUM_REPETITIONS{250};
+  const int NUM_REPETITIONS{100};
   std::stringstream ss_time;
 
   // =======================================================
