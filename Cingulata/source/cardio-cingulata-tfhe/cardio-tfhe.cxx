@@ -28,6 +28,7 @@
 #include <ci_int.hxx>
 #include <int_op_gen/size.hxx>
 #include <tfhe_bit_exec.hxx>
+#include <int_op_gen/mult_depth.hxx>
 
 /* namespaces */
 using namespace std;
@@ -47,24 +48,24 @@ int main() {
           "tfhe.pk", TfheBitExec::Public),
       make_shared<IntOpGenSize>());
 
-  CiInt flags{0, 5}; // 5 flags
-  flags.read("flags");
-
-  CiInt age{CiInt::u8}, hdl{CiInt::u8}, height{CiInt::u8}, weight{CiInt::u8},
-      physical_act{CiInt::u8}, drinking{CiInt::u8};
-
-  age.read("age");
-  hdl.read("hdl");
-  height.read("height");
-  weight.read("weight");
-  physical_act.read("physical_act");
-  drinking.read("drinking");
+  // Since the inputs are actually encrypted under a symmetric KS,
+  // and not under FHE, they are provided here as plaintexts
+  std::vector<int> KS = {241, 210, 225, 219, 92, 43, 197};
+  CiInt flags{15 ^ KS[0], 5, false};
+  CiInt age{55 ^ KS[1], 8, false};
+  CiInt hdl{50 ^ KS[2], 8, false};
+  CiInt height{80 ^ KS[3], 8, false};
+  CiInt weight{80 ^ KS[4], 8, false};
+  CiInt physical_act{45 ^ KS[5], 8, false};
+  CiInt drinking{4 ^ KS[6], 8, false};
 
   vector<CiInt> keystream(7, CiInt::u8);
-  // Read the pre-calculated keystream.
+  // Read the pre-calculated and encrypted keystream.
   for (int i = 0; i < 7; i++)
     keystream[i].read("ks_" + to_string(i));
 
+  // Homomorphically decrypt the KS-encrypted inputs
+  // to give an FHE ctxt that encrypts the (KS-free) ptxt message
   for (int i = 0; i < 5; i++)
     flags[i] ^= keystream[0][i];
   age ^= keystream[1];
@@ -76,22 +77,23 @@ int main() {
 
   vector<CiInt> risk_factors;
 
-  risk_factors.push_back(select((flags[SEX_FIELD]) && (age > 50), 1, 0));
-  risk_factors.push_back(select((!flags[SEX_FIELD]) && (age > 60), 1, 0));
+  risk_factors.emplace_back(flags[SEX_FIELD] && (age > 50)); // true
+  risk_factors.emplace_back(!flags[SEX_FIELD] && (age > 60)); // false
 
-  risk_factors.push_back(flags[ANTECEDENT_FIELD]);
-  risk_factors.push_back(flags[SMOKER_FIELD]);
-  risk_factors.push_back(flags[DIABETES_FIELD]);
-  risk_factors.push_back(flags[PRESSURE_FIELD]);
+  risk_factors.emplace_back(flags[ANTECEDENT_FIELD]); //true
+  risk_factors.emplace_back(flags[SMOKER_FIELD]);  //true
+  risk_factors.emplace_back(flags[DIABETES_FIELD]); //true
+  risk_factors.emplace_back(flags[PRESSURE_FIELD]); //false
 
-  risk_factors.push_back(select(hdl < 40, 1, 0));
+  risk_factors.emplace_back(hdl < 40); //false
 
-  risk_factors.push_back(select(weight - 10 > height, 1, 0));
+  risk_factors.emplace_back(weight - CiInt{10, 8, false} > height); //false
+  //WARNING: Without the explicit cast to CiInt with 8 bits, this does something funny/wrong!
 
-  risk_factors.push_back(select(physical_act < 30, 1, 0));
+  risk_factors.emplace_back(physical_act < 30); //false
 
-  risk_factors.push_back(select((flags[SEX_FIELD]) && (drinking > 3), 1, 0));
-  risk_factors.push_back(select((!flags[SEX_FIELD]) && (drinking > 2), 1, 0));
+  risk_factors.emplace_back(flags[SEX_FIELD] && (drinking > 3)); //true
+  risk_factors.emplace_back(!flags[SEX_FIELD] && (drinking > 2)); //false
 
   CiInt risk = sum(risk_factors);
 

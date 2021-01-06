@@ -48,6 +48,9 @@ while (( $RUN <= $NUM_RUNS ))
 do
     RUN=$(( $RUN + 1))
 
+    # Cleanup
+    rm -f age_* drinking_* flags_* hdl_* height_* weight_* ks_* physical_act_* risk_*
+
     # Generate keys
     START_T=$( get_timestamp_ms )
     $APPS_DIR/tfhe-keygen

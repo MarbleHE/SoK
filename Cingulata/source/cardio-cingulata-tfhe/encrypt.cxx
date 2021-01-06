@@ -34,15 +34,7 @@ int main(int argc, char *argv[]) {
 
   std::vector<int> KS = {241, 210, 225, 219, 92, 43, 197};
 
-  /* get input values */
-  CiInt flags{15 ^ KS[0], 5, false};
-  CiInt age{55 ^ KS[1], 8, false};
-  CiInt hdl{50 ^ KS[2], 8, false};
-  CiInt height{80 ^ KS[3], 8, false};
-  CiInt weight{80 ^ KS[4], 8, false};
-  CiInt physical_act{45 ^ KS[5], 8, false};
-  CiInt drinking{4 ^ KS[6], 8, false};
-
+  /* Only the KS is actually FHE encrypted, everything else is sent under OTP with the KS */
   std::vector<CiInt> ks;
   for (auto K : KS) {
     ks.emplace_back(K, 8, false);
@@ -51,13 +43,6 @@ int main(int argc, char *argv[]) {
   /* Only tfhe bit executor is needed for encryption/decryption and IO operations  */
   CiContext::set_bit_exec(make_shared<TfheBitExec>("tfhe.sk", TfheBitExec::Secret));
 
-  flags.encrypt().write("flags");
-  age.encrypt().write("age");
-  hdl.encrypt().write("hdl");
-  height.encrypt().write("height");
-  weight.encrypt().write("weight");
-  physical_act.encrypt().write("physical_act");
-  drinking.encrypt().write("drinking");
   for (int i = 0; i < ks.size(); ++i) {
     ks[i].encrypt().write("ks_" + to_string(i));
   }
