@@ -21,6 +21,10 @@ void log_time(std::stringstream &ss,
 
 std::stringstream ss_time;
 
+// Counters for gates
+int and_gates = 0;
+int xor_gates = 0;
+
 void client();
 void cloud();
 void verify();
@@ -29,6 +33,13 @@ int main() {
   client();
   cloud();
   verify();
+
+  // Report total gate numbers
+  std::cout << "and: " << and_gates << std::endl;
+  std::cout << "xor: " << xor_gates << std::endl;
+
+  // Print out times:
+  std::cout << ss_time.str() << std::endl;
 
   // write ss_time into file
   std::ofstream myfile;
@@ -199,9 +210,12 @@ void ripple_carry_adder(LweSample *s,
     bootsXOR(n1, carry, &a[i], bk);
     bootsXOR(n2, carry, &b[i], bk);
     bootsXOR(&s[i], n1, &b[i], bk);
+    xor_gates += 3;
     if (i < nb_bits - 1) {
       bootsAND(n1_AND_n2, n1, n2, bk);
+      ++and_gates;
       bootsXOR(carry, n1_AND_n2, carry, bk);
+      ++xor_gates;
     }
   }
 #ifdef DEBUG
@@ -286,6 +300,7 @@ void cloud() {
   // Apply the Keystream
   for (int i = 0; i < NB_FLAGS; ++i) {
     bootsXOR(&flags[i], &flags[i], &ks[0][i], bk);
+    ++xor_gates;
   }
   for (int i = 0; i < NB_VALUES; ++i) {
     bootsXOR(&age[i], &age[i], &ks[1][i], bk);
@@ -294,6 +309,7 @@ void cloud() {
     bootsXOR(&weight[i], &weight[i], &ks[4][i], bk);
     bootsXOR(&physical_cat[i], &physical_cat[i], &ks[5][i], bk);
     bootsXOR(&drinking[i], &drinking[i], &ks[6][i], bk);
+    xor_gates += 6;
   }
 
 #ifdef DEBUG
@@ -312,6 +328,7 @@ void cloud() {
   less(age_gt_50, fifty, age, NB_VALUES, bk);
   LweSample *factor_1 = encode_n(0, bk);
   bootsAND(&factor_1[0], &flags[SEX_FIELD], age_gt_50, bk);
+  ++and_gates;
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, fifty);
   delete_gate_bootstrapping_ciphertext(age_gt_50);
 #ifdef DEBUG
@@ -327,6 +344,7 @@ void cloud() {
   bootsNOT(not_sex_field, &flags[SEX_FIELD], bk);
   LweSample *factor_2 = encode_n(0, bk);
   bootsAND(&factor_2[0], not_sex_field, age_gt_60, bk);
+  ++and_gates;
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, sixty);
   delete_gate_bootstrapping_ciphertext(age_gt_60);
   // not sex field is used again later, so not deleted here
@@ -389,6 +407,7 @@ void cloud() {
   less(drinking_gt_3, three, drinking, NB_VALUES, bk);
   LweSample *factor_10 = encode_n(0, bk);
   bootsAND(&factor_10[0], &flags[SEX_FIELD], drinking_gt_3, bk);
+  ++and_gates;
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, three);
   delete_gate_bootstrapping_ciphertext(drinking_gt_3);
 #ifdef DEBUG
@@ -401,6 +420,7 @@ void cloud() {
   less(drinking_gt_2, two, drinking, NB_VALUES, bk);
   LweSample *factor_11 = encode_n(0, bk);
   bootsAND(&factor_11[0], not_sex_field, drinking_gt_2, bk);
+  ++and_gates;
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, two);
   delete_gate_bootstrapping_ciphertext(drinking_gt_2);
   delete_gate_bootstrapping_ciphertext(not_sex_field);
