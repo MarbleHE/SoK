@@ -11,10 +11,9 @@ void Microbenchmark::setup_context_bfv(std::size_t poly_modulus_degree,
   seal::EncryptionParameters params(seal::scheme_type::BFV);
   params.set_poly_modulus_degree(poly_modulus_degree);
 
-#ifdef SEALPARAMS
-  params.set_coeff_modulus(seal::CoeffModulus::BFVDefault(
-      poly_modulus_degree, seal::sec_level_type::tc128));
-#endif
+  params.set_coeff_modulus(seal::CoeffModulus::Create(
+      poly_modulus_degree,  {60, 60, 60, 60})); //to match log2 q = 240 in Palisade BFV
+
 
   if (use_batching) {
     params.set_plain_modulus(seal::PlainModulus::Batching(poly_modulus_degree, 20));
@@ -66,7 +65,7 @@ void Microbenchmark::run_benchmark() {
 
   // set up the BFV scheme
   auto t0 = Time::now();
-  setup_context_bfv(16384, 2, false);
+  setup_context_bfv(16384, 536903681, false);
   auto t1 = Time::now();
   log_time(ss_time, t0, t1, false);
 

@@ -9,7 +9,7 @@ void Microbenchmark::setup_context_ckks(std::size_t poly_modulus_degree) {
   params.set_poly_modulus_degree(poly_modulus_degree);
   params.set_coeff_modulus(seal::CoeffModulus::Create(
       poly_modulus_degree,
-      {60, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 60}));
+      {60, 32})); //to match log2 q = 92 in Palisade CKKS
 
   // Instantiate context
   context = seal::SEALContext::Create(params);
@@ -78,7 +78,7 @@ void Microbenchmark::run_benchmark() {
 
   // set up the CKKS scheme
   auto t0 = Time::now();
-  setup_context_ckks(32768);
+  setup_context_ckks(65536);
   auto t1 = Time::now();
   log_time(ss_time, t0, t1, false);
 
