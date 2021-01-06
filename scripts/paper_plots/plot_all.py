@@ -50,6 +50,7 @@ def plot_all_cardio():
 
         'TFHE',
         'E3-TFHE',
+        'Cingulata-TFHE',
 
         'SEAL-BFV-Batched-Manualparams',
         'E3-SEAL-Batched',

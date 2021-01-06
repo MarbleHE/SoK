@@ -67,7 +67,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'MultiStart-OPT-PARAMS': (1, 4),
 
         'TFHE': (2, 0),
-        'E3-TFHE': (2, 1)
+        'E3-TFHE': (2, 1),
+        'Cingulata-TFHE': (2, 2)
 
     }
 
@@ -80,7 +81,7 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     group_labels = [
         'SEAL\n{\\fontsize{6pt}{3em}\\selectfont{}(Opt.*/E\\textsuperscript{3}*/Opt./E\\textsuperscript{3}/Naive)}',
         'Cingulata\n{\\fontsize{6pt}{3em}\\selectfont{(A/B/C/D/E})}',
-        'TFHE\n{\\fontsize{6pt}{3em}\\selectfont{}(Naive/E\\textsuperscript{3})}'
+        'TFHE\n{\\fontsize{6pt}{3em}\\selectfont{}(Naive/E\\textsuperscript{3}/Cingulata)}'
     ]
 
     x_center, x_start = get_x_ticks_positions(positions, bar_width, inner_spacer, spacer)
