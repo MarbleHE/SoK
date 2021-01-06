@@ -112,32 +112,6 @@ void client() {
   /// Keystream
   std::vector<int> KS = {241, 210, 225, 219, 92, 43, 197};
 
-  // encrypt the flags
-  LweSample *flags = new_gate_bootstrapping_ciphertext_array(NB_FLAGS, params);
-  for (int i = 0; i < NB_FLAGS; i++) {
-    bootsSymEncrypt(&flags[i], ((15 ^ KS[0]) >> i) & 1, key);
-  }
-
-  //TODO: In BFV solution, these inputs aren't actually encrypted under FHE
-  // Instead, they are protected by the symmetric KS and the server encodes
-  // them into FHE and then applies the homomorphically encrypted KS
-
-  // encrypt age, hdl, height, weight, physical_act and drinking
-  LweSample *age = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
-  LweSample *hdl = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
-  LweSample *height = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
-  LweSample *weight = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
-  LweSample *physical_cat = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
-  LweSample *drinking = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
-  for (int i = 0; i < NB_VALUES; i++) {
-    bootsSymEncrypt(&age[i], ((55 ^ KS[1]) >> i) & 1, key);
-    bootsSymEncrypt(&hdl[i], ((50 ^ KS[2]) >> i) & 1, key);
-    bootsSymEncrypt(&height[i], ((80 ^ KS[3]) >> i) & 1, key);
-    bootsSymEncrypt(&weight[i], ((80 ^ KS[4]) >> i) & 1, key);
-    bootsSymEncrypt(&physical_cat[i], ((45 ^ KS[5]) >> i) & 1, key);
-    bootsSymEncrypt(&drinking[i], ((4 ^ KS[6]) >> i) & 1, key);
-  }
-
   // encrypt the KS
   LweSample *ks[7];
   for (int i = 0; i < 7; ++i) {
@@ -149,14 +123,6 @@ void client() {
 
   //export the ciphertexts to a file (for the cloud)
   FILE *cloud_data = fopen("cloud.data", "wb");
-  for (int i = 0; i < NB_FLAGS; ++i) {
-    export_gate_bootstrapping_ciphertext_toFile(cloud_data, &flags[i], params);
-  }
-  for (auto &v : {age, hdl, height, weight, physical_cat, drinking}) {
-    for (int i = 0; i < NB_VALUES; ++i) {
-      export_gate_bootstrapping_ciphertext_toFile(cloud_data, &v[i], params);
-    }
-  }
   for (auto &k : ks) {
     for (int j = 0; j < NB_VALUES; ++j) {
       export_gate_bootstrapping_ciphertext_toFile(cloud_data, &k[j], params);
@@ -165,10 +131,6 @@ void client() {
   fclose(cloud_data);
 
   //clean up all pointers
-  delete_gate_bootstrapping_ciphertext_array(NB_FLAGS, flags);
-  for (auto &v : {age, hdl, height, weight, physical_cat, drinking}) {
-    delete_gate_bootstrapping_ciphertext_array(NB_VALUES, v);
-  }
   for (auto &k : ks) {
     delete_gate_bootstrapping_ciphertext_array(NB_VALUES, k);
   }
@@ -197,8 +159,8 @@ void ripple_carry_adder(LweSample *s,
                         const int nb_bits,
                         const TFheGateBootstrappingCloudKeySet *bk) {
 #ifdef DEBUG
-  std::cout << "adding " << decrypt_array(a, NB_FLAGS, SECRET_KEY) << " + " << decrypt_array(b, NB_VALUES, SECRET_KEY)
-            << " with carry in: " << bootsSymDecrypt(carry, SECRET_KEY) << std::endl;
+  std::cout << "adding " << decrypt_array(a, nb_bits, SECRET_KEY) << " + " << decrypt_array(b, nb_bits, SECRET_KEY)
+            << " with carry in " << bootsSymDecrypt(carry, SECRET_KEY) << std::endl;
 #endif
 
   // Create temp ctxt's
@@ -219,7 +181,8 @@ void ripple_carry_adder(LweSample *s,
     }
   }
 #ifdef DEBUG
-  std::cout << "result: " << decrypt_array(s, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "result: " << decrypt_array(s, nb_bits, SECRET_KEY)
+            << " carry out: " << bootsSymDecrypt(carry, SECRET_KEY) << std::endl;
 #endif
 
   // Clean up  temp ctxt's
@@ -235,19 +198,35 @@ void less(LweSample *result,
           const int nb_bits,
           const TFheGateBootstrappingCloudKeySet *bk) {
 #ifdef DEBUG
-  std::cout << "comparing " << decrypt_array(a, NB_FLAGS, SECRET_KEY) << " < "
+  std::cout << "comparing " << decrypt_array(a, nb_bits, SECRET_KEY) << " < "
             << decrypt_array(b, nb_bits, SECRET_KEY)
             << std::endl;
 #endif
+  //Using adder circuit to perform comparison
+  //  // initialize the carry_in to 1
+  //  bootsCONSTANT(result, 1, bk);
+  //  LweSample *notB = new_gate_bootstrapping_ciphertext_array(nb_bits, bk->params);
+  //  for (int i = 0; i < nb_bits; ++i) {
+  //    bootsNOT(&notB[i], &b[i], bk);
+  //  }
+  //  LweSample *ignoredResult = new_gate_bootstrapping_ciphertext_array(nb_bits, bk->params);
+  //  ripple_carry_adder(ignoredResult, result, a, notB, nb_bits, bk);
 
-  //initialize the carry_in to 1
-  bootsCONSTANT(result, 1, bk);
-  LweSample *notB = new_gate_bootstrapping_ciphertext_array(nb_bits, bk->params);
+  // Circuit as described in Cingulata's lower.cxx (LowerCompSize::oper)
+  LweSample *n1 = new_gate_bootstrapping_ciphertext(bk->params);
+  LweSample *n2 = new_gate_bootstrapping_ciphertext(bk->params);
+  LweSample *n1_AND_n2 = new_gate_bootstrapping_ciphertext(bk->params);
+  bootsCONSTANT(result, 0, bk);
   for (int i = 0; i < nb_bits; ++i) {
-    bootsNOT(&notB[i], &b[i], bk);
+    bootsXOR(n1, result, &a[i], bk);
+    bootsXOR(n2, result, &b[i], bk);
+    bootsAND(n1_AND_n2, n1, n2, bk);
+    bootsXOR(result, n1_AND_n2, &b[i], bk);
   }
-  LweSample *ignoredResult = new_gate_bootstrapping_ciphertext_array(nb_bits, bk->params);
-  ripple_carry_adder(ignoredResult, result, a, notB, nb_bits, bk);
+
+  delete_gate_bootstrapping_ciphertext(n1);
+  delete_gate_bootstrapping_ciphertext(n2);
+  delete_gate_bootstrapping_ciphertext(n1_AND_n2);
 
 #ifdef DEBUG
   std::cout << "result: " << bootsSymDecrypt(result, SECRET_KEY) << std::endl;
@@ -266,8 +245,11 @@ void cloud() {
   //if necessary, the params are inside the key
   const TFheGateBootstrappingParameterSet *params = bk->params;
 
-  //create the ciphertexts
-
+  // age, hdl, height, weight, physical_act and drinking are actually
+  // not encrypted under FHE, but instead under the KS
+  /// This is provided here only for simplicity, in a real deployment the server
+  /// would of course only see (<value> ^ KS[i])
+  std::vector<int> KS = {241, 210, 225, 219, 92, 43, 197};
   LweSample *flags = new_gate_bootstrapping_ciphertext_array(NB_FLAGS, params);
   LweSample *age = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
   LweSample *hdl = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
@@ -275,21 +257,25 @@ void cloud() {
   LweSample *weight = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
   LweSample *physical_cat = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
   LweSample *drinking = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
+  for (int i = 0; i < NB_FLAGS; i++) {
+    bootsCONSTANT(&flags[i], ((15 ^ KS[0]) >> i) & 1, bk);
+  }
+  for (int i = 0; i < NB_VALUES; i++) {
+    bootsCONSTANT(&age[i], ((55 ^ KS[1]) >> i) & 1, bk);
+    bootsCONSTANT(&hdl[i], ((50 ^ KS[2]) >> i) & 1, bk);
+    bootsCONSTANT(&height[i], ((80 ^ KS[3]) >> i) & 1, bk);
+    bootsCONSTANT(&weight[i], ((80 ^ KS[4]) >> i) & 1, bk);
+    bootsCONSTANT(&physical_cat[i], ((45 ^ KS[5]) >> i) & 1, bk);
+    bootsCONSTANT(&drinking[i], ((4 ^ KS[6]) >> i) & 1, bk);
+  }
+
   LweSample *ks[7];
   for (auto &k : ks) {
     k = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
   }
 
-  //reads the ciphertexts from the cloud file
+  //reads the encrypted KS from the cloud file
   FILE *cloud_data = fopen("cloud.data", "rb");
-  for (int i = 0; i < NB_FLAGS; i++) {
-    import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &flags[i], params);
-  }
-  for (auto &v : {age, hdl, height, weight, physical_cat, drinking}) {
-    for (int i = 0; i < NB_VALUES; ++i) {
-      import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &v[i], params);
-    }
-  }
   for (auto &k : ks) {
     for (int i = 0; i < NB_VALUES; ++i) {
       import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &k[i], params);
@@ -322,7 +308,7 @@ void cloud() {
   std::cout << "drinking: " << decrypt_array(drinking, NB_VALUES, SECRET_KEY) << std::endl;
 #endif
 
-  // Compute first complex condition: flags(sex_field) && (50 < age)
+  // Compute first complex condition: flags(sex_field) && (50 < age) [should be true]
   LweSample *fifty = encode_n(50, bk);
   LweSample *age_gt_50 = new_gate_bootstrapping_ciphertext(params);
   less(age_gt_50, fifty, age, NB_VALUES, bk);
@@ -332,11 +318,11 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, fifty);
   delete_gate_bootstrapping_ciphertext(age_gt_50);
 #ifdef DEBUG
-  std::cout << "factor_1: " << decrypt_array(factor_1, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_1: " << decrypt_array(factor_1, NB_VALUES, SECRET_KEY) << std::endl;
 #endif
 
 
-  // Compute second complex condition: !flags(sex_field) && (60 < age)
+  // Compute second complex condition: !flags(sex_field) && (60 < age) [should be false]
   LweSample *sixty = encode_n(60, bk);
   LweSample *age_gt_60 = new_gate_bootstrapping_ciphertext(params);
   less(age_gt_60, sixty, age, NB_VALUES, bk);
@@ -349,10 +335,10 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext(age_gt_60);
   // not sex field is used again later, so not deleted here
 #ifdef DEBUG
-  std::cout << "factor_2: " << decrypt_array(factor_2, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_2: " << decrypt_array(factor_2, NB_VALUES, SECRET_KEY) << std::endl;
 #endif
 
-  // factors 3,4,5,6 are just flags
+  // factors 3,4,5,6 are just flags [3-5 should be true, 6 false]
   LweSample *factor_3 = encode_n(0, bk);
   bootsCOPY(&factor_3[0], &flags[ANTECEDENT_FIELD], bk);
   LweSample *factor_4 = encode_n(0, bk);
@@ -362,22 +348,22 @@ void cloud() {
   LweSample *factor_6 = encode_n(0, bk);
   bootsCOPY(&factor_6[0], &flags[PRESSURE_FIELD], bk);
 #ifdef DEBUG
-  std::cout << "factor_3: " << decrypt_array(factor_3, NB_FLAGS, SECRET_KEY) << std::endl;
-  std::cout << "factor_4: " << decrypt_array(factor_4, NB_FLAGS, SECRET_KEY) << std::endl;
-  std::cout << "factor_5: " << decrypt_array(factor_5, NB_FLAGS, SECRET_KEY) << std::endl;
-  std::cout << "factor_6: " << decrypt_array(factor_6, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_3: " << decrypt_array(factor_3, NB_VALUES, SECRET_KEY) << std::endl;
+  std::cout << "factor_4: " << decrypt_array(factor_4, NB_VALUES, SECRET_KEY) << std::endl;
+  std::cout << "factor_5: " << decrypt_array(factor_5, NB_VALUES, SECRET_KEY) << std::endl;
+  std::cout << "factor_6: " << decrypt_array(factor_6, NB_VALUES, SECRET_KEY) << std::endl;
 #endif
 
-  // compute 7th factor: hdl < 40
+  // compute 7th factor: hdl < 40 [Should be false]
   LweSample *forty = encode_n(40, bk);
   LweSample *factor_7 = encode_n(0, bk);
   less(&factor_7[0], hdl, forty, NB_VALUES, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, forty);
 #ifdef DEBUG
-  std::cout << "factor_7: " << decrypt_array(factor_7, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_7: " << decrypt_array(factor_7, NB_VALUES, SECRET_KEY) << std::endl;
 #endif
 
-  // compute 8-th factor: weight - 10 > height <=> height + 10 < weight
+  // compute 8-th factor: weight - 10 > height <=> height + 10 < weight [should be false]
   LweSample *ten = encode_n(10, bk);
   LweSample *height_plus_10 = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
   LweSample *carry = new_gate_bootstrapping_ciphertext(params);
@@ -389,19 +375,19 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, height_plus_10);
   delete_gate_bootstrapping_ciphertext(carry);
 #ifdef DEBUG
-  std::cout << "factor_8: " << decrypt_array(factor_8, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_8: " << decrypt_array(factor_8, NB_VALUES, SECRET_KEY) << std::endl;
 #endif
 
-  // Compute 9th factor: physical_act < 30
+  // Compute 9th factor: physical_act < 30 [should be false]
   LweSample *thirty = encode_n(30, bk);
   LweSample *factor_9 = encode_n(0, bk);
   less(&factor_9[0], physical_cat, thirty, NB_VALUES, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, thirty);
 #ifdef DEBUG
-  std::cout << "factor_9: " << decrypt_array(factor_9, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_9: " << decrypt_array(factor_9, NB_VALUES, SECRET_KEY) << std::endl;
 #endif
 
-  // Compute 10th factor: sex && (drinking > 3)
+  // Compute 10th factor: sex && (drinking > 3) [should be true]
   LweSample *three = encode_n(3, bk);
   LweSample *drinking_gt_3 = new_gate_bootstrapping_ciphertext(params);
   less(drinking_gt_3, three, drinking, NB_VALUES, bk);
@@ -411,10 +397,10 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, three);
   delete_gate_bootstrapping_ciphertext(drinking_gt_3);
 #ifdef DEBUG
-  std::cout << "factor_10: " << decrypt_array(factor_10, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_10: " << decrypt_array(factor_10, NB_VALUES, SECRET_KEY) << std::endl;
 #endif
 
-  // Compute 11th factor: !sex && (drinking > 2)
+  // Compute 11th factor: !sex && (drinking > 2) [should be false]
   LweSample *two = encode_n(2, bk);
   LweSample *drinking_gt_2 = new_gate_bootstrapping_ciphertext(params);
   less(drinking_gt_2, two, drinking, NB_VALUES, bk);
@@ -426,42 +412,62 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext(not_sex_field);
   //not_sex_field no longer needed
 #ifdef DEBUG
-  std::cout << "factor_11: " << decrypt_array(factor_11, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_11: " << decrypt_array(factor_11, NB_VALUES, SECRET_KEY) << std::endl;
 #endif
 
   // Start adding up all the factors:
   carry = new_gate_bootstrapping_ciphertext(params);
+
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_2, NB_VALUES, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_2, 2, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_2);
+
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_3, NB_VALUES, bk);
-  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_3);
-  bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_4, NB_VALUES, bk);
+  ripple_carry_adder(factor_3, carry, factor_3, factor_4, 2, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_4);
+
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_5, NB_VALUES, bk);
-  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_5);
-  bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_6, NB_VALUES, bk);
+  ripple_carry_adder(factor_5, carry, factor_5, factor_6, 2, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_6);
+
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_7, NB_VALUES, bk);
-  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_7);
-  bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_8, NB_VALUES, bk);
+  ripple_carry_adder(factor_7, carry, factor_7, factor_8, 2, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_8);
+
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_9, NB_VALUES, bk);
-  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_9);
-  bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_10, NB_VALUES, bk);
+  ripple_carry_adder(factor_9, carry, factor_9, factor_10, 2, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_10);
+
+  // 1-4
+  // Adding 4 bits will never result in a number larger than 2 bits
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_11, NB_VALUES, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_3, 2, bk);
+  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_3);
+
+  // 5-8
+  // Adding 4 bits will never result in a number larger than 2 bits
+  bootsCONSTANT(carry, 0, bk);
+  ripple_carry_adder(factor_5, carry, factor_5, factor_7, 2, bk);
+  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_7);
+
+  //9-11
+  // Adding 3 bits will never result in a number larger than 2 bits
+  bootsCONSTANT(carry, 0, bk);
+  ripple_carry_adder(factor_9, carry, factor_9, factor_11, 2, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_11);
-  delete_gate_bootstrapping_ciphertext(carry);
+
+  // 1-8
+  // Adding 8 bits will never result in a number larger than 3 bits
+  bootsCONSTANT(carry, 0, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_5, 3, bk);
+  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_5);
+
+  // 1-11
+  // Adding 11 bits will never result in a number larger than 3 bits
+  bootsCONSTANT(carry, 0, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_9, 4, bk);
+  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_9);
+
 
   //export the resulting ciphertext to a file (for the cloud)
   FILE *answer_data = fopen("answer.data", "wb");
