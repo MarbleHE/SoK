@@ -4,6 +4,7 @@
 #include <chrono>
 #include <sstream>
 #include <fstream>
+#include <iostream>
 
 typedef std::chrono::milliseconds ms;
 typedef std::chrono::high_resolution_clock Time;
@@ -47,7 +48,7 @@ const int PRESSURE_FIELD = 4;
 
 const int NB_VALUES = 8;
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 /// DEBUG SECRET_KEY
@@ -184,6 +185,11 @@ void ripple_carry_adder(LweSample *s,
                         const LweSample *b,
                         const int nb_bits,
                         const TFheGateBootstrappingCloudKeySet *bk) {
+#ifdef DEBUG
+  std::cout << "adding " << decrypt_array(a, NB_FLAGS, SECRET_KEY) << " + " << decrypt_array(b, NB_VALUES, SECRET_KEY)
+            << " with carry in: " << bootsSymDecrypt(carry, SECRET_KEY) << std::endl;
+#endif
+
   // Create temp ctxt's
   LweSample *n1 = new_gate_bootstrapping_ciphertext(bk->params);
   LweSample *n2 = new_gate_bootstrapping_ciphertext(bk->params);
@@ -192,12 +198,15 @@ void ripple_carry_adder(LweSample *s,
   for (int i = 0; i < nb_bits; i++) {
     bootsXOR(n1, carry, &a[i], bk);
     bootsXOR(n2, carry, &b[i], bk);
-    bootsAND(n1_AND_n2, n1, n2, bk);
-    bootsXOR(&s[i], n1_AND_n2, carry, bk);
+    bootsXOR(&s[i], n1, &b[i], bk);
     if (i < nb_bits - 1) {
+      bootsAND(n1_AND_n2, n1, n2, bk);
       bootsXOR(carry, n1_AND_n2, carry, bk);
     }
   }
+#ifdef DEBUG
+  std::cout << "result: " << decrypt_array(s, NB_FLAGS, SECRET_KEY) << std::endl;
+#endif
 
   // Clean up  temp ctxt's
   delete_gate_bootstrapping_ciphertext(n1);
@@ -211,17 +220,25 @@ void less(LweSample *result,
           const LweSample *b,
           const int nb_bits,
           const TFheGateBootstrappingCloudKeySet *bk) {
-  //initialize the result to 0
-  bootsCONSTANT(result, 0, bk);
-  for (int i = 0; i < nb_bits; i++) {
-    LweSample *n1 = new_gate_bootstrapping_ciphertext(bk->params);
-    bootsXOR(n1, result, &a[i], bk);
-    LweSample *n2 = new_gate_bootstrapping_ciphertext(bk->params);
-    bootsXOR(n2, result, &b[i], bk);
-    LweSample *n1_AND_n2 = new_gate_bootstrapping_ciphertext(bk->params);
-    bootsAND(n1_AND_n2, n1, n2, bk);
-    bootsXOR(result, n1_AND_n2, &b[i], bk);
+#ifdef DEBUG
+  std::cout << "comparing " << decrypt_array(a, NB_FLAGS, SECRET_KEY) << " < "
+            << decrypt_array(b, nb_bits, SECRET_KEY)
+            << std::endl;
+#endif
+
+  //initialize the carry_in to 1
+  bootsCONSTANT(result, 1, bk);
+  LweSample *notB = new_gate_bootstrapping_ciphertext_array(nb_bits, bk->params);
+  for (int i = 0; i < nb_bits; ++i) {
+    bootsNOT(&notB[i], &b[i], bk);
   }
+  LweSample *ignoredResult = new_gate_bootstrapping_ciphertext_array(nb_bits, bk->params);
+  ripple_carry_adder(ignoredResult, result, a, notB, nb_bits, bk);
+
+#ifdef DEBUG
+  std::cout << "result: " << bootsSymDecrypt(result, SECRET_KEY) << std::endl;
+#endif
+
 }
 
 void cloud() {
@@ -272,12 +289,22 @@ void cloud() {
   }
   for (int i = 0; i < NB_VALUES; ++i) {
     bootsXOR(&age[i], &age[i], &ks[1][i], bk);
-    bootsXOR(&hdl[i], &hdl[i], &ks[1][i], bk);
-    bootsXOR(&height[i], &height[i], &ks[1][i], bk);
-    bootsXOR(&weight[i], &weight[i], &ks[1][i], bk);
-    bootsXOR(&physical_cat[i], &physical_cat[i], &ks[1][i], bk);
-    bootsXOR(&drinking[i], &drinking[i], &ks[1][i], bk);
+    bootsXOR(&hdl[i], &hdl[i], &ks[2][i], bk);
+    bootsXOR(&height[i], &height[i], &ks[3][i], bk);
+    bootsXOR(&weight[i], &weight[i], &ks[4][i], bk);
+    bootsXOR(&physical_cat[i], &physical_cat[i], &ks[5][i], bk);
+    bootsXOR(&drinking[i], &drinking[i], &ks[6][i], bk);
   }
+
+#ifdef DEBUG
+  std::cout << "flags: " << decrypt_array(flags, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "age: " << decrypt_array(age, NB_VALUES, SECRET_KEY) << std::endl;
+  std::cout << "hdl: " << decrypt_array(hdl, NB_VALUES, SECRET_KEY) << std::endl;
+  std::cout << "height: " << decrypt_array(height, NB_VALUES, SECRET_KEY) << std::endl;
+  std::cout << "weight: " << decrypt_array(weight, NB_VALUES, SECRET_KEY) << std::endl;
+  std::cout << "physical_cat: " << decrypt_array(physical_cat, NB_VALUES, SECRET_KEY) << std::endl;
+  std::cout << "drinking: " << decrypt_array(drinking, NB_VALUES, SECRET_KEY) << std::endl;
+#endif
 
   // Compute first complex condition: flags(sex_field) && (50 < age)
   LweSample *fifty = encode_n(50, bk);
@@ -287,6 +314,10 @@ void cloud() {
   bootsAND(&factor_1[0], &flags[SEX_FIELD], age_gt_50, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, fifty);
   delete_gate_bootstrapping_ciphertext(age_gt_50);
+#ifdef DEBUG
+  std::cout << "factor_1: " << decrypt_array(factor_1, NB_FLAGS, SECRET_KEY) << std::endl;
+#endif
+
 
   // Compute second complex condition: !flags(sex_field) && (60 < age)
   LweSample *sixty = encode_n(60, bk);
@@ -299,22 +330,34 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, sixty);
   delete_gate_bootstrapping_ciphertext(age_gt_60);
   // not sex field is used again later, so not deleted here
+#ifdef DEBUG
+  std::cout << "factor_2: " << decrypt_array(factor_2, NB_FLAGS, SECRET_KEY) << std::endl;
+#endif
 
   // factors 3,4,5,6 are just flags
-  LweSample *factor_3 = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
+  LweSample *factor_3 = encode_n(0, bk);
   bootsCOPY(&factor_3[0], &flags[ANTECEDENT_FIELD], bk);
-  LweSample *factor_4 = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
+  LweSample *factor_4 = encode_n(0, bk);
   bootsCOPY(&factor_4[0], &flags[SMOKER_FIELD], bk);
-  LweSample *factor_5 = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
+  LweSample *factor_5 = encode_n(0, bk);
   bootsCOPY(&factor_5[0], &flags[DIABETES_FIELD], bk);
-  LweSample *factor_6 = new_gate_bootstrapping_ciphertext_array(NB_VALUES, params);
+  LweSample *factor_6 = encode_n(0, bk);
   bootsCOPY(&factor_6[0], &flags[PRESSURE_FIELD], bk);
+#ifdef DEBUG
+  std::cout << "factor_3: " << decrypt_array(factor_3, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_4: " << decrypt_array(factor_4, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_5: " << decrypt_array(factor_5, NB_FLAGS, SECRET_KEY) << std::endl;
+  std::cout << "factor_6: " << decrypt_array(factor_6, NB_FLAGS, SECRET_KEY) << std::endl;
+#endif
 
   // compute 7th factor: hdl < 40
   LweSample *forty = encode_n(40, bk);
   LweSample *factor_7 = encode_n(0, bk);
   less(&factor_7[0], hdl, forty, NB_VALUES, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, forty);
+#ifdef DEBUG
+  std::cout << "factor_7: " << decrypt_array(factor_7, NB_FLAGS, SECRET_KEY) << std::endl;
+#endif
 
   // compute 8-th factor: weight - 10 > height <=> height + 10 < weight
   LweSample *ten = encode_n(10, bk);
@@ -327,12 +370,18 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, ten);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, height_plus_10);
   delete_gate_bootstrapping_ciphertext(carry);
+#ifdef DEBUG
+  std::cout << "factor_8: " << decrypt_array(factor_8, NB_FLAGS, SECRET_KEY) << std::endl;
+#endif
 
   // Compute 9th factor: physical_act < 30
   LweSample *thirty = encode_n(30, bk);
   LweSample *factor_9 = encode_n(0, bk);
   less(&factor_9[0], physical_cat, thirty, NB_VALUES, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, thirty);
+#ifdef DEBUG
+  std::cout << "factor_9: " << decrypt_array(factor_9, NB_FLAGS, SECRET_KEY) << std::endl;
+#endif
 
   // Compute 10th factor: sex && (drinking > 3)
   LweSample *three = encode_n(3, bk);
@@ -342,6 +391,9 @@ void cloud() {
   bootsAND(&factor_10[0], &flags[SEX_FIELD], drinking_gt_3, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, three);
   delete_gate_bootstrapping_ciphertext(drinking_gt_3);
+#ifdef DEBUG
+  std::cout << "factor_10: " << decrypt_array(factor_10, NB_FLAGS, SECRET_KEY) << std::endl;
+#endif
 
   // Compute 11th factor: !sex && (drinking > 2)
   LweSample *two = encode_n(2, bk);
@@ -353,6 +405,9 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext(drinking_gt_2);
   delete_gate_bootstrapping_ciphertext(not_sex_field);
   //not_sex_field no longer needed
+#ifdef DEBUG
+  std::cout << "factor_11: " << decrypt_array(factor_11, NB_FLAGS, SECRET_KEY) << std::endl;
+#endif
 
   // Start adding up all the factors:
   carry = new_gate_bootstrapping_ciphertext(params);
