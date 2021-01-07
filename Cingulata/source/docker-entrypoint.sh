@@ -14,16 +14,17 @@ cd /cingu/build_tfhe/tests/tfhe/chi-squared \
     && ./run.sh \
     && upload_file Cingulata-TFHE cingulata_chi_squared_tfhe.csv fhe_parameters.txt
 
-echo "Running chi-squared..."
-cd /cingu/eval/chi-squared \
-    && ./run.sh \
-    && upload_file Cingulata cingulata_chi_squared_unoptimized.csv fhe_parameters_chi_squared.txt
-
 echo "Running cardio-cingulata-tfhe..."
 cd /cingu/build_tfhe/tests/tfhe/cardio \
     && chmod +x run.sh \
     && ./run.sh \
     && upload_file Cingulata-TFHE cingulata_cardio_tfhe.csv fhe_parameters.txt
+
+
+echo "Running chi-squared..."
+cd /cingu/eval/chi-squared \
+    && ./run.sh \
+    && upload_file Cingulata cingulata_chi_squared_unoptimized.csv fhe_parameters_chi_squared.txt
 
 echo "Running cardio-cingulata..."
 cd /cingu/eval/cardio-cingulata \
