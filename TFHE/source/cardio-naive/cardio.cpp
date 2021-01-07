@@ -202,31 +202,15 @@ void less(LweSample *result,
             << decrypt_array(b, nb_bits, SECRET_KEY)
             << std::endl;
 #endif
-  //Using adder circuit to perform comparison
-  //  // initialize the carry_in to 1
-  //  bootsCONSTANT(result, 1, bk);
-  //  LweSample *notB = new_gate_bootstrapping_ciphertext_array(nb_bits, bk->params);
-  //  for (int i = 0; i < nb_bits; ++i) {
-  //    bootsNOT(&notB[i], &b[i], bk);
-  //  }
-  //  LweSample *ignoredResult = new_gate_bootstrapping_ciphertext_array(nb_bits, bk->params);
-  //  ripple_carry_adder(ignoredResult, result, a, notB, nb_bits, bk);
-
-  // Circuit as described in Cingulata's lower.cxx (LowerCompSize::oper)
-  LweSample *n1 = new_gate_bootstrapping_ciphertext(bk->params);
-  LweSample *n2 = new_gate_bootstrapping_ciphertext(bk->params);
-  LweSample *n1_AND_n2 = new_gate_bootstrapping_ciphertext(bk->params);
-  bootsCONSTANT(result, 0, bk);
-  for (int i = 0; i < nb_bits; ++i) {
-    bootsXOR(n1, result, &a[i], bk);
-    bootsXOR(n2, result, &b[i], bk);
-    bootsAND(n1_AND_n2, n1, n2, bk);
-    bootsXOR(result, n1_AND_n2, &b[i], bk);
-  }
-
-  delete_gate_bootstrapping_ciphertext(n1);
-  delete_gate_bootstrapping_ciphertext(n2);
-  delete_gate_bootstrapping_ciphertext(n1_AND_n2);
+    //Using adder circuit to perform comparison
+    // initialize the carry_in to 1
+    bootsCONSTANT(result, 1, bk);
+    LweSample *notB = new_gate_bootstrapping_ciphertext_array(nb_bits, bk->params);
+    for (int i = 0; i < nb_bits; ++i) {
+      bootsNOT(&notB[i], &b[i], bk);
+    }
+    LweSample *ignoredResult = new_gate_bootstrapping_ciphertext_array(nb_bits, bk->params);
+    ripple_carry_adder(ignoredResult, result, a, notB, nb_bits, bk);
 
 #ifdef DEBUG
   std::cout << "result: " << bootsSymDecrypt(result, SECRET_KEY) << std::endl;
@@ -419,55 +403,44 @@ void cloud() {
   carry = new_gate_bootstrapping_ciphertext(params);
 
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_2, 2, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_2, NB_VALUES, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_2);
 
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_3, carry, factor_3, factor_4, 2, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_3, NB_VALUES, bk);
+  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_3);
+
+  bootsCONSTANT(carry, 0, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_4, NB_VALUES, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_4);
 
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_5, carry, factor_5, factor_6, 2, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_5, NB_VALUES, bk);
+  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_5);
+
+  bootsCONSTANT(carry, 0, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_6, NB_VALUES, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_6);
 
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_7, carry, factor_7, factor_8, 2, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_7, NB_VALUES, bk);
+  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_7);
+
+  bootsCONSTANT(carry, 0, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_8, NB_VALUES, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_8);
 
   bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_9, carry, factor_9, factor_10, 2, bk);
-  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_10);
-
-  // 1-4
-  // Adding 4 bits will never result in a number larger than 2 bits
-  bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_3, 2, bk);
-  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_3);
-
-  // 5-8
-  // Adding 4 bits will never result in a number larger than 2 bits
-  bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_5, carry, factor_5, factor_7, 2, bk);
-  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_7);
-
-  //9-11
-  // Adding 3 bits will never result in a number larger than 2 bits
-  bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_9, carry, factor_9, factor_11, 2, bk);
-  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_11);
-
-  // 1-8
-  // Adding 8 bits will never result in a number larger than 3 bits
-  bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_5, 3, bk);
-  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_5);
-
-  // 1-11
-  // Adding 11 bits will never result in a number larger than 3 bits
-  bootsCONSTANT(carry, 0, bk);
-  ripple_carry_adder(factor_1, carry, factor_1, factor_9, 4, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_9, NB_VALUES, bk);
   delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_9);
 
+  bootsCONSTANT(carry, 0, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_10, NB_VALUES, bk);
+  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_10);
+
+  bootsCONSTANT(carry, 0, bk);
+  ripple_carry_adder(factor_1, carry, factor_1, factor_11, NB_VALUES, bk);
+  delete_gate_bootstrapping_ciphertext_array(NB_VALUES, factor_11);
 
   //export the resulting ciphertext to a file (for the cloud)
   FILE *answer_data = fopen("answer.data", "wb");
