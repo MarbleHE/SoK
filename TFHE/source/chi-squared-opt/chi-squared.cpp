@@ -6,6 +6,8 @@
 #include <fstream>
 #include <iostream>
 #include <assert.h>
+#include <functional>
+#include <queue>
 
 typedef std::chrono::milliseconds ms;
 typedef std::chrono::high_resolution_clock Time;
@@ -55,8 +57,12 @@ int main() {
 /// Number of bits in numerical parameters
 const int BIT_SIZE = 8;
 
+#define DEBUG
+
+#ifdef DEBUG
 // DEBUG SECRET_KEY
 TFheGateBootstrappingSecretKeySet *SECRET_KEY;
+#endif
 
 int decrypt_array(const LweSample *array, int nb_size, const TFheGateBootstrappingSecretKeySet *key) {
   uint32_t int_answer = 0;
@@ -77,7 +83,6 @@ void client() {
   uint32_t seed[] = {314, 1592, 657};
   tfhe_random_generator_setSeed(seed, 3);
   TFheGateBootstrappingSecretKeySet *key = new_random_gate_bootstrapping_secret_keyset(params);
-  SECRET_KEY = key;
 
   //export the secret key to file for later use
   FILE *secret_key = fopen("secret.key", "wb");
@@ -127,117 +132,171 @@ void client() {
   delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, n0);
   delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, n1);
   delete_gate_bootstrapping_ciphertext_array(BIT_SIZE, n2);
-  //delete_gate_bootstrapping_secret_keyset(key);
-  //delete_gate_bootstrapping_parameters(params);
+
+#ifdef DEBUG
+  SECRET_KEY = key;
+#else
+  delete_gate_bootstrapping_secret_keyset(key);
+  delete_gate_bootstrapping_parameters(params);
+#endif
 
   auto t3 = Time::now();
   log_time(ss_time, t2, t3, false);
 
 }
 
-// A (very inefficiently formulated) full adder
-void full_adder(LweSample *s,
-                LweSample *c_out,
-                const LweSample *a,
-                const LweSample *b,
-                const LweSample *c_in,
-                const TFheGateBootstrappingCloudKeySet *bk) {
-  LweSample *tmp = new_gate_bootstrapping_ciphertext(bk->params);
-  bootsXOR(tmp, a, b, bk); // tmp = a XOR b
-  ++xor_gates;
-  bootsXOR(s, tmp, c_in, bk); // s = (a XOR b) XOR c_in
-  ++xor_gates;
-
-  LweSample *tmp2 = new_gate_bootstrapping_ciphertext(bk->params);
-  LweSample *tmp3 = new_gate_bootstrapping_ciphertext(bk->params);
-  bootsAND(tmp2, c_in, tmp, bk); // tmp2 = c_in AND (a XOR b)
-  ++and_gates;
-  bootsAND(tmp3, a, b, bk); // tmp3 = a AND b
-  ++and_gates;
-  bootsOR(c_out, tmp2, tmp3, bk); // c_out = (a AND b) OR (c_in AND (a XOR b))
-
-  delete_gate_bootstrapping_ciphertext(tmp);
-  delete_gate_bootstrapping_ciphertext(tmp2);
-  delete_gate_bootstrapping_ciphertext(tmp3);
-
-}
-
+/// Simple ripple carry adder
+/// \param s        [out]      result
+/// \param carry    [in,out]
+/// \param a        [in]       lhs (must be array of size nb_bits)
+/// \param b        [in]       rhs (must be array of size nb_bits)
+/// \param nb_bits  [in]       size of lhs and rhs
+/// \param bk       [in]
 void ripple_carry_adder(LweSample *s,
-                        LweSample *c_out,
+                        LweSample *carry,
                         const LweSample *a,
                         const LweSample *b,
                         const int nb_bits,
                         const TFheGateBootstrappingCloudKeySet *bk) {
-  //run the elementary comparator gate n times
-  LweSample *c_in = new_gate_bootstrapping_ciphertext(bk->params);
-  bootsCONSTANT(c_in, 0, bk);
+#ifdef DEBUG
+  std::cout << "adding " << decrypt_array(a, nb_bits, SECRET_KEY) << " + " << decrypt_array(b, nb_bits, SECRET_KEY)
+            << " with carry in " << bootsSymDecrypt(carry, SECRET_KEY) << std::endl;
+#endif
+
+  // Create temp ctxt's
+  LweSample *n1 = new_gate_bootstrapping_ciphertext(bk->params);
+  LweSample *n2 = new_gate_bootstrapping_ciphertext(bk->params);
+  LweSample *n1_AND_n2 = new_gate_bootstrapping_ciphertext(bk->params);
 
   for (int i = 0; i < nb_bits; i++) {
-//    int ptxt_cin = decrypt_array(c_in,1,SECRET_KEY);
-//    int ptxt_a = decrypt_array(&a[i],1,SECRET_KEY);
-//    int ptxt_b = decrypt_array(&b[i],1,SECRET_KEY);
-    full_adder(&s[i], c_out, &a[i], &b[i], c_in, bk);
-//    int ptxt_s = decrypt_array(&s[i],1,SECRET_KEY);
-//    int ptxt_cout = decrypt_array(c_out,1,SECRET_KEY);
-    bootsCOPY(c_in, c_out, bk);
-
+    bootsXOR(n1, carry, &a[i], bk);
+    bootsXOR(n2, carry, &b[i], bk);
+    bootsXOR(&s[i], n1, &b[i], bk);
+    xor_gates += 3;
+    if (i < nb_bits - 1) {
+      bootsAND(n1_AND_n2, n1, n2, bk);
+      ++and_gates;
+      bootsXOR(carry, n1_AND_n2, carry, bk);
+      ++xor_gates;
+    }
   }
+#ifdef DEBUG
+  std::cout << "result: " << decrypt_array(s, nb_bits, SECRET_KEY)
+            << " carry out: " << bootsSymDecrypt(carry, SECRET_KEY) << std::endl;
+#endif
+
+  // Clean up  temp ctxt's
+  delete_gate_bootstrapping_ciphertext(n1);
+  delete_gate_bootstrapping_ciphertext(n2);
+  delete_gate_bootstrapping_ciphertext(n1_AND_n2);
 }
 
-// Computes
-void simple_multiplier(LweSample *result,
-                       const LweSample *a,
-                       const LweSample *b,
-                       const int nb_bits, /* input length */
-                       const TFheGateBootstrappingCloudKeySet *bk) {
-  // Build a large array for all the intermediate results
-  LweSample *intermediates[nb_bits];
-  for (int i = 0; i < nb_bits; ++i) {
-    intermediates[i] = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
-    for (int j = 0; j < 2*nb_bits; ++j) {
-      bootsCONSTANT(&intermediates[i][j], 0, bk);
+/// Wallace multiplier, implementation based on Cingulata's multiplier.cxx
+/// \param result
+/// \param lhs
+/// \param rhs
+/// \param nb_bits
+/// \param bk
+void wallace_multiplier(LweSample *result,
+                        const LweSample *lhs,
+                        const LweSample *rhs,
+                        const int nb_bits, /* input length */
+                        const TFheGateBootstrappingCloudKeySet *bk) {
+#ifdef DEBUG
+  std::cout << "multiplying " << decrypt_array(lhs, nb_bits, SECRET_KEY) << " * "
+            << decrypt_array(rhs, nb_bits, SECRET_KEY)
+            << std::endl;
+#endif
+  if (nb_bits==1) {
+    bootsAND(&result[0], &lhs[0], &rhs[0], bk);
+    ++and_gates;
+  } else {
+    using T = std::tuple<int, LweSample *>;
+    std::priority_queue<T, std::vector<T>, std::function<bool(const T &, const T &)>>
+        elems_sorted_by_depth(
+        [](const T &a, const T &b) -> bool { return std::get<0>(a) > std::get<0>(b); });
+
+    // shift copies of rhs and AND with lhs at the same time
+    for (int i = 0; i < nb_bits; ++i) {
+      // take rhs, shift it by i, i.e. save to ..[j+i] and AND each bit with lhs[i]
+      // then write into i-th intermediate result
+      for (int j = 0; j < nb_bits; ++j) {
+        LweSample *temp = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
+        bootsAND(&temp[j + i], &lhs[i], &rhs[j], bk);
+        elems_sorted_by_depth.push(std::forward_as_tuple(1, temp));
+      }
     }
-  }
 
-  // shift copies of b and AND with a at the same time
-  for (int i = 0; i < nb_bits; ++i) {
-    // take b, shift it by i, i.e. save to ..[j+i] and AND each bit with a[i] and write into i-th intermediate result
-    for (int j = 0; j < nb_bits; ++j) {
-      bootsAND(&intermediates[i][j + i], &a[i], &b[j], bk);
-      ++and_gates;
+    while (elems_sorted_by_depth.size() > 2) {
+      int da, db, dc;
+      LweSample *a, *b, *c;
+
+      std::tie(da, a) = elems_sorted_by_depth.top();
+      elems_sorted_by_depth.pop();
+      std::tie(db, b) = elems_sorted_by_depth.top();
+      elems_sorted_by_depth.pop();
+      std::tie(dc, c) = elems_sorted_by_depth.top();
+      elems_sorted_by_depth.pop();
+
+      // tmp1 = lhs ^ rhs ^ c;
+      LweSample *tmp1 = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
+      for (int i = 0; i < nb_bits; ++i) {
+        bootsXOR(&tmp1[i], &a[i], &b[i], bk);
+        ++xor_gates;
+        bootsXOR(&tmp1[i], &tmp1[i], &c[i], bk);
+        ++xor_gates;
+      }
+
+      // Shift a, b and c 1 to the right
+      // Actually, we instead later shift tmp2!
+      //
+      //      a >>= 1;
+      //      b >>= 1;
+      //      c >>= 1;
+
+      // tmp2 = ((a ^ c) & (b ^ c)) ^c;
+      LweSample *tmp2 = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
+      LweSample *a_XOR_c = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
+      LweSample *b_XOR_c = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
+      LweSample *a_x_c_AND_b_x_c = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
+      bootsCONSTANT(&tmp2[0], 0, bk); //because we do the shift during the bootsXOR
+      for (int i = 0; i < nb_bits; ++i) {
+        bootsXOR(&a_XOR_c[i], &a[i], &c[i], bk);
+        ++xor_gates;
+        bootsXOR(&b_XOR_c[i], &b[i], &c[i], bk);
+        ++xor_gates;
+        bootsAND(&a_x_c_AND_b_x_c[i], &a_XOR_c[i], &b_XOR_c[i], bk);
+        ++and_gates;
+        if (i < nb_bits - 1) {
+          bootsXOR(&tmp2[i + 1], &a_x_c_AND_b_x_c[i], &c[i], bk);
+        }
+      }
+
+      delete_gate_bootstrapping_ciphertext_array(2*nb_bits, a_XOR_c);
+      delete_gate_bootstrapping_ciphertext_array(2*nb_bits, b_XOR_c);
+      delete_gate_bootstrapping_ciphertext_array(2*nb_bits, a_x_c_AND_b_x_c);
+
+      elems_sorted_by_depth.push(std::forward_as_tuple(dc, tmp1));
+      elems_sorted_by_depth.push(std::forward_as_tuple(dc + 1, tmp2));
     }
-  }
 
-//  // DEBUG: output all the intermediates
-//  printf("Intermediates:\n");
-//  for(int i = 0; i < nb_bits; ++i) {
-//    int ptxt = decrypt_array(intermediates[i],2*nb_bits,SECRET_KEY);
-//    printf("%u: %u\n", i, ptxt);
-//  }
+    int da, db;
+    LweSample *a, *b;
 
+    std::tie(da, a) = elems_sorted_by_depth.top();
+    elems_sorted_by_depth.pop();
+    std::tie(db, rhs) = elems_sorted_by_depth.top();
+    elems_sorted_by_depth.pop();
 
-  //TODO: Use 3-for-2 compressor to make this faster
-  // go through and add all the intermediates
-  LweSample *carry = new_gate_bootstrapping_ciphertext(bk->params);
-  LweSample *temp = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
-  for (int i = 0; i < nb_bits; ++i) {
+    /// add final two numbers
+    LweSample *carry = new_gate_bootstrapping_ciphertext(bk->params);
     bootsCONSTANT(carry, 0, bk);
-    for (int j = 0; j < 2*nb_bits; ++j) {
-      bootsCOPY(&temp[j], &result[j], bk);
-      bootsCONSTANT(&result[j], 0, bk);
-    }
-//    int result_ptxt_before = decrypt_array(temp, 2*nb_bits, SECRET_KEY);
-//    int intermediate_ptxt = decrypt_array(intermediates[i], 2*nb_bits, SECRET_KEY);
-    ripple_carry_adder(result, carry, temp, intermediates[i], 2*nb_bits, bk);
-//    int result_ptxt_after = decrypt_array(result, 2*nb_bits, SECRET_KEY);
-//    printf("Adding %u to %u resulted in %u\n", intermediate_ptxt, result_ptxt_before, result_ptxt_after);
+    ripple_carry_adder(result, carry, a, b, nb_bits, bk);
   }
-  delete_gate_bootstrapping_ciphertext(carry);
-  delete_gate_bootstrapping_ciphertext_array(2*nb_bits, temp);
+#ifdef DEBUG
+  std::cout << "result: " << decrypt_array(result, nb_bits, SECRET_KEY) << std::endl;
+#endif
 
-  for (int i = 0; i < nb_bits; ++i) {
-    delete_gate_bootstrapping_ciphertext_array(2*nb_bits, intermediates[i]);
-  }
 }
 
 void cloud() {
@@ -269,13 +328,15 @@ void cloud() {
   for (int j = 0; j < BIT_SIZE; j++)
     import_gate_bootstrapping_ciphertext_fromFile(cloud_data, &n2[j], params);
 
-//  // DEBUG: DECRYPT ALL THE CIPHERTEXTS
-//  int n0_ptxt = decrypt_array(n0, BIT_SIZE, SECRET_KEY);
-//  printf("n0: %u\n", n0_ptxt);
-//  int n1_ptxt = decrypt_array(n1, BIT_SIZE, SECRET_KEY);
-//  printf("n1: %u\n", n1_ptxt);
-//  int n2_ptxt = decrypt_array(n2, BIT_SIZE, SECRET_KEY);
-//  printf("n2: %u\n", n2_ptxt);
+#ifdef DEBUG
+  // DECRYPT ALL THE CIPHERTEXTS
+  int n0_ptxt = decrypt_array(n0, BIT_SIZE, SECRET_KEY);
+  printf("n0: %u\n", n0_ptxt);
+  int n1_ptxt = decrypt_array(n1, BIT_SIZE, SECRET_KEY);
+  printf("n1: %u\n", n1_ptxt);
+  int n2_ptxt = decrypt_array(n2, BIT_SIZE, SECRET_KEY);
+  printf("n2: %u\n", n2_ptxt);
+#endif
 
   /// alpha = (4(n0*n2) - n1*n1)^2
   LweSample *alpha = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
@@ -333,21 +394,25 @@ void cloud() {
   ripple_carry_adder(term2, &term2[BIT_SIZE + 1], n2_twice, n1, BIT_SIZE, bk);
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n2_twice);
 
-//  // DEBUG: VERIFY TERM RESULTS
-//  auto term1_ptxt = decrypt_array(term1, 4*BIT_SIZE, SECRET_KEY);
-//  printf("term1: %u\n", term1_ptxt);
-//  auto term2_ptxt = decrypt_array(term2, 4*BIT_SIZE, SECRET_KEY);
-//  printf("term2: %u\n", term2_ptxt);
+#ifdef DEBUG
+  // VERIFY TERM RESULTS
+  auto term1_ptxt = decrypt_array(term1, 4*BIT_SIZE, SECRET_KEY);
+  printf("term1: %u\n", term1_ptxt);
+  auto term2_ptxt = decrypt_array(term2, 4*BIT_SIZE, SECRET_KEY);
+  printf("term2: %u\n", term2_ptxt);
+#endif
 
   // Multiply n0 and n2
   LweSample *n0_n2 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
   for (int i = 0; i < 4*BIT_SIZE; ++i) {
     bootsCONSTANT(&n0_n2[i], 0, bk);
   }
-  simple_multiplier(n0_n2, n0, n2, BIT_SIZE, bk);
+  wallace_multiplier(n0_n2, n0, n2, BIT_SIZE, bk);
 
-//  auto n02_n2_ptxt = decrypt_array(n0_n2, 4*BIT_SIZE, SECRET_KEY);
-//  printf("n0*n2: %u\n", n02_n2_ptxt);
+#ifdef DEBUG
+  auto n02_n2_ptxt = decrypt_array(n0_n2, 4*BIT_SIZE, SECRET_KEY);
+  printf("n0*n2: %u\n", n02_n2_ptxt);
+#endif
 
   // shift result by 2
   LweSample *four_n0_n2 = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
@@ -359,18 +424,21 @@ void cloud() {
   }
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n0_n2);
 
-//  auto four_n02_n2_ptxt = decrypt_array(four_n0_n2, 4*BIT_SIZE, SECRET_KEY);
-//  printf("4*n0*n2: %u\n", four_n02_n2_ptxt);
-
+#ifdef DEBUG
+  auto four_n02_n2_ptxt = decrypt_array(four_n0_n2, 4*BIT_SIZE, SECRET_KEY);
+  printf("4*n0*n2: %u\n", four_n02_n2_ptxt);
+#endif
   // square n1
   LweSample *n1_squared = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
   for (int i = 0; i < 4*BIT_SIZE; ++i) {
     bootsCONSTANT(&n1_squared[i], 0, bk);
   }
-  simple_multiplier(n1_squared, n1, n1, BIT_SIZE, bk);
+  wallace_multiplier(n1_squared, n1, n1, BIT_SIZE, bk);
 
-//  auto n1_squared_ptxt = decrypt_array(n1_squared, 4*BIT_SIZE, SECRET_KEY);
-//  printf("n1^2: %u\n", n1_squared_ptxt);
+#ifdef DEBUG
+  auto n1_squared_ptxt = decrypt_array(n1_squared, 4*BIT_SIZE, SECRET_KEY);
+  printf("n1^2: %u\n", n1_squared_ptxt);
+#endif
 
   // Alpha:
   // first add (yes, original formula is minus, but runtime is pretty much the same and it's already implemented)
@@ -383,11 +451,13 @@ void cloud() {
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, four_n0_n2);
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, n1_squared);
 
-//  auto sqrt_alpha_ptxt = decrypt_array(sqrt_alpha, 4*BIT_SIZE, SECRET_KEY);
-//  printf("sqrt_alpha: %u\n", sqrt_alpha_ptxt);
+#ifdef DEBUG
+  auto sqrt_alpha_ptxt = decrypt_array(sqrt_alpha, 4*BIT_SIZE, SECRET_KEY);
+  printf("sqrt_alpha: %u\n", sqrt_alpha_ptxt);
+#endif
 
   // now square
-  simple_multiplier(alpha, sqrt_alpha, sqrt_alpha, 2*BIT_SIZE, bk);
+  wallace_multiplier(alpha, sqrt_alpha, sqrt_alpha, 2*BIT_SIZE, bk);
   delete_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, sqrt_alpha);
 
 
@@ -396,20 +466,24 @@ void cloud() {
   for (int i = 0; i < 4*BIT_SIZE; ++i) {
     bootsCONSTANT(&term1_squared[i], 0, bk);
   }
-  simple_multiplier(term1_squared, term1, term1, BIT_SIZE, bk);
+  wallace_multiplier(term1_squared, term1, term1, BIT_SIZE, bk);
 
-//  auto term1_squared_ptxt = decrypt_array(term1_squared, 4*BIT_SIZE, SECRET_KEY);
-//  printf("term1_squared: %u\n", term1_squared_ptxt);
+#ifdef DEBUG
+  auto term1_squared_ptxt = decrypt_array(term1_squared, 4*BIT_SIZE, SECRET_KEY);
+  printf("term1_squared: %u\n", term1_squared_ptxt);
+#endif
 
   // Square term 2
   LweSample *term2_squared = new_gate_bootstrapping_ciphertext_array(4*BIT_SIZE, params);
   for (int i = 0; i < 4*BIT_SIZE; ++i) {
     bootsCONSTANT(&term2_squared[i], 0, bk);
   }
-  simple_multiplier(term2_squared, term2, term2, BIT_SIZE, bk);
+  wallace_multiplier(term2_squared, term2, term2, BIT_SIZE, bk);
 
-//  auto term2_squared_ptxt = decrypt_array(term2_squared, 4*BIT_SIZE, SECRET_KEY);
-//  printf("term2_squared: %u\n", term2_squared_ptxt);
+#ifdef DEBUG
+  auto term2_squared_ptxt = decrypt_array(term2_squared, 4*BIT_SIZE, SECRET_KEY);
+  printf("term2_squared: %u\n", term2_squared_ptxt);
+#endif
 
   // beta 1 is  2*(term1)^2 so we shift by one
   for (int i = 0; i < 2*BIT_SIZE; ++i) {
@@ -417,7 +491,7 @@ void cloud() {
   }
 
   // beta 2 is term1 * term2
-  simple_multiplier(beta2, term1, term2, BIT_SIZE, bk);
+  wallace_multiplier(beta2, term1, term2, BIT_SIZE, bk);
 
 
   // beta 3 is  2*(term2)^2 so we shift by one
@@ -426,7 +500,7 @@ void cloud() {
   }
 
 
-  //export the resulting ciphertexts to a file (for the cloud)
+  //export the resulting ciphertexts to lhs file (for the cloud)
   FILE *answer_data = fopen("answer.data", "wb");
   for (int i = 0; i < BIT_SIZE; i++) export_gate_bootstrapping_ciphertext_toFile(answer_data, &alpha[i], params);
   for (int i = 0; i < BIT_SIZE; i++) export_gate_bootstrapping_ciphertext_toFile(answer_data, &beta1[i], params);
