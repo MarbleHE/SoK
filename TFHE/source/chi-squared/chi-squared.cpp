@@ -20,6 +20,10 @@ void log_time(std::stringstream &ss,
 }
 }  // namespace
 
+// Counters for gates
+int and_gates = 0;
+int xor_gates = 0;
+
 std::stringstream ss_time;
 
 void client();
@@ -30,6 +34,13 @@ int main() {
   client();
   cloud();
   verify();
+
+  // Report total gate numbers
+  std::cout << "and: " << and_gates << std::endl;
+  std::cout << "xor: " << xor_gates << std::endl;
+
+  // Print out times:
+  std::cout << ss_time.str() << std::endl;
 
   // write ss_time into file
   std::ofstream myfile;
@@ -133,12 +144,16 @@ void full_adder(LweSample *s,
                 const TFheGateBootstrappingCloudKeySet *bk) {
   LweSample *tmp = new_gate_bootstrapping_ciphertext(bk->params);
   bootsXOR(tmp, a, b, bk); // tmp = a XOR b
+  ++xor_gates;
   bootsXOR(s, tmp, c_in, bk); // s = (a XOR b) XOR c_in
+  ++xor_gates;
 
   LweSample *tmp2 = new_gate_bootstrapping_ciphertext(bk->params);
   LweSample *tmp3 = new_gate_bootstrapping_ciphertext(bk->params);
   bootsAND(tmp2, c_in, tmp, bk); // tmp2 = c_in AND (a XOR b)
+  ++and_gates;
   bootsAND(tmp3, a, b, bk); // tmp3 = a AND b
+  ++and_gates;
   bootsOR(c_out, tmp2, tmp3, bk); // c_out = (a AND b) OR (c_in AND (a XOR b))
 
   delete_gate_bootstrapping_ciphertext(tmp);
@@ -189,6 +204,7 @@ void simple_multiplier(LweSample *result,
     // take b, shift it by i, i.e. save to ..[j+i] and AND each bit with a[i] and write into i-th intermediate result
     for (int j = 0; j < nb_bits; ++j) {
       bootsAND(&intermediates[i][j + i], &a[i], &b[j], bk);
+      ++and_gates;
     }
   }
 
