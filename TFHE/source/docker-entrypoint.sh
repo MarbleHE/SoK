@@ -21,7 +21,7 @@ export OUTPUT_FILENAME=tfhe_cardio_opt.csv
 ./run_cardio_opt.sh
 upload_files TFHE-Opt ${OUTPUT_FILENAME}
 
-# Chi-Squared Test
-export OUTPUT_FILENAME=tfhe_chi_squared.csv
-./run_chi_squared.sh
-upload_files TFHE ${OUTPUT_FILENAME}
+# Chi-Squared Naive
+export OUTPUT_FILENAME=tfhe_chi_squared_naive.csv
+./run_chi_squared_naive.sh
+upload_files TFHE-Naive ${OUTPUT_FILENAME}

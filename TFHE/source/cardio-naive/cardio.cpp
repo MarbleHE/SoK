@@ -86,7 +86,7 @@ LweSample *encode_n(int n, const TFheGateBootstrappingCloudKeySet *bk) {
 void client() {
   auto t0 = Time::now();
   //generate a keyset
-  const int minimum_lambda = 110;
+  const int minimum_lambda = 100;
   TFheGateBootstrappingParameterSet *params = new_default_gate_bootstrapping_parameters(minimum_lambda);
 
   //generate a random key

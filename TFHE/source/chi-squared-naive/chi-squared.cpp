@@ -70,7 +70,7 @@ int decrypt_array(const LweSample *array, int nb_size, const TFheGateBootstrappi
 void client() {
   auto t0 = Time::now();
   //generate a keyset
-  const int minimum_lambda = 110;
+  const int minimum_lambda = 100;
   TFheGateBootstrappingParameterSet *params = new_default_gate_bootstrapping_parameters(minimum_lambda);
 
   //generate a random key
@@ -107,7 +107,7 @@ void client() {
 
   }
 
-  printf("Hi there! Today we will calculate a chi-squared test !\n");
+  printf("Hi there! Today we will calculate a chi-squared-naive test !\n");
 
   //export the ciphertexts to a file (for the cloud)
   FILE *cloud_data = fopen("cloud.data", "wb");
