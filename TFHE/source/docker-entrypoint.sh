@@ -25,3 +25,8 @@ upload_files TFHE-Opt ${OUTPUT_FILENAME}
 export OUTPUT_FILENAME=tfhe_chi_squared_naive.csv
 ./run_chi_squared_naive.sh
 upload_files TFHE-Naive ${OUTPUT_FILENAME}
+
+# Chi-Squared Opt
+export OUTPUT_FILENAME=tfhe_chi_squared_opt.csv
+./run_chi_squared_opt.sh
+upload_files TFHE-Opt ${OUTPUT_FILENAME}
