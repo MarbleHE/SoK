@@ -52,14 +52,16 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
 
     positions = {
         'SEAL-BFV-Opt': (0, 0),
-        'SEAL-BFV-Naive': (0, 1),
-        'E3-SEAL': (0, 2),
-        'EVA': (0, 3),
+        'E3-SEAL': (0, 1),
+        'EVA': (0, 2),
+        'SEAL-BFV-Naive': (0, 3),
 
         'Cingulata': (1, 0),
 
-        'TFHE': (2, 0),
-        'E3-TFHE': (2, 1)
+        'TFHE-Opt': (2, 0),
+        'Cingulata-TFHE': (2,1),
+        'E3-TFHE': (2, 2),
+        'TFHE-Naive': (2, 3)
     }
 
     # plt.title('Runtime for Chi-Squared Test Benchmark', fontsize=10)
@@ -70,9 +72,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     inner_spacer = 0.0005
     # {\fontsize{30pt}{3em}\selectfont{}{Mean WRFv3.5 LHF\r}{\fontsize{18pt}{3em}\selectfont{}(September 16 - October 30, 2012)}
     group_labels = [
-        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Opt./Naive/E\\textsuperscript{3}/EVA)}',
-        'Cingulata\n{\\fontsize{7pt}{3em}\\selectfont{}(Cingulata)}',
-        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Naive/E\\textsuperscript{3})}'
+        'SEAL\n{\\fontsize{7pt}{3em}\\selectfont{}(Opt./E\\textsuperscript{3}/EVA/Naive)}',
+        'CinguBFV\n{\\fontsize{7pt}{3em}\\selectfont{}(Cingulata)}',
+        'TFHE\n{\\fontsize{7pt}{3em}\\selectfont{}(Opt./Cingulata/E\\textsuperscript{3}/Naive)}'
     ]
 
     # ['E3-SEAL', 'E3-TFHE', 'SEAL-BFV-Batched', 'SEAL-BFV', 'TFHE']

@@ -55,8 +55,8 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     positions = {
 
         'SEAL-BFV-Batched-Manualparams': (0, 0),
-        'E3-SEAL-Batched': (0, 1),
-        'SEAL-BFV-Manualparams': (0, 2),
+        'SEAL-BFV-Manualparams': (0, 1),
+        'E3-SEAL-Batched': (0, 2),
         'E3-SEAL': (0, 3),
         'SEAL-BFV-Naive-Sealparams': (0, 4),
 
@@ -66,9 +66,10 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
         'Cingulata-OPT': (1, 3),
         'MultiStart-OPT-PARAMS': (1, 4),
 
-        'TFHE': (2, 0),
-        'E3-TFHE': (2, 1),
-        'Cingulata-TFHE': (2, 2)
+        'TFHE-Opt': (2,0),
+        'Cingulata-TFHE': (2, 1),
+        'E3-TFHE': (2, 2),
+        'TFHE-Naive': (2, 3)
 
     }
 
@@ -79,9 +80,9 @@ def plot(labels: List[str], pandas_dataframes: List[pd.DataFrame], fig=None) -> 
     inner_spacer = 0.0005
 
     group_labels = [
-        'SEAL\n{\\fontsize{6pt}{3em}\\selectfont{}(Opt.*/E\\textsuperscript{3}*/Opt./E\\textsuperscript{3}/Naive)}',
-        'Cingulata\n{\\fontsize{6pt}{3em}\\selectfont{(A/B/C/D/E})}',
-        'TFHE\n{\\fontsize{6pt}{3em}\\selectfont{}(Naive/E\\textsuperscript{3}/Cingulata)}'
+        'SEAL\n{\\fontsize{6pt}{3em}\\selectfont{}(Opt.*/Opt./E\\textsuperscript{3}*/E\\textsuperscript{3}/Naive)}',
+        'CinguBFV\n{\\fontsize{6pt}{3em}\\selectfont{(A/B/C/D/E})}',
+        'TFHE\n{\\fontsize{6pt}{3em}\\selectfont{}(Opt./Cingulata/E\\textsuperscript{3}/Naive)}'
     ]
 
     x_center, x_start = get_x_ticks_positions(positions, bar_width, inner_spacer, spacer)
