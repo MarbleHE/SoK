@@ -5,7 +5,7 @@ COPY source/ /cingu/eval
 
 # copy TFHE examples into Cingulata tree and rebuild
 RUN cp -r  /cingu/eval/cardio-cingulata-tfhe /cingu/tests/tfhe/cardio \
- && cp -r  /cingu/eval/chi-squared-cingulata-tfhe /cingu/tests/tfhe/chi-squared
+ && cp -r  /cingu/eval/chi-squared-cingulata-tfhe /cingu/tests/tfhe/chi-squared \
  && cd /cingu/build_tfhe \
  && cmake -DTFHE_PATH=/tfhe -j $(nproc) .. \
  && make
