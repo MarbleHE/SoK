@@ -57,7 +57,9 @@ int main() {
 /// Number of bits in numerical parameters
 const int BIT_SIZE = 8;
 
-#define DEBUG
+//#define DEBUG
+
+//#define DEBUG_WALLACE
 
 #ifdef DEBUG
 // DEBUG SECRET_KEY
@@ -181,7 +183,7 @@ void ripple_carry_adder(LweSample *s,
     }
   }
 #ifdef DEBUG
-  std::cout << "result: " << decrypt_array(s, nb_bits, SECRET_KEY)
+  std::cout << "addition result: " << decrypt_array(s, nb_bits, SECRET_KEY)
             << " carry out: " << bootsSymDecrypt(carry, SECRET_KEY) << std::endl;
 #endif
 
@@ -220,11 +222,25 @@ void wallace_multiplier(LweSample *result,
     for (int i = 0; i < nb_bits; ++i) {
       // take rhs, shift it by i, i.e. save to ..[j+i] and AND each bit with lhs[i]
       // then write into i-th intermediate result
-      for (int j = 0; j < nb_bits; ++j) {
-        LweSample *temp = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
-        bootsAND(&temp[j + i], &lhs[i], &rhs[j], bk);
-        elems_sorted_by_depth.push(std::forward_as_tuple(1, temp));
+      LweSample *temp = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
+      for (int k = 0; k < 2*nb_bits; ++k) {
+        bootsCONSTANT(&temp[k], 0, bk); //initialize all the other positions
       }
+      for (int j = 0; j < nb_bits; ++j) {
+        bootsAND(&temp[j + i], &lhs[i], &rhs[j], bk);
+#ifdef  DEBUG_WALLACE
+        std::cout << "i: " << i
+                  << ", lhs[i]=" << bootsSymDecrypt(&lhs[i], SECRET_KEY)
+                  << ", rhs[j]=" << bootsSymDecrypt(&rhs[j], SECRET_KEY)
+                  << ", AND=" << bootsSymDecrypt(&temp[j + i], SECRET_KEY)
+                  << std::endl;
+#endif
+      }
+#ifdef  DEBUG_WALLACE
+      std::cout << "Adding to queue: " << decrypt_array(temp, 2*nb_bits, SECRET_KEY) << std::endl;
+#endif
+      elems_sorted_by_depth.push(std::forward_as_tuple(1, temp));
+
     }
 
     while (elems_sorted_by_depth.size() > 2) {
@@ -238,15 +254,24 @@ void wallace_multiplier(LweSample *result,
       std::tie(dc, c) = elems_sorted_by_depth.top();
       elems_sorted_by_depth.pop();
 
+#ifdef  DEBUG_WALLACE
+      std::cout << "3-for-2: " << std::endl
+                << "a: " << decrypt_array(a, 2*nb_bits, SECRET_KEY) << std::endl
+                << "b: " << decrypt_array(b, 2*nb_bits, SECRET_KEY) << std::endl
+                << "c: " << decrypt_array(c, 2*nb_bits, SECRET_KEY) << std::endl;
+#endif
+
       // tmp1 = lhs ^ rhs ^ c;
       LweSample *tmp1 = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
-      for (int i = 0; i < nb_bits; ++i) {
+      for (int i = 0; i < 2*nb_bits; ++i) {
         bootsXOR(&tmp1[i], &a[i], &b[i], bk);
         ++xor_gates;
         bootsXOR(&tmp1[i], &tmp1[i], &c[i], bk);
         ++xor_gates;
       }
-
+#ifdef  DEBUG_WALLACE
+      std::cout << "tmp1: " << decrypt_array(tmp1, 2*nb_bits, SECRET_KEY) << std::endl;
+#endif
       // Shift a, b and c 1 to the right
       // Actually, we instead later shift tmp2!
       //
@@ -260,17 +285,21 @@ void wallace_multiplier(LweSample *result,
       LweSample *b_XOR_c = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
       LweSample *a_x_c_AND_b_x_c = new_gate_bootstrapping_ciphertext_array(2*nb_bits, bk->params);
       bootsCONSTANT(&tmp2[0], 0, bk); //because we do the shift during the bootsXOR
-      for (int i = 0; i < nb_bits; ++i) {
+      for (int i = 0; i < 2*nb_bits; ++i) {
         bootsXOR(&a_XOR_c[i], &a[i], &c[i], bk);
         ++xor_gates;
         bootsXOR(&b_XOR_c[i], &b[i], &c[i], bk);
         ++xor_gates;
         bootsAND(&a_x_c_AND_b_x_c[i], &a_XOR_c[i], &b_XOR_c[i], bk);
         ++and_gates;
-        if (i < nb_bits - 1) {
+        if (i < 2*nb_bits - 1) {
           bootsXOR(&tmp2[i + 1], &a_x_c_AND_b_x_c[i], &c[i], bk);
         }
       }
+
+#ifdef  DEBUG_WALLACE
+      std::cout << "tmp2: " << decrypt_array(tmp2, 2*nb_bits, SECRET_KEY) << std::endl << std::endl;
+#endif
 
       delete_gate_bootstrapping_ciphertext_array(2*nb_bits, a_XOR_c);
       delete_gate_bootstrapping_ciphertext_array(2*nb_bits, b_XOR_c);
@@ -285,16 +314,16 @@ void wallace_multiplier(LweSample *result,
 
     std::tie(da, a) = elems_sorted_by_depth.top();
     elems_sorted_by_depth.pop();
-    std::tie(db, rhs) = elems_sorted_by_depth.top();
+    std::tie(db, b) = elems_sorted_by_depth.top();
     elems_sorted_by_depth.pop();
 
     /// add final two numbers
     LweSample *carry = new_gate_bootstrapping_ciphertext(bk->params);
     bootsCONSTANT(carry, 0, bk);
-    ripple_carry_adder(result, carry, a, b, nb_bits, bk);
+    ripple_carry_adder(result, carry, a, b, 2*nb_bits, bk);
   }
 #ifdef DEBUG
-  std::cout << "result: " << decrypt_array(result, nb_bits, SECRET_KEY) << std::endl;
+  std::cout << "multiplication result: " << decrypt_array(result, 2*nb_bits, SECRET_KEY) << std::endl;
 #endif
 
 }
