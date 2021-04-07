@@ -41,14 +41,14 @@ def plot_all_cardio():
         'Lobster-Baseline-OPT',
         'MultiStart-OPT-PARAMS',
         'Lobster-OPT-PARAMS',
-
         'Cingulata-OPT',
 
         'SEAL-BFV-Manualparams',
         'SEAL-BFV-Naive-Sealparams',
         'E3-SEAL',
 
-        'TFHE',
+        'TFHE-Naive',
+        'TFHE-Opt',
         'E3-TFHE',
         'Cingulata-TFHE',
 
@@ -141,11 +141,11 @@ def run_in_parallel(*fns):
 
 def plot_all():
     # run_in_parallel(plot_all_microbenchmark, plot_all_cardio, plot_all_kernel, plot_all_nn, plot_all_chi_squared)
-    plot_all_microbenchmark()
+    # plot_all_microbenchmark()
     plot_all_cardio()
-    plot_all_nn()
+    # plot_all_nn()
     plot_all_chi_squared()
-    plot_all_kernel()
+    # plot_all_kernel()
 
 
 if __name__ == "__main__":
