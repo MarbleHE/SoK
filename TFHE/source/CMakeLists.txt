@@ -2,6 +2,14 @@ cmake_minimum_required (VERSION 3.9...3.17)
 
 project(eval_benchmark)
 
+# Hamming Opt
+add_executable(hamming-opt hamming-opt/hamming.cpp)
+set_target_properties(hamming-opt PROPERTIES LINKER_LANGUAGE CXX)
+target_link_libraries(hamming-opt /usr/local/lib/libtfhe-fftw.so)
+configure_file(hamming-opt/run_hamming.sh.in tmp/run_hamming_opt.sh)
+file (COPY ${CMAKE_BINARY_DIR}/tmp/run_hamming_opt.sh DESTINATION ${CMAKE_BINARY_DIR} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ)
+
+
 # Cardio Naive
 add_executable(cardio-naive cardio-naive/cardio.cpp)
 set_target_properties(cardio-naive PROPERTIES LINKER_LANGUAGE CXX)
