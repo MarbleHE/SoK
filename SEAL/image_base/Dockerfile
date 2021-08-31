@@ -18,7 +18,7 @@ RUN wget https://cmake.org/files/v3.15/cmake-3.15.0.tar.gz && \
 
 ###### build SEAL
 WORKDIR $ROOT_HOME
-RUN git clone --branch 3.5.6 https://github.com/microsoft/SEAL.git && \
+RUN git clone --branch 3.6.6 https://github.com/microsoft/SEAL.git && \
     mkdir -p SEAL/build; cd SEAL/build; export CC=clang-9; export CXX=clang++-9; \
     cmake -DSEAL_BUILD_SEAL_C=ON -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release .. && \
     make -j$(nproc) && \
