@@ -6,3 +6,4 @@ __pycache__
 **/build/*
 *id_rsa*
 id_sealion
+**/cmake-build-*
