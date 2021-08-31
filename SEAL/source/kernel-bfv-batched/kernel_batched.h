@@ -30,9 +30,9 @@ class Evaluation {
   std::shared_ptr<seal::SEALContext> context;
 
   std::unique_ptr<seal::SecretKey> secret_key;
-  std::unique_ptr<seal::PublicKey> public_key;
-  std::unique_ptr<seal::GaloisKeys> galois_keys;
-  std::unique_ptr<seal::RelinKeys> relin_keys;
+  std::unique_ptr<seal::PublicKey> public_key = std::make_unique<seal::PublicKey>();
+  std::unique_ptr<seal::GaloisKeys> galois_keys = std::make_unique<seal::GaloisKeys>();
+  std::unique_ptr<seal::RelinKeys> relin_keys = std::make_unique<seal::RelinKeys>();
 
   std::unique_ptr<seal::BatchEncoder> encoder;
   std::unique_ptr<seal::Encryptor> encryptor;

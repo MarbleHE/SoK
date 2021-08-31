@@ -83,7 +83,7 @@ std::vector<int64_t> Evaluation::run_kernel(VecInt2D img) {
   std::stringstream ss_time;
   Timepoint t_start_keygen = Time::now();
 
-  seal::EncryptionParameters parms(seal::scheme_type::BFV);
+  seal::EncryptionParameters parms(seal::scheme_type::bfv);
   parms.set_poly_modulus_degree(DEFAULT_NUM_SLOTS);  // = no. of ctxt slots
   // Let SEAL select a "suitable" coefficient modulus (not necessarily maximal)
   parms.set_coeff_modulus(
@@ -91,21 +91,21 @@ std::vector<int64_t> Evaluation::run_kernel(VecInt2D img) {
   // Let SEAL select a plaintext modulus that actually supports batching
   parms.set_plain_modulus(
       seal::PlainModulus::Batching(parms.poly_modulus_degree(), 20));
-  context = seal::SEALContext::Create(parms);
+  context = std::make_unique<seal::SEALContext>(parms);
 
   /// Create keys
-  seal::KeyGenerator keygen(context);
+  seal::KeyGenerator keygen(*context);
   secret_key = std::make_unique<seal::SecretKey>(keygen.secret_key());
-  public_key = std::make_unique<seal::PublicKey>(keygen.public_key());
-  galois_keys = std::make_unique<seal::GaloisKeys>(keygen.galois_keys_local());
-  relin_keys = std::make_unique<seal::RelinKeys>(keygen.relin_keys_local());
+  keygen.create_public_key(*public_key);
+  keygen.create_galois_keys(*galois_keys);
+ keygen.create_relin_keys(*relin_keys);
 
   // Create helper objects
-  encoder = std::make_unique<seal::BatchEncoder>(context);
+  encoder = std::make_unique<seal::BatchEncoder>(*context);
   encryptor =
-      std::make_unique<seal::Encryptor>(context, *public_key, *secret_key);
-  decryptor = std::make_unique<seal::Decryptor>(context, *secret_key);
-  evaluator = std::make_unique<seal::Evaluator>(context);
+      std::make_unique<seal::Encryptor>(*context, *public_key, *secret_key);
+  decryptor = std::make_unique<seal::Decryptor>(*context, *secret_key);
+  evaluator = std::make_unique<seal::Evaluator>(*context);
 
   Timepoint t_end_keygen = Time::now();
   log_time(ss_time, t_start_keygen, t_end_keygen, false);
@@ -140,7 +140,7 @@ std::vector<int64_t> Evaluation::run_kernel(VecInt2D img) {
                                 -(2 * image_size + 2)};
   seal::Plaintext w_ptxt;
   std::vector<seal::Ciphertext> img_ctxts(weight_matrix.size(),
-                                          seal::Ciphertext(context));
+                                          seal::Ciphertext(*context));
   for (size_t i = 0; i < weight_matrix.size(); ++i) {
     evaluator->rotate_rows(img_ctxt, rotations[i], *galois_keys, img_ctxts[i]);
     encoder->encode(
@@ -149,7 +149,7 @@ std::vector<int64_t> Evaluation::run_kernel(VecInt2D img) {
   }
 
   // Sum up all the ciphertexts
-  seal::Ciphertext res_ctxt(context);
+  seal::Ciphertext res_ctxt(*context);
   evaluator->add_many(img_ctxts, res_ctxt);
 
   // Move the computed result to the expected position, e.g., first computed
@@ -189,7 +189,7 @@ std::vector<int64_t> Evaluation::run_kernel(VecInt2D img) {
 
   // write ss_time into file
   std::ofstream myfile;
-  auto out_filename = std::getenv("OUTPUT_FILENAME");
+  auto out_filename =  "kernel_batched.csv"; //std::getenv("OUTPUT_FILENAME");
   myfile.open(out_filename, std::ios_base::app);
   myfile << ss_time.str() << std::endl;
   myfile.close();

@@ -24,10 +24,10 @@ inline void write_parameters_to_file(std::shared_ptr<seal::SEALContext> context,
   */
   std::string scheme_name;
   switch (context_data.parms().scheme()) {
-    case seal::scheme_type::BFV:
+    case seal::scheme_type::bfv:
       scheme_name = "BFV";
       break;
-    case seal::scheme_type::CKKS:
+    case seal::scheme_type::ckks:
       scheme_name = "CKKS";
       break;
     default:
@@ -55,7 +55,7 @@ inline void write_parameters_to_file(std::shared_ptr<seal::SEALContext> context,
   /*
   For the BFV scheme print the plain_modulus parameter.
   */
-  if (context_data.parms().scheme() == seal::scheme_type::BFV) {
+  if (context_data.parms().scheme() == seal::scheme_type::bfv) {
     outfile << "|   plain_modulus: "
               << context_data.parms().plain_modulus().value() << std::endl;
   }
