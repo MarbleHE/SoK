@@ -39,18 +39,18 @@ class ChiSquared {
   std::unique_ptr<seal::SecretKey> secretKey;
 
   /// public key (ptr because PublicKey() segfaults)
-  std::unique_ptr<seal::PublicKey> publicKey;
+  std::unique_ptr<seal::PublicKey> publicKey = std::make_unique<seal::PublicKey>();
 
   /// keys required to rotate (ptr because GaloisKeys() segfaults)
-  std::unique_ptr<seal::GaloisKeys> galoisKeys;
+  std::unique_ptr<seal::GaloisKeys> galoisKeys = std::make_unique<seal::GaloisKeys>();
 
   /// keys required to relinearize after multipliction (ptr for consistency)
-  std::unique_ptr<seal::RelinKeys> relinKeys;
+  std::unique_ptr<seal::RelinKeys> relinKeys = std::make_unique<seal::RelinKeys>();
 
   std::unique_ptr<seal::Encryptor> encryptor;
   std::unique_ptr<seal::Evaluator> evaluator;
   std::unique_ptr<seal::Decryptor> decryptor;
-  std::unique_ptr<seal::IntegerEncoder> encoder;
+  std::unique_ptr<seal::BatchEncoder> encoder;
 
  public:
   void run_chi_squared();

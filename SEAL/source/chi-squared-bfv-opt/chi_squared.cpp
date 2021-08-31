@@ -5,14 +5,14 @@
 void ChiSquared::setup_context_bfv(std::size_t poly_modulus_degree,
                                    std::uint64_t plain_modulus) {
   /// Wrapper for parameters
-  seal::EncryptionParameters params(seal::scheme_type::BFV);
+  seal::EncryptionParameters params(seal::scheme_type::bfv);
   params.set_poly_modulus_degree(poly_modulus_degree);
   // Cingulata params + an additional moduli (44) as computation otherwise
   // cannot be performed
 
 #ifdef MANUALPARAMS
   params.set_coeff_modulus(seal::CoeffModulus::Create(
-      poly_modulus_degree,  {60, 60, 30}));
+      poly_modulus_degree, {60, 60, 30}));
 #endif
 
 #ifdef CINGUPARAM
@@ -25,25 +25,23 @@ void ChiSquared::setup_context_bfv(std::size_t poly_modulus_degree,
       poly_modulus_degree, seal::sec_level_type::tc128));
 #endif
 
-  params.set_plain_modulus(plain_modulus);
+  params.set_plain_modulus(seal::PlainModulus::Batching(params.poly_modulus_degree(), 20));
 
   // Instantiate context
-  context = seal::SEALContext::Create(params);
+  context = std::make_unique<seal::SEALContext>(params);
 
   /// Create keys
-  seal::KeyGenerator keyGenerator(context);
-  publicKey = std::make_unique<seal::PublicKey>(keyGenerator.public_key());
+  seal::KeyGenerator keyGenerator(*context);
   secretKey = std::make_unique<seal::SecretKey>(keyGenerator.secret_key());
-  relinKeys =
-      std::make_unique<seal::RelinKeys>(keyGenerator.relin_keys_local());
+  keyGenerator.create_public_key(*publicKey);
+  keyGenerator.create_relin_keys(*relinKeys);
 
   // Provide both public and secret key, however, we will use public-key
   // encryption as this is the one used in a typical client-server scenario.
-  encryptor =
-      std::make_unique<seal::Encryptor>(context, *publicKey, *secretKey);
-  evaluator = std::make_unique<seal::Evaluator>(context);
-  decryptor = std::make_unique<seal::Decryptor>(context, *secretKey);
-  encoder = std::make_unique<seal::IntegerEncoder>(context);
+  encryptor = std::make_unique<seal::Encryptor>(*context, *publicKey, *secretKey);
+  evaluator = std::make_unique<seal::Evaluator>(*context);
+  decryptor = std::make_unique<seal::Decryptor>(*context, *secretKey);
+  encoder = std::make_unique<seal::BatchEncoder>(*context);
 }
 
 namespace {
@@ -59,16 +57,19 @@ void log_time(std::stringstream &ss,
 int32_t ChiSquared::get_decrypted_value(seal::Ciphertext value) {
   seal::Plaintext tmp;
   decryptor->decrypt(value, tmp);
-  return encoder->decode_int32(tmp);
+  std::vector<uint64_t> v;
+  encoder->decode(tmp, v);
+  return (int32_t) v.at(0);
+
 }
 
 ResultCiphertexts ChiSquared::compute_alpha_betas(const seal::Ciphertext &N_0,
                                                   const seal::Ciphertext &N_1,
                                                   const seal::Ciphertext &N_2) {
   seal::Plaintext four;
-  encoder->encode(4, four);
+  encoder->encode(std::vector<uint64_t>(context->first_context_data()->parms().poly_modulus_degree(), 4), four);
   seal::Plaintext two;
-  encoder->encode(2, two);
+  encoder->encode(std::vector<uint64_t>(context->first_context_data()->parms().poly_modulus_degree(), 2), two);
 
   // compute alpha
   seal::Ciphertext alpha;
@@ -122,10 +123,14 @@ void ChiSquared::run_chi_squared() {
 
   auto t2 = Time::now();
   int32_t n0_val = 2, n1_val = 7, n2_val = 9;
+  seal::Plaintext n0_ptxt, n1_ptxt, n2_ptxt;
   seal::Ciphertext n0, n1, n2;
-  encryptor->encrypt(encoder->encode(n0_val), n0);
-  encryptor->encrypt(encoder->encode(n1_val), n1);
-  encryptor->encrypt(encoder->encode(n2_val), n2);
+  encoder->encode(std::vector<uint64_t>(context->first_context_data()->parms().poly_modulus_degree(), n0_val), n0_ptxt);
+  encoder->encode(std::vector<uint64_t>(context->first_context_data()->parms().poly_modulus_degree(), n1_val), n1_ptxt);
+  encoder->encode(std::vector<uint64_t>(context->first_context_data()->parms().poly_modulus_degree(), n2_val), n2_ptxt);
+  encryptor->encrypt(n0_ptxt, n0);
+  encryptor->encrypt(n1_ptxt, n1);
+  encryptor->encrypt(n2_ptxt, n2);
   auto t3 = Time::now();
   log_time(ss_time, t2, t3, false);
 
@@ -145,18 +150,18 @@ void ChiSquared::run_chi_squared() {
   log_time(ss_time, t6, t7, true);
 
   // check results
-  auto exp_alpha = std::pow((4 * n0_val * n2_val) - std::pow(n1_val, 2), 2);
+  auto exp_alpha = std::pow((4*n0_val*n2_val) - std::pow(n1_val, 2), 2);
   assert(("Unexpected result for 'alpha' encountered!",
-          result_alpha == exp_alpha));
-  auto exp_beta_1 = 2 * std::pow(2 * n0_val + n1_val, 2);
+      result_alpha==exp_alpha));
+  auto exp_beta_1 = 2*std::pow(2*n0_val + n1_val, 2);
   assert(("Unexpected result for 'beta_1' encountered!",
-          result_beta1 == exp_beta_1));
-  auto exp_beta_2 = ((2 * n0_val) + n1_val) * ((2 * n2_val) + n1_val);
+      result_beta1==exp_beta_1));
+  auto exp_beta_2 = ((2*n0_val) + n1_val)*((2*n2_val) + n1_val);
   assert(("Unexpected result for 'beta_2' encountered!",
-          result_beta2 == exp_beta_2));
-  auto exp_beta_3 = 2 * std::pow(2 * n2_val + n1_val, 2);
+      result_beta2==exp_beta_2));
+  auto exp_beta_3 = 2*std::pow(2*n2_val + n1_val, 2);
   assert(("Unexpected result for 'beta_3' encountered!",
-          result_beta3 == exp_beta_3));
+      result_beta3==exp_beta_3));
 
   // write ss_time into file
   std::ofstream myfile;
